@@ -16,7 +16,7 @@ function Landing() {
         </p>
 
         <footer className="text-center">
-          <Link to="/signup" className="btn" style={{ backgroundColor: 'var(--primary-blue)', color: '#fff' }}>
+          <Link to="/signup" className="btn" style={{ backgroundColor: 'var(--primary-blue)', color: '#fff364E68' }}>
             Sign Up
           </Link>
         </footer>
