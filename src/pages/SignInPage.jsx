@@ -20,12 +20,39 @@ function SignInPage() {
   };
 
   return (
-    <section>
-      <h2>Login As:</h2>
-      <button onClick={() => handleSignIn("researcher")}>Researcher</button>
-      <button onClick={() => handleSignIn("reviewer")}>Reviewer</button>
-      <button onClick={() => handleSignIn("admin")}>Admin</button>
-    </section>
+    <main className="container-fluid min-vh-100 d-flex align-items-center justify-content-center bg-light">
+      <section
+        className="card shadow p-4"
+        style={{ maxWidth: "400px", width: "100%" }}
+      >
+        <header className="mb-4 text-center">
+          <h1 className="h4">Login As:</h1>
+        </header>
+        <nav aria-label="Role selection" className="d-grid gap-3">
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => handleSignIn("researcher")}
+          >
+            Researcher
+          </button>
+          <button
+            type="button"
+            className="btn btn-success"
+            onClick={() => handleSignIn("reviewer")}
+          >
+            Reviewer
+          </button>
+          <button
+            type="button"
+            className="btn btn-danger"
+            onClick={() => handleSignIn("admin")}
+          >
+            Admin
+          </button>
+        </nav>
+      </section>
+    </main>
   );
 }
 
