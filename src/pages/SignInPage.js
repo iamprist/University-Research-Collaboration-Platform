@@ -50,14 +50,14 @@ function SignInPage() {
           <h1 className="h4 m-0">innerk hub</h1>
           <menu className="d-flex align-items-center gap-3 m-0" style={{ listStyle: "none" }}>
             <li>
-              <a href="#" className="text-dark text-decoration-none">
+              <button className="text-dark text-decoration-none" onClick={() => alert('Login clicked')}>
                 Login
-              </a>
+              </button>
             </li>
             <li>
-              <a href="#" className="text-dark text-decoration-none">
+              <button className="text-dark text-decoration-none" onClick={() => alert('Sign Up clicked')}>
                 Sign Up
-              </a>
+              </button>
             </li>
             <li>
               <span className="menu-icon" style={{ fontSize: "1.5rem", cursor: "pointer" }}>
@@ -94,15 +94,15 @@ function SignInPage() {
       <footer className="mt-auto py-4 text-center bg-white border-top">
         <section className="container">
           <nav className="d-flex justify-content-center flex-wrap mb-2" aria-label="Footer links">
-            <a href="#" className="text-dark text-decoration-none mx-2">
+            <button className="text-dark text-decoration-none mx-2" onClick={() => alert('Privacy Policy clicked')}>
               Privacy Policy
-            </a>
-            <a href="#" className="text-dark text-decoration-none mx-2">
+            </button>
+            <button className="text-dark text-decoration-none mx-2" onClick={() => alert('Terms of Service clicked')}>
               Terms of Service
-            </a>
-            <a href="#" className="text-dark text-decoration-none mx-2">
+            </button>
+            <button className="text-dark text-decoration-none mx-2" onClick={() => alert('Contact Us clicked')}>
               Contact Us
-            </a>
+            </button>
           </nav>
           <small className="text-muted">&copy; 2025 Innerk Hub</small>
         </section>
