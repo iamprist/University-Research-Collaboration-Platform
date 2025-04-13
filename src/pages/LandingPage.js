@@ -85,13 +85,13 @@ const LandingPage = () => {
   };
 
   return (
-    <div style={styles.container}>
+    <section style={styles.container}>
       {/* Hero Section */}
       <section style={styles.heroSection}>
-        <div style={styles.particleBackground}>
+        <section style={styles.particleBackground}>
           {/* Add particle animation background here */}
-        </div>
-        <div style={styles.content}>
+        </section>
+        <section style={styles.content}>
           <h1 style={styles.heading}>
             Collaborate. Innovate. Publish.
           </h1>
@@ -112,20 +112,20 @@ const LandingPage = () => {
           >
             Start Your Journey
           </button>
-        </div>
+        </section>
       </section>
 
       {/* Features Section */}
       <section style={styles.featuresSection}>
         <h2 style={styles.sectionHeading}>Why Choose Innerk Hub?</h2>
-        <div style={{
+        <section style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
           gap: '2rem',
           maxWidth: '1200px',
           margin: '0 auto',
         }}>
-          <div style={styles.featureCard}>
+          <section style={styles.featureCard}>
             <BeakerIcon style={{ height: '3rem', color: '#64CCC5' }} />
             <h3 style={{ color: '#132238', fontSize: '1.5rem', margin: '1rem 0' }}>
               Interdisciplinary Collaboration
@@ -133,9 +133,9 @@ const LandingPage = () => {
             <p style={{ color: '#747C92' }}>
               Connect with researchers across multiple disciplines and institutions
             </p>
-          </div>
+          </section>
 
-          <div style={styles.featureCard}>
+          <section style={styles.featureCard}>
             <UserGroupIcon style={{ height: '3rem', color: '#64CCC5' }} />
             <h3 style={{ color: '#132238', fontSize: '1.5rem', margin: '1rem 0' }}>
               Secure Workspaces
@@ -143,9 +143,9 @@ const LandingPage = () => {
             <p style={{ color: '#747C92' }}>
               Private project spaces with version control and real-time collaboration
             </p>
-          </div>
+          </section>
 
-          <div style={styles.featureCard}>
+          <section style={styles.featureCard}>
             <DocumentTextIcon style={{ height: '3rem', color: '#64CCC5' }} />
             <h3 style={{ color: '#132238', fontSize: '1.5rem', margin: '1rem 0' }}>
               Publication Pipeline
@@ -153,13 +153,13 @@ const LandingPage = () => {
             <p style={{ color: '#747C92' }}>
               Integrated tools for peer review and journal submissions
             </p>
-          </div>
-        </div>
+          </section>
+        </section>
       </section>
 
       {/* Footer */}
       <footer style={styles.footer}>
-        <div style={{
+        <section style={{
           display: 'flex',
           justifyContent: 'space-between',
           maxWidth: '1200px',
@@ -167,30 +167,30 @@ const LandingPage = () => {
           flexWrap: 'wrap',
           gap: '2rem',
         }}>
-          <div>
+          <section>
             <h4 style={{ color: '#B1EDE8', marginBottom: '1rem' }}>Innerk Hub</h4>
             <p style={{ fontSize: '0.9rem' }}>
               Advancing research through global collaboration
             </p>
-          </div>
+          </section>
           <nav style={{ display: 'flex', gap: '2rem' }}>
-            <div>
+            <section>
               <h4 style={{ color: '#B1EDE8', marginBottom: '1rem' }}>Resources</h4>
               <a href="#privacy" style={{ color: '#64CCC5', textDecoration: 'none' }}>Privacy Policy</a><br />
               <a href="#terms" style={{ color: '#64CCC5', textDecoration: 'none' }}>Terms of Service</a>
-            </div>
-            <div>
+            </section>
+            <section>
               <h4 style={{ color: '#B1EDE8', marginBottom: '1rem' }}>Contact</h4>
               <a href="#contact" style={{ color: '#64CCC5', textDecoration: 'none' }}>Support</a><br />
               <a href="#partners" style={{ color: '#64CCC5', textDecoration: 'none' }}>Partnerships</a>
-            </div>
+            </section>
           </nav>
-        </div>
+        </section>
         <p style={{ textAlign: 'center', marginTop: '2rem', fontSize: '0.9rem' }}>
           ©2025 Innerk Hub · Advancing Scientific Collaboration
         </p>
       </footer>
-    </div>
+    </section>
   );
 };
 
