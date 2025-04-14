@@ -36,78 +36,162 @@ function SignInPage() {
       });
 
       // Navigate to the respective role-based page
-      navigate(`/${role}`);
+      if (role === "researcher") {
+        navigate("/researcher-dashboard"); // Redirect to researcher page
+      } else if (role === "reviewer") {
+        navigate("/reviewer"); // Redirect to reviewer page
+      } else if (role === "admin") {
+        navigate("/admin"); // Redirect to admin page
+      }
     } catch (error) {
       console.error("Login error:", error);
       alert("Login failed. Please try again.");
     }
   };
 
+  const styles = {
+    container: {
+      minHeight: "100vh",
+      display: "flex",
+      flexDirection: "column",
+      backgroundColor: "#FFFCF9",
+      fontFamily: "Inter, sans-serif",
+    },
+    header: {
+      backgroundColor: "#132238",
+      color: "#FFFFFF",
+      padding: "1.5rem",
+      textAlign: "center",
+    },
+    main: {
+      flexGrow: 1,
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: "#F8F9FA",
+      padding: "2rem",
+    },
+    card: {
+      backgroundColor: "#FFFFFF",
+      padding: "2rem",
+      borderRadius: "1rem",
+      boxShadow: "0 4px 6px rgba(18, 34, 56, 0.1)",
+      textAlign: "center",
+      maxWidth: "400px",
+      width: "100%",
+    },
+    heading: {
+      fontSize: "2rem",
+      fontWeight: "700",
+      color: "#132238",
+      marginBottom: "1.5rem",
+    },
+    button: {
+      position: "relative",
+      padding: "0.75rem 1.5rem",
+      borderRadius: "2rem",
+      fontSize: "1rem",
+      fontWeight: "600",
+      border: "none",
+      cursor: "pointer",
+      transition: "all 0.3s ease",
+      marginBottom: "1rem",
+      width: "100%",
+      textAlign: "center", // Center the text
+    },
+    googleIcon: {
+      position: "absolute",
+      left: "1rem", // Align the icon to the left
+      width: "20px",
+      height: "20px",
+    },
+    researcherButton: {
+      backgroundColor: "#64CCC5",
+      color: "#132238",
+    },
+    reviewerButton: {
+      backgroundColor: "#B1EDE8",
+      color: "#132238",
+    },
+    adminButton: {
+      backgroundColor: "#A0E7E5", // Lighter shade of researcher button
+      color: "#132238",
+    },
+    footer: {
+      backgroundColor: "#364E68",
+      color: "#B1EDE8",
+      padding: "1.5rem",
+      textAlign: "center",
+    },
+    footerLink: {
+      color: "#B1EDE8",
+      textDecoration: "none",
+      margin: "0 1rem",
+      fontSize: "0.9rem",
+    },
+  };
+
   return (
-    <>
-      <header className="p-3 bg-white border-bottom">
-        <nav className="container-fluid d-flex justify-content-between align-items-center" aria-label="Main navigation">
-          <h1 className="h4 m-0">innerk hub</h1>
-          <menu className="d-flex align-items-center gap-3 m-0" style={{ listStyle: "none" }}>
-            <li>
-              <button className="text-dark text-decoration-none" onClick={() => alert('Login clicked')}>
-                Login
-              </button>
-            </li>
-            <li>
-              <button className="text-dark text-decoration-none" onClick={() => alert('Sign Up clicked')}>
-                Sign Up
-              </button>
-            </li>
-            <li>
-              <span className="menu-icon" style={{ fontSize: "1.5rem", cursor: "pointer" }}>
-                &#9776;
-              </span>
-            </li>
-          </menu>
-        </nav>
+    <div style={styles.container}>
+      <header style={styles.header}>
+        <h1>Innerk Hub</h1>
+        <p>Collaborate and innovate with ease</p>
       </header>
 
-      <main className="flex-grow-1 d-flex justify-content-center align-items-center" style={{ minHeight: "calc(100vh - 160px)", backgroundColor: "#f0f0f0" }}>
-        <section className="bg-white p-5 rounded-4 shadow-sm text-center" style={{ width: "100%", maxWidth: "400px" }}>
-          <header>
-            <h2 className="mb-4 fw-bold">
-              innerk hub
-              <br />
-              Sign in
-            </h2>
-          </header>
-          <nav aria-label="Role selection" className="d-grid gap-3">
-            <button type="button" className="btn btn-outline-primary" onClick={() => handleSignIn("researcher")}>
-              Sign in as Researcher
-            </button>
-            <button type="button" className="btn btn-outline-success" onClick={() => handleSignIn("reviewer")}>
-              Sign in as Reviewer
-            </button>
-            <button type="button" className="btn btn-outline-danger" onClick={() => handleSignIn("admin")}>
-              Sign in as Admin
-            </button>
-          </nav>
-        </section>
+      <main style={styles.main}>
+        <div style={styles.card}>
+          <h2 style={styles.heading}>Sign In</h2>
+          <button
+            style={{ ...styles.button, ...styles.researcherButton }}
+            onClick={() => handleSignIn("researcher")}
+          >
+            <img
+              src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+              alt="Google Icon"
+              style={styles.googleIcon}
+            />
+            Sign in as Researcher
+          </button>
+          <button
+            style={{ ...styles.button, ...styles.reviewerButton }}
+            onClick={() => handleSignIn("reviewer")}
+          >
+            <img
+              src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+              alt="Google Icon"
+              style={styles.googleIcon}
+            />
+            Sign in as Reviewer
+          </button>
+          <button
+            style={{ ...styles.button, ...styles.adminButton }}
+            onClick={() => handleSignIn("admin")}
+          >
+            <img
+              src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+              alt="Google Icon"
+              style={styles.googleIcon}
+            />
+            Sign in as Admin
+          </button>
+        </div>
       </main>
 
-      <footer className="mt-auto py-4 text-center bg-white border-top">
-        <section className="container">
-          <nav className="d-flex justify-content-center flex-wrap mb-2" aria-label="Footer links">
-            <button className="text-dark text-decoration-none mx-2" onClick={() => alert('Privacy Policy clicked')}>
-              Privacy Policy
-            </button>
-            <button className="text-dark text-decoration-none mx-2" onClick={() => alert('Terms of Service clicked')}>
-              Terms of Service
-            </button>
-            <button className="text-dark text-decoration-none mx-2" onClick={() => alert('Contact Us clicked')}>
-              Contact Us
-            </button>
-          </nav>
-          <small className="text-muted">&copy; 2025 Innerk Hub</small>
-        </section>
+      <footer style={styles.footer}>
+        <a href="/privacy-policy" style={styles.footerLink}>
+          Privacy Policy
+        </a>
+        <a href="/terms-of-service" style={styles.footerLink}>
+          Terms of Service
+        </a>
+        <a href="/contact-us" style={styles.footerLink}>
+          Contact Us
+        </a>
+        <p style={{ marginTop: "1rem", fontSize: "0.8rem" }}>
+          &copy; 2025 Innerk Hub
+        </p>
       </footer>
-    </>
+    </div>
   );
 }
 
