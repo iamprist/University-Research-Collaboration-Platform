@@ -4,7 +4,6 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { BrowserRouter } from "react-router-dom";
 import SignInPage from "../pages/SignInPage";
 
-// 🧪 Mock Firebase Auth and Firestore
 jest.mock("firebase/auth", () => ({
   signInWithPopup: jest.fn(() =>
     Promise.resolve({
@@ -22,7 +21,6 @@ jest.mock("firebase/firestore", () => ({
   setDoc: jest.fn(() => Promise.resolve()),
 }));
 
-// 🔁 You might also need to mock your firebaseConfig.js
 jest.mock("../firebaseConfig", () => ({
   auth: {},
   provider: {},
@@ -52,8 +50,5 @@ describe("SignInPage", () => {
 
     const adminButton = screen.getByText("Admin");
     fireEvent.click(adminButton);
-
-    // Since Firebase is mocked, this test passes if no crash occurs
-    // You can improve this by spying on signInWithPopup/setDoc if needed
   });
 });

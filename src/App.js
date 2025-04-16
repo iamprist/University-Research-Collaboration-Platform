@@ -1,11 +1,11 @@
-import { Routes, Route, Navigate } from "react-router-dom"; // No need for BrowserRouter here
+import { Routes, Route, Navigate } from "react-router-dom";
 import SignInPage from "./pages/SignInPage";
-import AdminPage from "./pages/AdminPage";
-import ReviewerPage from "./pages/ReviewerPage";
-import AddListing from "./pages/AddListing";
-import ResearcherDashboard from "./pages/ResearcherDashboard";
-import LandingPage from "./pages/LandingPage"; // Import LandingPage
-import { auth, db } from "./firebaseConfig"; // Firebase authentication and Firestore
+import AdminPage from "./pages/Admin/AdminPage";
+import ReviewerPage from "./pages/Reviewer/ReviewerPage";
+import AddListing from "./pages/Researcher/AddListing";
+import ResearcherDashboard from "./pages/Researcher/ResearcherDashboard";
+import LandingPage from "./pages/LandingPage";
+import { auth, db } from "./config/firebaseConfig";
 import { useState, useEffect } from "react";
 import { doc, getDoc } from "firebase/firestore";
 
@@ -17,10 +17,8 @@ function App() {
     const unsubscribe = auth.onAuthStateChanged(async (authUser) => {
       if (authUser) {
         setUser(authUser);
-
         const userDocRef = doc(db, "users", authUser.uid);
         const userDoc = await getDoc(userDocRef);
-
         if (userDoc.exists()) {
           setRole(userDoc.data().role);
         }
@@ -29,33 +27,24 @@ function App() {
         setRole(null);
       }
     });
-
     return () => unsubscribe();
   }, []);
 
   const ProtectedRoute = ({ children, allowedRoles }) => {
-    if (!user) {
-      return <Navigate to="/" />; // Redirect to LandingPage if not authenticated
-    }
-    if (!allowedRoles.includes(role)) {
-      return <Navigate to="/" />; // Redirect to LandingPage if role is not allowed
+    if (!user || !allowedRoles.includes(role)) {
+      return <Navigate to="/" />;
     }
     return children;
   };
 
   return (
     <Routes>
-      {/* Default route to LandingPage */}
       <Route path="/" element={<LandingPage />} />
-
-      {/* SignIn route */}
       <Route path="/signin" element={<SignInPage />} />
-
-      {/* Protected routes */}
       <Route
         path="/admin"
         element={
-          <ProtectedRoute allowedRoles={['admin']}>
+          <ProtectedRoute allowedRoles={["admin"]}>
             <AdminPage />
           </ProtectedRoute>
         }
@@ -63,7 +52,7 @@ function App() {
       <Route
         path="/reviewer"
         element={
-          <ProtectedRoute allowedRoles={['reviewer']}>
+          <ProtectedRoute allowedRoles={["reviewer"]}>
             <ReviewerPage />
           </ProtectedRoute>
         }
@@ -71,7 +60,7 @@ function App() {
       <Route
         path="/researcher-dashboard"
         element={
-          <ProtectedRoute allowedRoles={['researcher']}>
+          <ProtectedRoute allowedRoles={["researcher"]}>
             <ResearcherDashboard />
           </ProtectedRoute>
         }
@@ -79,7 +68,7 @@ function App() {
       <Route
         path="/dashboard"
         element={
-          <ProtectedRoute allowedRoles={['researcher']}>
+          <ProtectedRoute allowedRoles={["researcher"]}>
             <AddListing />
           </ProtectedRoute>
         }
