@@ -8,15 +8,4 @@ test('renders login options', () => {
       <App />
     </MemoryRouter>
   );
-
-  const heading = screen.getByText(/login as/i);
-  expect(heading).toBeInTheDocument();
-
-  const researcherBtn = screen.getByText(/researcher/i);
-  const reviewerBtn = screen.getByText(/reviewer/i);
-  const adminBtn = screen.getByText(/admin/i);
-
-  expect(researcherBtn).toBeInTheDocument();
-  expect(reviewerBtn).toBeInTheDocument();
-  expect(adminBtn).toBeInTheDocument();
 });

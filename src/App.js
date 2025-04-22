@@ -1,3 +1,4 @@
+import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom"; // No need for BrowserRouter here
 import SignInPage from "./pages/SignInPage";
 import AdminPage from "./pages/AdminPage";
