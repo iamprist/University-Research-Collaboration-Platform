@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { logEvent } from "../utils/logEvent";
 
 function SignInPage() {
-  const [user, setUser] = useState(null); // State to store the user
+  const [setUser] = useState(null); // State to store the user
   const navigate = useNavigate();
 
   const allowedAdmins = [
