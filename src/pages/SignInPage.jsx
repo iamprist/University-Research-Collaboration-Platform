@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { auth, provider, db } from "../config/firebaseConfig";
 import { signInWithPopup } from "firebase/auth";
 import { setDoc, doc } from "firebase/firestore";
@@ -6,7 +6,6 @@ import { useNavigate } from "react-router-dom";
 import { logEvent } from "../utils/logEvent";
 
 function SignInPage() {
-  const [setUser] = useState(null); // State to store the user
   const navigate = useNavigate();
 
   const allowedAdmins = [
@@ -20,11 +19,8 @@ function SignInPage() {
 
   const handleSignIn = async (role) => {
     try {
-      console.log(`Attempting to sign in as ${role}...`);
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
-
-      setUser(user); // Store the user in state
 
       if (role === "admin" && !allowedAdmins.includes(user.email)) {
         alert("Access denied: You are not an authorized admin.");
@@ -51,7 +47,6 @@ function SignInPage() {
         details: "User logged in",
       });
 
-      console.log("Redirecting to dashboard...");
       // Redirect to the appropriate page
       if (role === "researcher") navigate("/researcher-dashboard");
       else if (role === "reviewer") navigate("/reviewer");
