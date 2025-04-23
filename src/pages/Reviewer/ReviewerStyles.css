@@ -1,0 +1,195 @@
+/* ReviewerApplication.css */
+
+/* Base Container */
+html, body, #root {
+    height: 100%;
+  }
+.reviewer-application-container {
+    max-width: 42rem;
+    margin: 2rem auto;
+    padding: 2rem;
+    background: #ffffff;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  .reviewer-application-container h2 {
+    font-size: 1.75rem;
+    color: #2d3748;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    font-weight: 600;
+  }
+  
+  /* Form Styles */
+  .reviewer-application-container form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+  
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .form-group label {
+    font-weight: 500;
+    color: #4a5568;
+    font-size: 0.95rem;
+  }
+  
+  .form-group input[type="text"],
+  .form-group input[type="number"],
+  .form-group input[type="file"],
+  .form-group textarea {
+    padding: 0.75rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.375rem;
+    font-size: 1rem;
+    transition: border-color 0.2s;
+  }
+  
+  .form-group input[type="text"]:focus,
+  .form-group input[type="number"]:focus,
+  .form-group textarea:focus {
+    outline: none;
+    border-color: #4299e1;
+    box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.2);
+  }
+  
+  .form-group textarea {
+    min-height: 6rem;
+    resize: vertical;
+  }
+  
+  /* File Input Styles */
+  .form-group input[type="file"] {
+    padding: 0.5rem;
+    background: #f7fafc;
+  }
+  
+  .file-info {
+    font-size: 0.875rem;
+    color: #38a169;
+    margin-top: 0.25rem;
+  }
+  
+  .hint {
+    display: block;
+    font-size: 0.75rem;
+    color: #718096;
+    font-weight: 400;
+    margin-top: 0.25rem;
+  }
+  
+  /* Terms Checkbox */
+  .terms {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 1rem 0;
+  }
+  
+  .terms input[type="checkbox"] {
+    width: 1.1rem;
+    height: 1.1rem;
+  }
+  
+  .terms label {
+    font-weight: 400;
+  }
+  
+  .terms a {
+    color: #3182ce;
+    text-decoration: underline;
+  }
+  
+  /* Submit Button */
+  button[type="submit"] {
+    padding: 0.875rem;
+    background-color: #3182ce;
+    color: white;
+    border: none;
+    border-radius: 0.375rem;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    margin-top: 0.5rem;
+  }
+  
+  button[type="submit"]:hover:not(:disabled) {
+    background-color: #2b6cb0;
+  }
+  
+  button[type="submit"]:disabled {
+    background-color: #90cdf4;
+    cursor: not-allowed;
+  }
+  
+  /* Spinner Animation */
+  .spinner {
+    display: inline-block;
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s ease-in-out infinite;
+    margin-right: 0.75rem;
+    vertical-align: middle;
+  }
+  
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  
+  /* React Select Customization */
+  .expertise-select {
+    width: 100%;
+  }
+  
+  .expertise-select .select__control {
+    min-height: 3rem;
+    border-color: #e2e8f0;
+  }
+  
+  .expertise-select .select__control--is-focused {
+    border-color: #4299e1 !important;
+    box-shadow: 0 0 0 1px #4299e1 !important;
+  }
+  
+  .expertise-select .select__multi-value {
+    background-color: #ebf8ff;
+    border-radius: 0.25rem;
+  }
+  
+  .expertise-select .select__multi-value__label {
+    color: #3182ce;
+  }
+  
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .reviewer-application-container {
+      margin: 1rem;
+      padding: 1.5rem;
+    }
+    
+    .reviewer-application-container h2 {
+      font-size: 1.5rem;
+    }
+  }
+  
+  /* Error State (for form validation) */
+  input:invalid,
+  textarea:invalid {
+    border-color: #fc8181 !important;
+  }
+  
+  .error-message {
+    color: #e53e3e;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+  }

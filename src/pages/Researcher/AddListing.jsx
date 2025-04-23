@@ -3,7 +3,18 @@ import axios from 'axios';
 import Select from 'react-select';
 import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../../config/firebaseConfig';
-import { collection, addDoc, doc, getDoc, setDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { logEvent } from '../../utils/logEvent'; // Import the logEvent function
+
+async function fetchUserIP() {
+  try {
+    const response = await axios.get('https://api.ipify.org?format=json');
+    return response.data.ip;
+  } catch (error) {
+    console.error('Failed to fetch user IP:', error);
+    return 'N/A';
+  }
+}
 
 function AddListing() {
   const navigate = useNavigate();
@@ -55,7 +66,7 @@ function AddListing() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const userId = auth.currentUser?.uid;
-    if (!userId) return alert('User not logged in');
+    if (!userId) return alert("User not logged in");
 
     try {
       const newListing = {
@@ -64,7 +75,7 @@ function AddListing() {
         researchArea,
         keywords,
         methodology,
-        institution: selectedUniversity?.value || '',
+        institution: selectedUniversity?.value || "",
         department,
         collaboratorNeeds,
         status,
@@ -73,13 +84,27 @@ function AddListing() {
         fundingInfo,
         tags,
         userId,
-        createdAt: new Date(),
+        createdAt: serverTimestamp(),
       };
 
-      await addDoc(collection(db, 'research-listings'), newListing);
-      navigate('/researcher-dashboard');
+      // Add the new listing to Firestore
+      const docRef = await addDoc(collection(db, "research-listings"), newListing);
+
+      // Log the event
+      await logEvent({
+        userId,
+        role: "researcher",
+        userName: auth.currentUser?.displayName || "N/A",
+        action: "Posted Listing",
+        target: `research-listings/${docRef.id}`,
+        details: `Posted a new listing: ${title}`,
+        ip: await fetchUserIP(), // Fetch the user's IP address
+      });
+
+      navigate("/researcher-dashboard");
     } catch (err) {
-      console.error('Error adding listing: ', err);
+      console.error("Error adding listing: ", err);
+      alert("Failed to create listing. Please try again.");
     }
   };
 

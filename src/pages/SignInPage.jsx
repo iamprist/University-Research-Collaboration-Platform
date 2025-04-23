@@ -1,11 +1,14 @@
+import React, { useState } from "react";
 import { auth, provider, db } from "../config/firebaseConfig";
 import { signInWithPopup } from "firebase/auth";
 import { setDoc, doc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
-import React from "react";
+import { logEvent } from "../utils/logEvent";
 
 function SignInPage() {
+  const [user, setUser] = useState(null); // State to store the user
   const navigate = useNavigate();
+
   const allowedAdmins = [
     "2550411@students.wits.ac.za",
     "2465030@students.wits.ac.za",
@@ -17,26 +20,49 @@ function SignInPage() {
 
   const handleSignIn = async (role) => {
     try {
+      console.log(`Attempting to sign in as ${role}...`);
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
+
+      setUser(user); // Store the user in state
 
       if (role === "admin" && !allowedAdmins.includes(user.email)) {
         alert("Access denied: You are not an authorized admin.");
         return;
       }
 
+      // Save the token in localStorage
+      const token = await user.getIdToken();
+      localStorage.setItem("authToken", token);
+
+      // Save user details in Firestore
       await setDoc(doc(db, "users", user.uid), {
         name: user.displayName,
         email: user.email,
         role,
       });
 
+      // Log the login event
+      await logEvent({
+        userId: user.uid,
+        role,
+        userName: user.displayName || "N/A",
+        action: "Login",
+        details: "User logged in",
+      });
+
+      console.log("Redirecting to dashboard...");
+      // Redirect to the appropriate page
       if (role === "researcher") navigate("/researcher-dashboard");
       else if (role === "reviewer") navigate("/reviewer");
       else if (role === "admin") navigate("/admin");
     } catch (error) {
-      console.error("Login error:", error);
-      alert("Login failed. Please try again.");
+      if (error.code === "auth/popup-closed-by-user") {
+        console.log("Login canceled by user");
+      } else {
+        console.error("Login error:", error);
+        alert("Login failed. Please try again.");
+      }
     }
   };
 
@@ -107,6 +133,12 @@ function SignInPage() {
       backgroundColor: "#A0E7E5",
       color: "#132238",
     },
+    landingPageButton: {
+      backgroundColor: "#F4F4F4",
+      color: "#132238",
+      border: "1px solid #D1D5DB",
+      marginTop: "1rem",
+    },
     footer: {
       backgroundColor: "#364E68",
       color: "#B1EDE8",
@@ -162,6 +194,12 @@ function SignInPage() {
               style={styles.googleIcon}
             />
             Sign in as Admin
+          </button>
+          <button
+            style={{ ...styles.button, ...styles.landingPageButton }}
+            onClick={() => navigate("/")}
+          >
+            Go to Landing Page
           </button>
         </div>
       </main>

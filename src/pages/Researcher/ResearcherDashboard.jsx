@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Plus } from 'react-bootstrap-icons';
 import { db, auth } from '../../config/firebaseConfig';
 import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
+import { logEvent } from '../../utils/logEvent';
 
 const ResearcherDashboard = () => {
   const navigate = useNavigate();
@@ -12,14 +13,27 @@ const ResearcherDashboard = () => {
   const [userId, setUserId] = useState(null);
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      if (user) {
-        setUserId(user.uid);
-      } else {
-        navigate('/signin');
+    const checkAuthToken = async () => {
+      const token = localStorage.getItem('authToken'); // Get the token from localStorage
+      if (!token) {
+        navigate('/signin'); // Redirect to login if no token is found
+        return;
       }
-    });
-    return () => unsubscribe();
+
+      // Validate the token by checking the current user
+      const unsubscribe = auth.onAuthStateChanged((user) => {
+        if (user) {
+          setUserId(user.uid);
+        } else {
+          localStorage.removeItem('authToken'); // Clear invalid token
+          navigate('/signin'); // Redirect to login
+        }
+      });
+
+      return () => unsubscribe();
+    };
+
+    checkAuthToken();
   }, [navigate]);
 
   useEffect(() => {
@@ -54,8 +68,55 @@ const ResearcherDashboard = () => {
     fetchListings();
   }, [userId]);
 
+  useEffect(() => {
+    const handleTabClose = async () => {
+      if (auth.currentUser) {
+        await logEvent({
+          userId: auth.currentUser.uid,
+          role: "Researcher",
+          userName: auth.currentUser.displayName || "N/A",
+          action: "Logout",
+          details: "User closed the browser/tab",
+        });
+      }
+    };
+
+    window.addEventListener("beforeunload", handleTabClose);
+    return () => window.removeEventListener("beforeunload", handleTabClose);
+  }, []);
+
   const handleAddListing = () => {
     navigate('/dashboard');
+  };
+
+  const handleLogout = async () => {
+    try {
+      console.log("Attempting to log out...");
+
+      // Log the logout event before signing out
+      if (auth.currentUser) {
+        await logEvent({
+          userId: auth.currentUser.uid,
+          role: "Researcher",
+          userName: auth.currentUser.displayName || "N/A",
+          action: "Logout",
+          details: "User logged out",
+        });
+        console.log("Logout event recorded.");
+      } else {
+        console.warn("No authenticated user found to log the event.");
+      }
+
+      // Perform logout using Firebase Auth
+      await auth.signOut();
+
+      console.log("Logout successful. Redirecting to /signin...");
+      // Redirect the user to the login page
+      navigate("/signin");
+    } catch (error) {
+      console.error("Error logging out:", error);
+      alert("Failed to log out. Please try again.");
+    }
   };
 
   const styles = {
@@ -79,6 +140,16 @@ const ResearcherDashboard = () => {
       boxShadow: '0 4px 6px rgba(0, 0, 0, 0.2)',
       cursor: 'pointer',
       transition: 'transform 0.3s ease',
+    },
+    logoutButton: {
+      backgroundColor: '#f44336',
+      color: '#FFFFFF',
+      border: 'none',
+      padding: '0.5rem 1rem',
+      borderRadius: '0.5rem',
+      cursor: 'pointer',
+      marginTop: '1rem',
+      transition: 'background-color 0.3s ease',
     },
     card: {
       backgroundColor: '#1A2E40',
@@ -129,6 +200,14 @@ const ResearcherDashboard = () => {
       <header style={styles.header}>
         <h1>Welcome, Researcher</h1>
         <p>Manage your research listings and collaborate effectively.</p>
+        <button
+          onClick={handleLogout}
+          style={styles.logoutButton}
+          onMouseOver={(e) => (e.target.style.backgroundColor = '#d32f2f')}
+          onMouseOut={(e) => (e.target.style.backgroundColor = '#f44336')}
+        >
+          Logout
+        </button>
       </header>
       <section
         className="container my-5"
@@ -150,6 +229,7 @@ const ResearcherDashboard = () => {
             <Plus size={40} />
           </button>
         </div>
+        {/* Your Listings Section */}
         <h6 className="mt-4 text-center" style={{ color: '#132238' }}>Your Listings:</h6>
         <section>
           {listings.length === 0 ? (
@@ -179,6 +259,7 @@ const ResearcherDashboard = () => {
             ))
           )}
         </section>
+        {/* Collaborate Section */}
         <h6 className="mt-5 text-center" style={{ color: '#132238' }}>Collaborate:</h6>
         <section>
           {collaborateListings.length === 0 ? (

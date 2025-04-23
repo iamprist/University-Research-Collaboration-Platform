@@ -1,25 +1,53 @@
-import React, { createContext, useContext, useState } from 'react';
+// src/context/AuthContext.js
+import { createContext, useContext, useEffect, useState } from 'react';
+import { onAuthStateChanged, getAuth } from 'firebase/auth';
+import { logEvent } from '../../utils/logEvent'; // Import the logEvent function
 
 const AuthContext = createContext();
-
-export const useAuth = () => {
-  return useContext(AuthContext);
-};
+const auth = getAuth();
 
 export const AuthProvider = ({ children }) => {
-  const [userId, setUserId] = useState(null); // Example state for userId
+  const [currentUser, setCurrentUser] = useState(null);
 
-  const login = (userId) => {
-    setUserId(userId);
-  };
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        console.log("User logged in:", user);
 
-  const logout = () => {
-    setUserId(null);
-  };
+        // Log the login event
+        await logEvent({
+          userId: user.uid,
+          role: "Reviewer", // Adjust role as needed
+          userName: user.displayName || "N/A",
+          action: "Login",
+          details: "User logged in",
+        });
+
+        setCurrentUser(user);
+      } else {
+        console.log("User logged out or session expired");
+
+        // Log the logout event
+        await logEvent({
+          userId: "N/A",
+          role: "Reviewer", // Adjust role as needed
+          userName: "N/A",
+          action: "Logout",
+          details: "User logged out or session expired",
+        });
+
+        setCurrentUser(null);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   return (
-    <AuthContext.Provider value={{ userId, login, logout }}>
+    <AuthContext.Provider value={{ currentUser }}>
       {children}
     </AuthContext.Provider>
   );
 };
+
+export const useAuth = () => useContext(AuthContext);

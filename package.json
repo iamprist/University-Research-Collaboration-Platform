@@ -19,7 +19,9 @@
     "react-router-dom": "^6.23.0",
     "react-scripts": "^5.0.1",
     "react-select": "^5.10.1",
+    "react-toastify": "^11.0.5",
     "react-tsparticles": "^2.12.2",
+    "recharts": "^2.15.3",
     "tsparticles": "^3.8.1",
     "web-vitals": "^2.1.4"
   },
