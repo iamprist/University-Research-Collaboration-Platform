@@ -32,6 +32,16 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
+  "jest": {
+  "transformIgnorePatterns": [
+    "node_modules/(?!(axios)/)"
+  ],
+  "moduleNameMapper": {
+    "\\.(css|less)$": "<rootDir>/src/__mocks__/styleMock.js",
+    "\\.(jpg|jpeg|png|gif|svg)$": "<rootDir>/src/__mocks__/fileMock.js"
+  }
+},
+
   "eslintConfig": {
     "extends": [
       "react-app",
@@ -49,5 +59,10 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "@babel/preset-env": "^7.26.9",
+    "@babel/preset-react": "^7.26.3",
+    "babel-jest": "^29.7.0"
   }
 }
