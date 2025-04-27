@@ -1,3 +1,4 @@
+[![codecov](https://codecov.io/gh/iamprist/University-Research-Collaboration-Platform/branch/skeletoncode/graph/badge.svg?token=EIG69HYXA7)](https://codecov.io/gh/iamprist/University-Research-Collaboration-Platform)
 # University-Research-Collaboration-Platform
 This is a web based app design to assist researchers in universities to find people to collaborate with, review their research, track funding and share documents. The goal it to make academic collaborations in universities much easier and accessible 
 
