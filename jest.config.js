@@ -9,6 +9,6 @@ module.exports = {
   transformIgnorePatterns: [
     "node_modules/(?!axios)/"  // Ensure Axios is transformed
   ],
-  setupFilesAfterEnv: ["@testing-library/jest-dom/extend-expect"],
+  setupFilesAfterEnv: ["@testing-library/jest-dom"],
   globalSetup: "./__mocks__/firebase.js",  // Optional if you want to globally mock Firebase
 };
