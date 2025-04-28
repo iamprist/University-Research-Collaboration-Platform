@@ -12,6 +12,8 @@ import { doc, getDoc } from "firebase/firestore";
 import { logEvent } from "./utils/logEvent";
 import axios from "axios";
 import ReviewerForm from "./pages/Reviewer/ReviewerForm"; // Uncomment if ReviewerForm exists
+import ChatRoom from "./pages/Researcher/ChatRoom";
+
 
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("authToken"); // Check for the token in localStorage
@@ -58,6 +60,7 @@ function App() {
 
   return (
     <Routes>
+      <Route path="/chat/:chatId" element={<ChatRoom />} />
       <Route path="/" element={<LandingPage />} />
       <Route path="/signin" element={<SignInPage />} />
       <Route

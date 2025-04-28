@@ -119,6 +119,17 @@ const ResearcherDashboard = () => {
     }
   };
 
+
+<button onClick={() => startChat(researcher.userId)}>Message</button>
+
+const startChat = async (otherUserId) => {
+  const chatRef = await addDoc(collection(db, 'chats'), {
+    participants: [auth.currentUser.uid, otherUserId],
+    messages: [],
+  });
+  navigate(`/chat/${chatRef.id}`);
+};
+
   const styles = {
     header: {
       backgroundColor: '#132238',
