@@ -21,23 +21,61 @@ function SignInPage() {
     try {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
-
+  
       if (role === "admin" && !allowedAdmins.includes(user.email)) {
-        alert("Access denied: You are not an authorized admin.");
+        // Styled popup for unauthorized admins
+        const popup = document.createElement("div");
+        popup.innerHTML = `
+          <div style="
+            position: fixed;
+            top: 0; 
+            left: 0;
+            width: 100%; 
+            height: 100%; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            background: rgba(0, 0, 0, 0.5); 
+            font-family: Inter, sans-serif;
+            z-index: 1000;
+          ">
+            <div style="
+              background: #FFFFFF;
+              padding: 2rem;
+              border-radius: 1rem;
+              text-align: center;
+              box-shadow: 0 4px 6px rgba(18, 34, 56, 0.1);
+            ">
+              <h2 style="font-size: 1.5rem; color: #132238; margin-bottom: 1rem;">Access Denied</h2>
+              <p style="font-size: 1rem; color: #364E68; margin-bottom: 1.5rem;">
+                You are not authorized to access the admin dashboard.
+              </p>
+              <button style="
+                background-color: #FF0000;
+                color: #FFFFFF;
+                padding: 0.75rem 1.5rem;
+                border: none;
+                border-radius: 0.5rem;
+                cursor: pointer;
+              " onclick="this.parentElement.parentElement.remove()">Close</button>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(popup);
         return;
       }
-
+  
       // Save the token in localStorage
       const token = await user.getIdToken();
       localStorage.setItem("authToken", token);
-
+  
       // Save user details in Firestore
       await setDoc(doc(db, "users", user.uid), {
         name: user.displayName,
         email: user.email,
         role,
       });
-
+  
       // Log the login event
       await logEvent({
         userId: user.uid,
@@ -46,7 +84,7 @@ function SignInPage() {
         action: "Login",
         details: "User logged in",
       });
-
+  
       // Redirect to the appropriate page
       if (role === "researcher") navigate("/researcher-dashboard");
       else if (role === "reviewer") navigate("/reviewer");
@@ -60,6 +98,7 @@ function SignInPage() {
       }
     }
   };
+  
 
   const styles = {
     container: {
