@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus } from 'react-bootstrap-icons';
 import { db, auth } from '../../config/firebaseConfig';
-import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, query, where, doc, getDoc, addDoc} from 'firebase/firestore';
 import { logEvent } from '../../utils/logEvent';
 
 const ResearcherDashboard = () => {
@@ -120,7 +120,7 @@ const ResearcherDashboard = () => {
   };
 
 
-<button onClick={() => startChat(researcher.userId)}>Message</button>
+<button onClick={() => startChat(userId)}>Message</button>
 
 const startChat = async (otherUserId) => {
   const chatRef = await addDoc(collection(db, 'chats'), {
