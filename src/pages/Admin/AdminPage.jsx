@@ -168,7 +168,7 @@ export default function AdminPage() {
                 <h3 style={{ fontSize: "1.5rem", fontWeight: "bold", color: "#1A2E40", marginBottom: "0.5rem", textAlign: "left" }}>{reviewer.name}</h3>
                 <p style={{ color: "#1A2E40", fontWeight: "600" }}><strong>Email:</strong> {reviewer.email}</p>
                 <p style={{ color: "#1A2E40", fontWeight: "600" }}><strong>Institution:</strong> {reviewer.institution || "Not Provided"}</p>
-                <p style={{ color: "#FFD700", fontWeight: "600" }}><strong>Expertise:</strong> {Array.isArray(reviewer.expertiseTags) ? reviewer.expertiseTags.join(", ") : "Not Provided"}</p>
+                <p style={{ color: "#1A2E40", fontWeight: "600" }}><strong>Expertise:</strong> {Array.isArray(reviewer.expertiseTags) ? reviewer.expertiseTags.join(", ") : "Not Provided"}</p>
                 <p style={{ color: "#1A2E40", fontWeight: "600" }}><strong>Years of Experience:</strong> {reviewer.yearsExperience || "Not Provided"}</p>
                 {reviewer.publications && reviewer.publications.length > 0 ? (
                   <p style={{ color: "#1A2E40" }}><strong>Publications:</strong> {reviewer.publications.map((pub) => (
