@@ -1,4 +1,3 @@
-//ReviewerForm.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db, auth, storage } from '../../config/firebaseConfig';
@@ -152,9 +151,10 @@ const ReviewerForm = () => {
             onChange={(selected) =>
               setFormData({
                 ...formData,
-                expertiseTags: selected.map((opt) => opt.value),
+                expertiseTags: selected,
               })
             }
+            
             className="expertise-select"
             placeholder="Select your expertise areas..."
             required
