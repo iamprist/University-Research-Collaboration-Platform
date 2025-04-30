@@ -6,7 +6,6 @@ import { useNavigate, useLocation } from "react-router-dom";
 export default function AdminPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const user = location.state?.user; // Ensure user is passed via state
   const [reviewers, setReviewers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isReviewerSectionOpen, setIsReviewerSectionOpen] = useState(false);
