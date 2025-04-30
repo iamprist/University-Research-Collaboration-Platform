@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { collection, getDocs, query, where, updateDoc, doc, addDoc, serverTimestamp, getDoc } from "firebase/firestore";
+import { collection, getDocs, updateDoc, doc } from "firebase/firestore";
 import { db, auth } from "../../config/firebaseConfig";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -79,50 +79,18 @@ export default function AdminPage() {
     },
   };
 
-  // Define the logEvent function locally
-  const logEvent = async ({ userId, role, userName, action, target, details, ip }) => {
-    try {
-      let resolvedUserName = userName;
-
-      // Fetch the user's name from Firestore if not provided
-      if (!userName && userId) {
-        const userDocRef = doc(db, "users", userId);
-        const userDoc = await getDoc(userDocRef);
-        resolvedUserName = userDoc.exists() ? userDoc.data().name : "N/A";
-      }
-
-      await addDoc(collection(db, "logs"), {
-        userId,
-        role,
-        userName: resolvedUserName,
-        action,
-        target,
-        details,
-        ip,
-        timestamp: serverTimestamp(),
-      });
-      console.log("Event logged:", { userId, role, action, details });
-    } catch (error) {
-      console.error("Error logging event:", error);
-    }
-  };
-
   useEffect(() => {
     const fetchReviewers = async () => {
       setLoading(true);
       try {
-        const reviewerQuery = query(
-          collection(db, "reviewers"),
-          where("status", "==", "in_progress")
-        );
-        const snapshot = await getDocs(reviewerQuery);
+        const snapshot = await getDocs(collection(db, "reviewers"));
         const reviewersData = snapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
-        setReviewers(reviewersData);
+        setReviewers(reviewersData); // Store all reviewers, not just pending ones
       } catch (error) {
-        console.error("Error fetching reviewer applications:", error);
+        console.error("Error fetching reviewers:", error);
       } finally {
         setLoading(false);
       }
@@ -138,16 +106,6 @@ export default function AdminPage() {
         updatedAt: new Date(),
       });
 
-      if (user?.uid) {
-        await logEvent({
-          userId: user.uid,
-          role: "Admin",
-          action: "Approve Reviewer",
-          details: `Approved reviewer with ID: ${id}`,
-        });
-        console.log(`Reviewer with ID: ${id} approved and logged.`);
-      }
-
       setReviewers((prev) => prev.filter((reviewer) => reviewer.id !== id));
     } catch (error) {
       console.error("Error approving reviewer:", error);
@@ -161,16 +119,6 @@ export default function AdminPage() {
         updatedAt: new Date(),
       });
 
-      if (user?.uid) {
-        await logEvent({
-          userId: user.uid,
-          role: "Admin",
-          action: "Reject Reviewer",
-          details: `Rejected reviewer with ID: ${id}`,
-        });
-        console.log(`Reviewer with ID: ${id} rejected and logged.`);
-      }
-
       setReviewers((prev) => prev.filter((reviewer) => reviewer.id !== id));
     } catch (error) {
       console.error("Error rejecting reviewer:", error);
@@ -179,23 +127,8 @@ export default function AdminPage() {
 
   const handleLogout = async () => {
     try {
-      console.log("Attempting to log out...");
-
-      if (user?.uid) {
-        await logEvent({
-          userId: user.uid,
-          role: "Admin",
-          action: "Logout",
-          details: "User logged out",
-        });
-        console.log("Logout event recorded.");
-      } else {
-        console.warn("No userId found to log the event.");
-      }
-
       await auth.signOut();
       localStorage.removeItem("authToken");
-      console.log("User signed out successfully.");
       navigate("/signin");
     } catch (error) {
       console.error("Logout error:", error);
@@ -217,6 +150,7 @@ export default function AdminPage() {
         <span>Reviewer Applications</span>
         <span>{isReviewerSectionOpen ? "▲" : "▼"}</span>
       </div>
+
       <div style={styles.collapsibleContent}>
         {loading ? (
           <p>Loading reviewer applications...</p>
@@ -226,28 +160,23 @@ export default function AdminPage() {
           reviewers.map((reviewer) => (
             <div key={reviewer.id} style={styles.card}>
               <h3>{reviewer.name}</h3>
-              <p>{reviewer.email}</p>
-              <a
-                href={reviewer.cvUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={styles.link}
-              >
+              <p><strong>Email:</strong> {reviewer.email}</p>
+              <p><strong>Institution:</strong> {reviewer.institution || "Not Provided"}</p>
+              <p><strong>Expertise:</strong> {reviewer.expertiseTags ? reviewer.expertiseTags.join(", ") : "Not Provided"}</p>
+              <p><strong>Years of Experience:</strong> {reviewer.yearsExperience || "Not Provided"}</p>
+              {reviewer.publications && reviewer.publications.length > 0 ? (
+                <p><strong>Publications:</strong> {reviewer.publications.map((pub) => (
+                  <a href={pub} target="_blank" rel="noopener noreferrer">{pub}</a>
+                ))}</p>
+              ) : (
+                <p><strong>Publications:</strong> No publications listed</p>
+              )}
+              <a href={reviewer.cvUrl} target="_blank" rel="noopener noreferrer" style={styles.link}>
                 View CV
               </a>
               <div>
-                <button
-                  style={{ ...styles.button, ...styles.approveButton }}
-                  onClick={() => handleApprove(reviewer.id)}
-                >
-                  Approve
-                </button>
-                <button
-                  style={{ ...styles.button, ...styles.rejectButton }}
-                  onClick={() => handleReject(reviewer.id)}
-                >
-                  Reject
-                </button>
+                <button style={{ ...styles.button, ...styles.approveButton }} onClick={() => handleApprove(reviewer.id)}>Approve</button>
+                <button style={{ ...styles.button, ...styles.rejectButton }} onClick={() => handleReject(reviewer.id)}>Reject</button>
               </div>
             </div>
           ))
@@ -256,23 +185,12 @@ export default function AdminPage() {
 
       <div style={{ marginTop: "2rem", textAlign: "center" }}>
         <button
-          style={{
-            ...styles.button,
-            backgroundColor: "#4C93AF",
-            marginRight: "1rem",
-          }}
-          onMouseOver={(e) => (e.target.style.backgroundColor = "#417e94")}
-          onMouseOut={(e) => (e.target.style.backgroundColor = "#4C93AF")}
+          style={{ ...styles.button, backgroundColor: "#4C93AF", marginRight: "1rem" }}
           onClick={() => navigate("/logs")}
         >
           View Logs
         </button>
-        <button
-          style={styles.logoutButton}
-          onMouseOver={(e) => (e.target.style.backgroundColor = "#d32f2f")}
-          onMouseOut={(e) => (e.target.style.backgroundColor = "#f44336")}
-          onClick={handleLogout}
-        >
+        <button style={styles.logoutButton} onClick={handleLogout}>
           Logout
         </button>
       </div>
