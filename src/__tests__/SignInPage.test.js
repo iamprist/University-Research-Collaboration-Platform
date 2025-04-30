@@ -32,9 +32,10 @@ describe('SignInPage', () => {
         getIdToken: jest.fn(() => Promise.resolve('mockToken')),
       },
     });
-    
-    // Add console.log statements in the component to debug the response handling
-    console.log("Mocked Response:", user);
+    console.log("Mocked Response:", {
+      email: 'unauthorized@example.com',
+      getIdToken: 'mockToken',
+    });
 
     // Render the SignInPage inside a MemoryRouter
     render(
