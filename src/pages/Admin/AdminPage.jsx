@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { collection, getDocs, updateDoc, doc } from "firebase/firestore";
+import { collection, getDocs, query, where, updateDoc, doc } from "firebase/firestore";
 import { db, auth } from "../../config/firebaseConfig";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 export default function AdminPage() {
   const navigate = useNavigate();
-  const location = useLocation();
   const [reviewers, setReviewers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isReviewerSectionOpen, setIsReviewerSectionOpen] = useState(false);
@@ -45,6 +44,7 @@ export default function AdminPage() {
       padding: "1.5rem",
       marginBottom: "1rem",
       boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+      transition: "all 0.3s ease-in-out",
     },
     button: {
       padding: "0.75rem 1.5rem",
@@ -82,14 +82,15 @@ export default function AdminPage() {
     const fetchReviewers = async () => {
       setLoading(true);
       try {
-        const snapshot = await getDocs(collection(db, "reviewers"));
+        const reviewerQuery = query(collection(db, "reviewers"), where("status", "!=", "rejected"));
+        const snapshot = await getDocs(reviewerQuery);
         const reviewersData = snapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
-        setReviewers(reviewersData); // Store all reviewers, not just pending ones
+        setReviewers(reviewersData);
       } catch (error) {
-        console.error("Error fetching reviewers:", error);
+        console.error("Error fetching reviewer applications:", error);
       } finally {
         setLoading(false);
       }
@@ -142,10 +143,7 @@ export default function AdminPage() {
         <p>Manage reviewer applications and oversee platform activity.</p>
       </header>
 
-      <div
-        style={styles.collapsibleHeader}
-        onClick={() => setIsReviewerSectionOpen(!isReviewerSectionOpen)}
-      >
+      <div style={styles.collapsibleHeader} onClick={() => setIsReviewerSectionOpen(!isReviewerSectionOpen)}>
         <span>Reviewer Applications</span>
         <span>{isReviewerSectionOpen ? "▲" : "▼"}</span>
       </div>
@@ -158,24 +156,49 @@ export default function AdminPage() {
         ) : (
           reviewers.map((reviewer) => (
             <div key={reviewer.id} style={styles.card}>
-              <h3>{reviewer.name}</h3>
-              <p><strong>Email:</strong> {reviewer.email}</p>
-              <p><strong>Institution:</strong> {reviewer.institution || "Not Provided"}</p>
-              <p><strong>Expertise:</strong> {reviewer.expertiseTags ? reviewer.expertiseTags.join(", ") : "Not Provided"}</p>
-              <p><strong>Years of Experience:</strong> {reviewer.yearsExperience || "Not Provided"}</p>
-              {reviewer.publications && reviewer.publications.length > 0 ? (
-                <p><strong>Publications:</strong> {reviewer.publications.map((pub) => (
-                  <a href={pub} target="_blank" rel="noopener noreferrer">{pub}</a>
-                ))}</p>
-              ) : (
-                <p><strong>Publications:</strong> No publications listed</p>
-              )}
-              <a href={reviewer.cvUrl} target="_blank" rel="noopener noreferrer" style={styles.link}>
-                View CV
-              </a>
+              {/* White background box for details, left-aligned text */}
+              <div style={{ 
+                backgroundColor: "#FFFFFF", 
+                padding: "1rem", 
+                borderRadius: "0.5rem", 
+                marginBottom: "1rem", 
+                width: "80%", 
+                marginLeft: "0" // Move box to the left
+              }}>
+                <h3 style={{ fontSize: "1.5rem", fontWeight: "bold", color: "#1A2E40", marginBottom: "0.5rem", textAlign: "left" }}>{reviewer.name}</h3>
+                <p style={{ color: "#1A2E40", fontWeight: "600" }}><strong>Email:</strong> {reviewer.email}</p>
+                <p style={{ color: "#1A2E40", fontWeight: "600" }}><strong>Institution:</strong> {reviewer.institution || "Not Provided"}</p>
+                <p style={{ color: "#FFD700", fontWeight: "600" }}><strong>Expertise:</strong> {Array.isArray(reviewer.expertiseTags) ? reviewer.expertiseTags.join(", ") : "Not Provided"}</p>
+                <p style={{ color: "#1A2E40", fontWeight: "600" }}><strong>Years of Experience:</strong> {reviewer.yearsExperience || "Not Provided"}</p>
+                {reviewer.publications && reviewer.publications.length > 0 ? (
+                  <p style={{ color: "#1A2E40" }}><strong>Publications:</strong> {reviewer.publications.map((pub) => (
+                    <a href={pub} target="_blank" rel="noopener noreferrer" style={styles.link}>{pub}</a>
+                  ))}</p>
+                ) : (
+                  <p style={{ color: "#1A2E40" }}><strong>Publications:</strong> No publications listed</p>
+                )}
+          
+                {/* Box-style View CV button with contrast */}
+                <a href={reviewer.cvUrl} target="_blank" rel="noopener noreferrer" style={{
+                  display: "inline-block",
+                  backgroundColor: "#64CCC5",
+                  color: "#132238",
+                  padding: "10px 15px",
+                  borderRadius: "5px",
+                  fontWeight: "bold",
+                  textDecoration: "none",
+                  textAlign: "center",
+                  marginTop: "0.5rem",
+                  boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.2)",
+                  width: "max-content" // Prevent stretching
+                }}>
+                  View CV
+                </a>
+              </div>
+          
               <div>
-                <button style={{ ...styles.button, ...styles.approveButton }} onClick={() => handleApprove(reviewer.id)}>Approve</button>
-                <button style={{ ...styles.button, ...styles.rejectButton }} onClick={() => handleReject(reviewer.id)}>Reject</button>
+                <button style={{ ...styles.button, backgroundColor: "#4C93AF", color: "#FFFFFF" }} onClick={() => handleApprove(reviewer.id)}>Approve</button>
+                <button style={{ ...styles.button, backgroundColor: "#D32F2F", color: "#FFFFFF" }} onClick={() => handleReject(reviewer.id)}>Reject</button>
               </div>
             </div>
           ))
@@ -183,10 +206,7 @@ export default function AdminPage() {
       </div>
 
       <div style={{ marginTop: "2rem", textAlign: "center" }}>
-        <button
-          style={{ ...styles.button, backgroundColor: "#4C93AF", marginRight: "1rem" }}
-          onClick={() => navigate("/logs")}
-        >
+        <button style={{ ...styles.button, backgroundColor: "#4C93AF", marginRight: "1rem" }} onClick={() => navigate("/logs")}>
           View Logs
         </button>
         <button style={styles.logoutButton} onClick={handleLogout}>
