@@ -324,15 +324,38 @@ function AddListing() {
               onChange={(e) => setFundingInfo(e.target.value)}
             />
           </div>
-          <div>
-            <label style={styles.label}>Tags</label>
-            <input
-              type="text"
-              style={styles.input}
-              value={tags}
-              onChange={(e) => setTags(e.target.value)}
-            />
-          </div>
+
+
+            
+              <div style={styles.fullWidth}>
+              <label style={styles.label}>Tags (up to 5)</label>
+              <Select
+                isMulti
+                options={ [
+                  { value: 'PHYS', label: 'Physics' },
+                  { value: 'CHEM', label: 'Chemistry' },
+                  { value: 'BIO', label: 'Biology' },
+                  { value: 'CS', label: 'Computer Science' },
+                  { value: 'AI', label: 'Artificial Intelligence' },
+                  { value: 'MED', label: 'Medicine' },
+                  { value: 'LAW', label: 'Law' },
+                  { value: 'BUS', label: 'Business Administration' },
+                  { value: 'FIN', label: 'Finance' },
+                  { value: 'MKT', label: 'Marketing' },
+                  { value: 'HRM', label: 'Human Resources' },
+                ]}
+                value={tags}
+                onChange={(selectedOptions) => {
+                  if (selectedOptions.length <= 5) {
+                    setTags(selectedOptions);
+                  } else {
+                    alert('Please select up to 5 tags only.');
+                  }
+                }}
+                placeholder="Select or type tags..."
+                isClearable
+              />
+            </div>
           <button
             type="submit"
             style={styles.button}
