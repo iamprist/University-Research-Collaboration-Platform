@@ -1,4 +1,3 @@
-//ReviewerPage.jsx
 import React, { useEffect, useState } from 'react';
 import { doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db, auth } from '../../config/firebaseConfig';
@@ -206,7 +205,9 @@ export default function ReviewerPage() {
                 </section>
 
                 {/* Render ReviewerRecommendations for approved reviewers */}
-                <ReviewerRecommendations />
+              <section className="mt-4 w-100">
+                <ReviewerRecommendations userId={currentUser.uid} />
+              </section>
               </>
             )}
 
