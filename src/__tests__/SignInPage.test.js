@@ -23,13 +23,13 @@ jest.mock("firebase/app", () => ({
   initializeApp: jest.fn(),
 }));
 
-describe("SignInPage", () => {
-  it("shows popup when unauthorized admin tries to sign in", async () => {
+describe('SignInPage', () => {
+  it('shows popup when unauthorized admin tries to sign in', async () => {
     // Mock an unauthorized admin user
     signInWithPopup.mockResolvedValueOnce({
       user: {
-        email: "unauthorized@example.com",
-        getIdToken: jest.fn(() => Promise.resolve("mockToken")),
+        email: 'unauthorized@example.com',
+        getIdToken: jest.fn(() => Promise.resolve('mockToken')),
       },
     });
 
@@ -41,13 +41,13 @@ describe("SignInPage", () => {
     );
 
     // Simulate admin login button click
-    const adminButton = screen.getByText("Sign in as Admin");
+    const adminButton = screen.getByText('Sign in as Admin');
     fireEvent.click(adminButton);
 
     // Verify the popup renders with the correct message
-    const popupHeading = await screen.findByText("Access Denied");
+    const popupHeading = await screen.findByText('Access Denied');
     const popupMessage = await screen.findByText(
-      "You are not authorized to access the admin dashboard."
+      'You are not authorized to access the admin dashboard.'
     );
 
     expect(popupHeading).toBeInTheDocument();
