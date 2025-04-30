@@ -9,6 +9,8 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(false);
   const [isReviewerSectionOpen, setIsReviewerSectionOpen] = useState(false);
 
+  
+
   const styles = {
     container: {
       minHeight: "100vh",
@@ -77,6 +79,7 @@ export default function AdminPage() {
       color: "#FFFFFF",
     },
   };
+  
 
   useEffect(() => {
     const fetchReviewers = async () => {
@@ -137,12 +140,31 @@ export default function AdminPage() {
   };
 
   return (
+    
     <div style={styles.container}>
       <header style={styles.header}>
         <h1>Admin Dashboard</h1>
         <p>Manage reviewer applications and oversee platform activity.</p>
       </header>
-
+      <button 
+  style={{
+    position: "fixed", /* Fix it so it stays visible */
+    top: "20px",
+    left: "20px",
+    backgroundColor: "#64CCC5",
+    color: "#132238",
+    padding: "10px 15px",
+    borderRadius: "5px",
+    fontWeight: "bold",
+    border: "none",
+    cursor: "pointer",
+    boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.2)",
+    zIndex: 1000 /* Ensure it's above other elements */
+  }} 
+  onClick={() => navigate("/")}
+>
+   Back
+</button>
       <div style={styles.collapsibleHeader} onClick={() => setIsReviewerSectionOpen(!isReviewerSectionOpen)}>
         <span>Reviewer Applications</span>
         <span>{isReviewerSectionOpen ? "▲" : "▼"}</span>
