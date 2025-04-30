@@ -12,16 +12,18 @@ export const logEvent = async ({ userId, role, userName, action, target, details
       resolvedUserName = userDoc.exists() ? userDoc.data().name : "N/A";
     }
 
-    await addDoc(collection(db, "logs"), {
-      userId,
-      role,
-      userName: resolvedUserName,
-      action,
-      target,
-      details,
-      ip,
+    const logData = {
+      userId: userId || "unknown",
+      role: role || "unknown",
+      userName: resolvedUserName || "unknown",
+      action: action || "unspecified",
+      target: target || "unspecified",
+      details: details || "",
+      ip: ip || "N/A",
       timestamp: serverTimestamp(),
-    });
+    };
+
+    await addDoc(collection(db, "logs"), logData);
   } catch (error) {
     console.error("Error logging event:", error);
   }
