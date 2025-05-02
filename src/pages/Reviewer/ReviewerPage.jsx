@@ -6,6 +6,8 @@ import { useNavigate } from 'react-router-dom';
 import { logEvent } from '../../utils/logEvent';
 import { signOut } from 'firebase/auth';
 import ReviewerRecommendations from '../../components/ReviewerRecommendations'; // Import the component
+import ReviewerNavbar from '../../components/ReviewerNavbar';
+
 
 export default function ReviewerPage() {
   const [status, setStatus] = useState('');
@@ -13,6 +15,8 @@ export default function ReviewerPage() {
   const [loading, setLoading] = useState(true);
   const { currentUser } = useAuth();
   const navigate = useNavigate();
+  const [expertiseTags, setExpertiseTags] = useState([]);
+
 
   useEffect(() => {
     const saveToken = async () => {
@@ -57,6 +61,8 @@ export default function ReviewerPage() {
             const data = docSnap.data();
             setStatus(data.status || 'in_progress');
             setReason(data.rejectionReason || '');
+            setExpertiseTags(data.expertiseTags || []);
+
           } else {
             setStatus('not_found');
           }
@@ -158,6 +164,8 @@ export default function ReviewerPage() {
   };
 
   return (
+    <>
+    <ReviewerNavbar onRevoke={handleRevoke} />
     <main 
       className="min-vh-100 d-flex flex-column align-items-center justify-content-center p-4"
       style={{ backgroundColor: '#1A2E40' }}
@@ -165,7 +173,29 @@ export default function ReviewerPage() {
     >
       <header className="text-center text-white mb-4">
         <h1>Reviewer Dashboard</h1>
-        <p className="lead">Manage and track your reviewer application status.</p>
+        <p className="lead">Curate, contribute, and connect with research that matches your expertise..</p>
+        <p className="h5 mt-4 text-white">
+  Hi {currentUser?.displayName || 'Reviewer'}
+</p>
+
+      <div className="d-flex flex-wrap gap-2 mt-2 justify-content-center">
+        {expertiseTags.map((tag, i) => (
+          <span 
+            key={i} 
+            style={{
+              backgroundColor: '#0d6efd',
+              padding: '0.4rem 0.8rem',
+              borderRadius: '0.5rem',
+              color: '#fff',
+              fontSize: '0.85rem',
+              fontWeight: '500'
+            }}
+          >
+            Your Expertise {tag.label || tag}
+          </span>
+        ))}
+      </div>
+
       </header>
 
       {loading ? (
@@ -195,13 +225,6 @@ export default function ReviewerPage() {
                   aria-live="polite"
                 >
                   <p className="fw-medium mb-0">✅ You are an approved reviewer.</p>
-                  <button 
-                    className="btn btn-danger mt-3" 
-                    onClick={handleRevoke}
-                    aria-label="Stop being a reviewer"
-                  >
-                    Stop Being a Reviewer
-                  </button>
                 </section>
 
                 {/* Render ReviewerRecommendations for approved reviewers */}
@@ -275,5 +298,6 @@ export default function ReviewerPage() {
         </article>
       )}
     </main>
+    </>
   );
 }
