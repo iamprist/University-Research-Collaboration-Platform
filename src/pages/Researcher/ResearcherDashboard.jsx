@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus } from 'react-bootstrap-icons';
 import { db, auth } from '../../config/firebaseConfig';
-import { collection, getDocs, query, where, doc, getDoc, addDoc} from 'firebase/firestore';
+import { collection, getDocs, query, where, doc, getDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { logEvent } from '../../utils/logEvent';
 
 const ResearcherDashboard = () => {
@@ -12,21 +12,21 @@ const ResearcherDashboard = () => {
   const [collaborateListings, setCollaborateListings] = useState([]);
   const [userId, setUserId] = useState(null);
 
+  // Fetch user data and listings
   useEffect(() => {
     const checkAuthToken = async () => {
-      const token = localStorage.getItem('authToken'); // Get the token from localStorage
+      const token = localStorage.getItem('authToken');
       if (!token) {
-        navigate('/signin'); // Redirect to login if no token is found
+        navigate('/signin');
         return;
       }
 
-      // Validate the token by checking the current user
       const unsubscribe = auth.onAuthStateChanged((user) => {
         if (user) {
           setUserId(user.uid);
         } else {
-          localStorage.removeItem('authToken'); // Clear invalid token
-          navigate('/signin'); // Redirect to login
+          localStorage.removeItem('authToken');
+          navigate('/signin');
         }
       });
 
@@ -41,11 +41,13 @@ const ResearcherDashboard = () => {
       if (!userId) return;
 
       try {
+        // Fetch user's own listings
         const userQuery = query(collection(db, 'research-listings'), where('userId', '==', userId));
         const userQuerySnapshot = await getDocs(userQuery);
         const userFetchedListings = userQuerySnapshot.docs.map((doc) => ({ ...doc.data(), id: doc.id }));
         setListings(userFetchedListings);
 
+        // Fetch other researchers' listings
         const otherQuery = query(collection(db, 'research-listings'), where('userId', '!=', userId));
         const otherQuerySnapshot = await getDocs(otherQuery);
 
@@ -55,7 +57,7 @@ const ResearcherDashboard = () => {
             const userDocRef = doc(db, 'users', listingData.userId);
             const userDoc = await getDoc(userDocRef);
             const researcherName = userDoc.exists() ? userDoc.data().name : 'Unknown Researcher';
-            return { ...listingData, id: docSnapshot.id, researcherName };
+            return { ...listingData, id: docSnapshot.id, researcherName, researcherId: listingData.userId };
           })
         );
 
@@ -68,22 +70,36 @@ const ResearcherDashboard = () => {
     fetchListings();
   }, [userId]);
 
-  useEffect(() => {
-    const handleTabClose = async () => {
-      if (auth.currentUser) {
-        await logEvent({
-          userId: auth.currentUser.uid,
-          role: "Researcher",
-          userName: auth.currentUser.displayName || "N/A",
-          action: "Logout",
-          details: "User closed the browser/tab",
-        });
-      }
-    };
+  // Handle chat creation
+  const startChat = async (otherUserId, listingId) => {
+    try {
+      // Check if chat already exists
+      const chatsQuery = query(
+        collection(db, 'chats'),
+        where('participants', 'array-contains', auth.currentUser.uid),
+        where('listingId', '==', listingId)
+      );
+      const querySnapshot = await getDocs(chatsQuery);
 
-    window.addEventListener("beforeunload", handleTabClose);
-    return () => window.removeEventListener("beforeunload", handleTabClose);
-  }, []);
+      if (querySnapshot.empty) {
+        // Create new chat
+        const chatRef = await addDoc(collection(db, 'chats'), {
+          listingId,
+          participants: [auth.currentUser.uid, otherUserId],
+          messages: [],
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        });
+        navigate(`/chats/${chatRef.id}`);
+      } else {
+        // Redirect to existing chat
+        navigate(`/chats/${querySnapshot.docs[0].id}`);
+      }
+    } catch (error) {
+      console.error("Error starting chat:", error);
+      alert("Failed to start chat. Please try again.");
+    }
+  };
 
   const handleAddListing = () => {
     navigate('/dashboard');
@@ -91,9 +107,6 @@ const ResearcherDashboard = () => {
 
   const handleLogout = async () => {
     try {
-      console.log("Attempting to log out...");
-
-      // Log the logout event before signing out
       if (auth.currentUser) {
         await logEvent({
           userId: auth.currentUser.uid,
@@ -102,34 +115,15 @@ const ResearcherDashboard = () => {
           action: "Logout",
           details: "User logged out",
         });
-        console.log("Logout event recorded.");
-      } else {
-        console.warn("No authenticated user found to log the event.");
       }
-
-      // Perform logout using Firebase Auth
       await auth.signOut();
-
-      console.log("Logout successful. Redirecting to /signin...");
-      // Redirect the user to the login page
       navigate("/signin");
     } catch (error) {
       console.error("Error logging out:", error);
-      alert("Failed to log out. Please try again.");
     }
   };
 
-
-<button onClick={() => startChat(userId)}>Message</button>
-
-const startChat = async (otherUserId) => {
-  const chatRef = await addDoc(collection(db, 'chats'), {
-    participants: [auth.currentUser.uid, otherUserId],
-    messages: [],
-  });
-  navigate(`/chat/${chatRef.id}`);
-};
-
+  // Styles
   const styles = {
     header: {
       backgroundColor: '#132238',
@@ -190,19 +184,26 @@ const startChat = async (otherUserId) => {
       borderRadius: '0.5rem',
       cursor: 'pointer',
       transition: 'background-color 0.3s ease',
+      marginRight: '0.5rem',
+    },
+    chatButton: {
+      backgroundColor: '#4C93AF',
+      color: '#FFFFFF',
+      border: 'none',
+      padding: '0.5rem 1rem',
+      borderRadius: '0.5rem',
+      cursor: 'pointer',
+      transition: 'background-color 0.3s ease',
+    },
+    buttonGroup: {
+      display: 'flex',
+      marginTop: '1rem',
     },
     footer: {
       backgroundColor: '#132238',
       color: '#B1EDE8',
       padding: '1.5rem',
       textAlign: 'center',
-    },
-    footerLink: {
-      color: '#B1EDE8',
-      textDecoration: 'none',
-      margin: '0 1rem',
-      fontSize: '0.9rem',
-      cursor: 'pointer',
     },
   };
 
@@ -240,6 +241,7 @@ const startChat = async (otherUserId) => {
             <Plus size={40} />
           </button>
         </div>
+        
         {/* Your Listings Section */}
         <h6 className="mt-4 text-center" style={{ color: '#132238' }}>Your Listings:</h6>
         <section>
@@ -256,20 +258,23 @@ const startChat = async (otherUserId) => {
                 <p style={styles.cardText}>
                   <strong>Status:</strong> {listing.status}
                 </p>
-                <a
-                  href={listing.publicationLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={styles.viewButton}
-                  onMouseOver={(e) => (e.target.style.backgroundColor = '#5AA9A3')}
-                  onMouseOut={(e) => (e.target.style.backgroundColor = '#64CCC5')}
-                >
-                  View Publication
-                </a>
+                <div style={styles.buttonGroup}>
+                  <a
+                    href={listing.publicationLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={styles.viewButton}
+                    onMouseOver={(e) => (e.target.style.backgroundColor = '#5AA9A3')}
+                    onMouseOut={(e) => (e.target.style.backgroundColor = '#64CCC5')}
+                  >
+                    View Publication
+                  </a>
+                </div>
               </div>
             ))
           )}
         </section>
+        
         {/* Collaborate Section */}
         <h6 className="mt-5 text-center" style={{ color: '#132238' }}>Collaborate:</h6>
         <section>
@@ -289,16 +294,26 @@ const startChat = async (otherUserId) => {
                 <p style={styles.cardText}>
                   <strong>Status:</strong> {listing.status}
                 </p>
-                <a
-                  href={listing.publicationLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={styles.viewButton}
-                  onMouseOver={(e) => (e.target.style.backgroundColor = '#5AA9A3')}
-                  onMouseOut={(e) => (e.target.style.backgroundColor = '#64CCC5')}
-                >
-                  View Publication
-                </a>
+                <div style={styles.buttonGroup}>
+                  <a
+                    href={listing.publicationLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={styles.viewButton}
+                    onMouseOver={(e) => (e.target.style.backgroundColor = '#5AA9A3')}
+                    onMouseOut={(e) => (e.target.style.backgroundColor = '#64CCC5')}
+                  >
+                    View Publication
+                  </a>
+                  <button
+                    style={styles.chatButton}
+                    onClick={() => startChat(listing.researcherId, listing.id)}
+                    onMouseOver={(e) => (e.target.style.backgroundColor = '#3a7a8c')}
+                    onMouseOut={(e) => (e.target.style.backgroundColor = '#4C93AF')}
+                  >
+                    View Chat
+                  </button>
+                </div>
               </div>
             ))
           )}

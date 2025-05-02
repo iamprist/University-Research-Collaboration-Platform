@@ -60,6 +60,7 @@ function App() {
 
   return (
     <Routes>
+      <Route path="/chats/:chatId" element={<ChatRoom />} />
       <Route path="/chat/:chatId" element={<ChatRoom />} />
       <Route path="/" element={<LandingPage />} />
       <Route path="/signin" element={<SignInPage />} />
