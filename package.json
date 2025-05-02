@@ -12,6 +12,7 @@
     "bootstrap": "^5.3.5",
     "bootstrap-icons": "^1.11.3",
     "firebase": "^11.6.0",
+    "framer-motion": "^12.9.4",
     "react": "^19.1.0",
     "react-bootstrap-icons": "^1.11.5",
     "react-dom": "^19.1.0",
