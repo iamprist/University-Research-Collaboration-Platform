@@ -1,74 +1,139 @@
 import { useState, useEffect, useRef } from 'react';
-import { doc, updateDoc, arrayUnion, serverTimestamp, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../../config/firebaseConfig';
+import { useParams } from 'react-router-dom';
+import './ChatRoom.css';
 
-export default function ChatRoom({ chatId }) {
+export default function ChatRoom() {
+  const { chatId } = useParams();
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
+  const [status, setStatus] = useState({ loading: true, error: null });
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
-    const chatRef = doc(db, 'chats', chatId);
-    const unsubscribe = onSnapshot(chatRef, (doc) => {
-      setMessages(doc.data()?.messages || []);
-      // Auto-scroll to newest message
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    });
-    return unsubscribe;
+    if (!chatId) {
+      setStatus({ loading: false, error: 'No chat ID provided' });
+      return;
+    }
+
+    const loadMessages = async () => {
+      try {
+        const chatRef = doc(db, 'chats', chatId);
+        const docSnap = await getDoc(chatRef);
+
+        if (!docSnap.exists()) {
+          await setDoc(chatRef, {
+            participants: [auth.currentUser?.uid],
+            messages: [],
+            createdAt: serverTimestamp(),
+            lastUpdated: serverTimestamp()
+          });
+          setMessages([]);
+        } else {
+          const messagesData = docSnap.data().messages || [];
+          setMessages(Array.isArray(messagesData) ? messagesData : []);
+        }
+
+        setStatus({ loading: false, error: null });
+      } catch (err) {
+        console.error('Failed to load chat:', err);
+        setStatus({ loading: false, error: 'Failed to load chat' });
+      }
+    };
+
+    loadMessages();
   }, [chatId]);
 
-  const sendMessage = async () => {
-    if (!newMessage.trim()) return;
-    const chatRef = doc(db, 'chats', chatId);
-    await updateDoc(chatRef, {
-      messages: arrayUnion({
-        senderId: auth.currentUser.uid,
+  const sendMessage = async (e) => {
+    e.preventDefault();
+    if (!newMessage.trim() || !auth.currentUser) return;
+
+    try {
+      setStatus({ loading: true, error: null });
+      const chatRef = doc(db, 'chats', chatId);
+      const docSnap = await getDoc(chatRef);
+
+      const currentMessages = Array.isArray(docSnap.data()?.messages)
+        ? docSnap.data().messages
+        : [];
+
+      const newMsg = {
         text: newMessage,
-        timestamp: serverTimestamp(),
-      }),
-      lastUpdated: serverTimestamp(),
-    });
-    setNewMessage('');
+        senderId: auth.currentUser.uid,
+        timestamp: new Date().toISOString()
+      };
+
+      await updateDoc(chatRef, {
+        messages: [...currentMessages, newMsg],
+        lastUpdated: serverTimestamp()
+      });
+
+      setMessages(prev => [...prev, { ...newMsg, timestamp: new Date() }]);
+      setNewMessage('');
+      setStatus({ loading: false, error: null });
+
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    } catch (err) {
+      console.error('Message send failed:', err);
+      setStatus({ loading: false, error: 'Failed to send message. Please try again.' });
+    }
   };
 
-  return (
-    <section aria-labelledby="chat-heading" className="chat-container">
-      <h2 id="chat-heading" className="visually-hidden">Chat Room</h2>
-      
-      <article className="message-list" aria-live="polite">
-        <ul className="messages">
-          {messages.map((msg, i) => (
-            <li 
-              key={i} 
-              className={`message ${msg.senderId === auth.currentUser?.uid ? 'sent' : 'received'}`}
-              aria-label={msg.senderId === auth.currentUser?.uid ? 'Message sent by you' : 'Message received'}
-            >
-              <p className="message-content">{msg.text}</p>
-              <time className="message-time" dateTime={new Date(msg.timestamp?.toDate()).toISOString()}>
-                {msg.timestamp?.toDate().toLocaleTimeString()}
-              </time>
-            </li>
-          ))}
-          <li ref={messagesEndRef} aria-hidden="true"></li>
-        </ul>
-      </article>
+  if (status.loading && messages.length === 0) {
+    return <section className="status-message">Loading chat...</section>;
+  }
 
-      <form onSubmit={(e) => { e.preventDefault(); sendMessage(); }} className="message-form">
-        <label htmlFor="message-input" className="visually-hidden">Type your message</label>
-        <input
-          id="message-input"
-          type="text"
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-          placeholder="Type your message..."
-          aria-required="true"
-        />
-        <button type="submit" aria-label="Send message">
-          Send
-        </button>
-      </form>
-    </section>
+  if (status.error) {
+    return (
+      <section className="status-message error">
+        {status.error}
+        <button onClick={() => window.location.reload()}>Retry</button>
+      </section>
+    );
+  }
+
+  return (
+    <main className="chat-room-container">
+      <section className="messages-container" aria-live="polite">
+        {messages.map((msg, i) => (
+          <article
+            key={i}
+            className={`message ${msg.senderId === auth.currentUser?.uid ? 'sent' : 'received'}`}
+          >
+            <p className="message-text">{msg.text}</p>
+            <time className="message-time" dateTime={msg.timestamp}>
+              {msg.timestamp?.toDate?.().toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit'
+              }) || 'Now'}
+            </time>
+          </article>
+        ))}
+        <span ref={messagesEndRef} />
+      </section>
+
+      <footer>
+        <form onSubmit={sendMessage} className="message-input-form" aria-label="Send a message">
+          <input
+            type="text"
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            placeholder="Type your message..."
+            disabled={status.loading}
+            aria-label="Message input"
+          />
+          <button 
+            type="submit" 
+            disabled={status.loading || !newMessage.trim()}
+            className={status.loading ? 'loading' : ''}
+          >
+            {status.loading ? 'Sending...' : 'Send'}
+          </button>
+        </form>
+      </footer>
+    </main>
   );
 }
-
