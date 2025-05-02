@@ -90,26 +90,74 @@ export default function ReviewerRecommendations() {
       </section>
     );
   }
+  const cardStyle = {
+    backgroundColor: '#1A2E40',
+    borderRadius: '1rem',
+    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.2)',
+    padding: '1.5rem',
+    marginBottom: '1.5rem',
+    textAlign: 'left',
+    maxWidth: '600px',
+    margin: '1rem auto',
+    color: '#FFFFFF',
+  };
+  
 
   return (
     <section className="mt-4">
       <h3 className="text-white mb-3">🔍 Recommended Research</h3>
+
+
+
+
       {recommendations.map((rec) => (
-        <article 
-          key={rec.id} 
-          className="bg-light text-dark p-3 mb-3 rounded shadow-sm"
-          aria-label={`Recommended research titled ${rec.title}`}
+  <article 
+    key={rec.id} 
+    style={cardStyle}
+    aria-label={`Recommended research titled ${rec.title}`}
+  >
+    <h5 className="mb-2">{rec.title}</h5>
+    <div className="d-flex flex-wrap gap-2 mb-2">
+  {rec.researchArea.split(',').map((area, i) => (
+    <span 
+      key={i} 
+      style={{
+        backgroundColor: '#274E6E',
+        padding: '0.4rem 0.8rem',
+        borderRadius: '0.5rem',
+        color: '#fff',
+        fontSize: '0.8rem',
+        fontWeight: '500',
+        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
+      }}
+    >
+      {area.trim()}
+    </span>
+  ))}
+</div>
+
+    <p>{rec.summary}</p>
+    <div className="d-flex flex-wrap gap-2 mt-2">
+      {rec.tags.map((tag, i) => (
+        <span 
+          key={i} 
+          style={{
+            backgroundColor: '#0d6efd', 
+            padding: '0.25rem 0.5rem', 
+            borderRadius: '0.5rem', 
+            fontSize: '0.75rem'
+          }}
         >
-          <h5 className="mb-2">{rec.title}</h5>
-          <p className="small text-muted mb-1">{rec.researchArea}</p>
-          <p>{rec.summary}</p>
-          <div className="d-flex flex-wrap gap-2 mt-2">
-            {rec.tags.map((tag, i) => (
-              <span key={i} className="badge bg-primary">{tag.label}</span>
-            ))}
-          </div>
-        </article>
+          {tag.label}
+        </span>
       ))}
+    </div>
+  </article>
+))}
+
+
+
+      
     </section>
   );
 }
