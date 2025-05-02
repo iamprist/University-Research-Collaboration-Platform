@@ -4,6 +4,7 @@ import AdminPage from "./pages/Admin/AdminPage";
 import ReviewerPage from "./pages/Reviewer/ReviewerPage";
 import AddListing from "./pages/Researcher/AddListing";
 import ResearcherDashboard from "./pages/Researcher/ResearcherDashboard";
+import TermsAndConditions from './pages/TermsAndConditions';
 import LandingPage from "./pages/LandingPage";
 import LogsPage from "./pages/Admin/LogsPage";
 import { auth, db } from "./config/firebaseConfig";
@@ -80,6 +81,7 @@ function App() {
           </ProtectedRoute>
         }
       />
+      <Route path="/terms" element={<TermsAndConditions />} />
       <Route
         path="/reviewer"
         element={
