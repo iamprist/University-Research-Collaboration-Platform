@@ -344,9 +344,9 @@ const ResearcherDashboard = () => {
       </section>
 
       <footer className="researcher-footer">
-        <a href="#" style={styles.footerLink}>Contact</a>
-        <a href="#" style={styles.footerLink}>Privacy Policy</a>
-        <a href="#" style={styles.footerLink}>Terms of Service</a>
+        <a href="/some-path" style={styles.footerLink}>Contact</a>
+        <a href="/some-path" style={styles.footerLink}>Privacy Policy</a>
+        <a href="/some-path" style={styles.footerLink}>Terms of Service</a>
         <p>&copy; 2025 Innerk Hub</p>
       </footer>
     </main>
