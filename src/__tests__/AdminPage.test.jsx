@@ -19,6 +19,7 @@ jest.mock('../pages/Admin/ManageResearchers', () => () => <div>Researchers</div>
 jest.mock('../pages/Admin/ManageAdmins', () => () => <div>Admins</div>);
 jest.mock('../pages/Admin/ManageReviewers', () => () => <div>Reviewers</div>);
 
+
 import AdminPage from '../pages/Admin/AdminPage';
 
 describe('AdminPage', () => {
