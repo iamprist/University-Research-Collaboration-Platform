@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../../config/firebaseConfig';
-import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, query, where, doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { logEvent } from '../../utils/logEvent';
 import './ResearcherDashboard.css';
 
@@ -12,7 +12,7 @@ const ResearcherDashboard = () => {
   const [userId, setUserId] = useState(null);
   const [hasProfile, setHasProfile] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
-
+  const [collaborations, setCollaborations] = useState([]);
   // Search state
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -66,7 +66,23 @@ const ResearcherDashboard = () => {
     })();
   }, [userId, navigate]);
   
-
+  useEffect(() => {
+    if (!userId) return;
+    
+    const q = query(
+      collection(db, "collaborations"),
+      where("collaboratorId", "==", userId)
+    );
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setCollaborations(snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })));
+    });
+    
+    return () => unsubscribe();
+  }, [userId]);
   // Fetch ALL listings for search dropdown
   useEffect(() => {
     if (!userId || !hasProfile) return;
@@ -143,10 +159,10 @@ const ResearcherDashboard = () => {
   };
 
   const handleAddListing = () => {
-    navigate('/researcher-add-listing');
+    navigate('/researcher/add-listing');
   };
   const handleCollaborate = () => {
-    navigate('/researcher-collaborate');
+    navigate('/researcher/collaborate');
   };
 
   // Hide dropdown and allow new search when input is focused/changed
@@ -342,7 +358,21 @@ const ResearcherDashboard = () => {
           )}
         </section>
       </section>
-
+      <section>
+  <h3>Your Collaborations</h3>
+  {collaborations.length > 0 ? (
+    collaborations.map(collab => (
+      <article key={collab.id} style={styles.card}>
+        <h4>Collaboration on: {collab.listingId}</h4>
+        <button onClick={() => navigate(`/listing/${collab.listingId}`)}>
+          View Project
+        </button>
+      </article>
+    ))
+  ) : (
+    <p>No active collaborations</p>
+  )}
+</section>
       <footer className="researcher-footer">
         <a href="/some-path" style={styles.footerLink}>Contact</a>
         <a href="/some-path" style={styles.footerLink}>Privacy Policy</a>

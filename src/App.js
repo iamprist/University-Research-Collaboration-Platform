@@ -1,5 +1,5 @@
 // src/App.js
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate} from "react-router-dom";
 import SignInPage from "./pages/SignInPage";
 import LandingPage from "./pages/LandingPage";
 
@@ -8,12 +8,14 @@ import AdminPage from "./pages/Admin/AdminPage";
 import ViewLogs from "./pages/Admin/ViewLogs";
 
 // Reviewer
+
 import ReviewerPage from "./pages/Reviewer/ReviewerPage";
 import ReviewerForm from "./pages/Reviewer/ReviewerForm";
 import TermsAndConditions from "./pages/TermsAndConditions";
 import AdminRegister from "./pages/Admin/AdminRegister";
 
 // Researcher
+import NotificationHandler from './components/NotificationHandler';
 import ResearcherDashboard from "./pages/Researcher/ResearcherDashboard";
 import ResearcherProfile from "./pages/Researcher/ResearcherProfile";
 import EditProfile from "./pages/Researcher/EditProfile";
@@ -26,6 +28,9 @@ import { useEffect } from "react";
 import { doc, getDoc } from "firebase/firestore";
 import { logEvent } from "./utils/logEvent";
 import axios from "axios";
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
 
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("authToken");
@@ -64,7 +69,15 @@ function App() {
     return () => unsubscribe();
   }, []);
 
+
+
   return (
+
+    <>
+    <NotificationHandler />
+    <ToastContainer position="bottom-right" />
+    
+  
     <Routes>
       {/* Public */}
       <Route path="/" element={<LandingPage />} />
@@ -147,7 +160,10 @@ function App() {
 
       {/* Catch-all redirect */}
       <Route path="*" element={<Navigate to="/" replace />} />
+    
+      
     </Routes>
+   </>
   );
 }
 
