@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebaseConfig';
 import { useAuth } from '../pages/Reviewer/authContext';
 
@@ -13,7 +13,6 @@ export default function ReviewerRecommendations() {
       if (!currentUser?.uid) return;
 
       try {
-        // Get reviewer's expertiseTags
         const reviewerRef = doc(db, 'reviewers', currentUser.uid);
         const reviewerSnap = await getDoc(reviewerRef);
 
@@ -25,41 +24,34 @@ export default function ReviewerRecommendations() {
         const { expertiseTags = [] } = reviewerSnap.data();
         const expertiseValues = expertiseTags.map(tag => tag?.value || tag);
 
-
-        // Get all research listings
-        const listingsRef = collection(db, 'research-listings');
-        const listingsSnap = await getDocs(listingsRef);
+        const listingsSnap = await getDocs(collection(db, 'research-listings'));
 
         const matches = [];
-
-
-        //
-        console.log("Expertise Values:", expertiseValues);
-        //
-
 
         listingsSnap.forEach(docSnap => {
           const data = docSnap.data();
           const rawTags = Array.isArray(data.tags) ? data.tags : [];
           const listingTags = rawTags.map(tag => tag?.value || tag);
 
-
-
-          //
-          console.log(`Research "${data.title}" tags:`, listingTags);
-          //
-
-
-
-          // Check if any tag matches
           const hasMatch = expertiseValues.some(val => listingTags.includes(val));
+
           if (hasMatch) {
             matches.push({
               id: docSnap.id,
               title: data.title,
               summary: data.summary,
-              tags: data.tags || [],
-              researchArea: data.researchArea || '',
+              collaboratorNeeds: data.collaboratorNeeds,
+              createdAt: data.createdAt?.toDate().toLocaleString(),
+              department: data.department,
+              endDate: data.endDate,
+              fundingInfo: data.fundingInfo,
+              institution: data.institution,
+              keywords: data.keywords,
+              methodology: data.methodology,
+              publicationLink: data.publicationLink,
+              researchArea: data.researchArea,
+              tags: rawTags,
+              status: data.status,
             });
           }
         });
@@ -77,7 +69,10 @@ export default function ReviewerRecommendations() {
 
   if (loading) {
     return (
-      <section className="mt-4 text-white">
+      <section className="mt-5 d-flex flex-column align-items-center justify-content-center text-white">
+        <div className="spinner-border text-primary mb-3" role="status" style={{ width: '3rem', height: '3rem' }}>
+          <span className="visually-hidden">Loading...</span>
+        </div>
         <p>Loading recommendations...</p>
       </section>
     );
@@ -85,79 +80,100 @@ export default function ReviewerRecommendations() {
 
   if (recommendations.length === 0) {
     return (
-      <section className="mt-4 text-white">
+      <section className="mt-4 text-white text-center">
         <p>No matching research found based on your expertise.</p>
       </section>
     );
   }
-  const cardStyle = {
-    backgroundColor: '#1A2E40',
-    borderRadius: '1rem',
-    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.2)',
-    padding: '1.5rem',
-    marginBottom: '1.5rem',
-    textAlign: 'left',
-    maxWidth: '600px',
-    margin: '1rem auto',
-    color: '#FFFFFF',
-  };
-  
 
   return (
-    <section className="mt-4">
-      <h3 className="text-white mb-3">🔍 Recommended Research</h3>
+    <section className="mt-4 px-3">
+      <h3 className="text-white mb-3">Recommended Research</h3>
 
+      <div className="row">
+        {recommendations.map((rec) => (
+          <div className="col-lg-4 col-md-6 col-sm-12" key={rec.id}>
+            <article
+              style={{
+                backgroundColor: '#2F3C52',
+                borderRadius: '1.25rem',
+                boxShadow: '0 8px 16px rgba(0, 0, 0, 0.2)',
+                padding: '1.5rem',
+                margin: '1rem 0',
+                color: '#FFFFFF',
+                width: '100%',
+                transition: 'transform 0.3s ease-in-out',
+              }}
+              className="recommendation-card"
+              aria-label={`Recommended research titled ${rec.title}`}
+            >
+              <h5 style={{ fontWeight: '600', fontSize: '1.3rem', marginBottom: '1rem' }}>{rec.title}</h5>
 
+              <div className="d-flex flex-wrap gap-2 mb-3">
+                {rec.researchArea.split(',').map((area, i) => (
+                  <span
+                    key={i}
+                    style={{
+                      backgroundColor: '#415A77',
+                      padding: '0.5rem 1rem',
+                      borderRadius: '1rem',
+                      color: '#fff',
+                      fontSize: '0.9rem',
+                      fontWeight: '500',
+                      boxShadow: '0 3px 6px rgba(0, 0, 0, 0.1)',
+                    }}
+                  >
+                    {area.trim()}
+                  </span>
+                ))}
+              </div>
 
+              <p style={{ fontSize: '1rem', lineHeight: '1.6' }}>{rec.summary}</p>
+              <p><strong>Collaborator Needs:</strong> {rec.collaboratorNeeds}</p>
+              <p><strong>Created At:</strong> {rec.createdAt}</p>
+              <p><strong>Department:</strong> {rec.department}</p>
+              <p><strong>End Date:</strong> {rec.endDate}</p>
+              <p><strong>Funding Info:</strong> {rec.fundingInfo}</p>
+              <p><strong>Institution:</strong> {rec.institution || 'Not Provided'}</p>
+              <p><strong>Keywords:</strong> {rec.keywords}</p>
+              <p><strong>Methodology:</strong> {rec.methodology}</p>
+              <p>
+                <strong>Publication Link:</strong>{' '}
+                <a
+                  href={rec.publicationLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    color: '#1E90FF',
+                    textDecoration: 'none',
+                    fontWeight: '500',
+                  }}
+                >
+                  View Publication
+                </a>
+              </p>
 
-      {recommendations.map((rec) => (
-  <article 
-    key={rec.id} 
-    style={cardStyle}
-    aria-label={`Recommended research titled ${rec.title}`}
-  >
-    <h5 className="mb-2">{rec.title}</h5>
-    <div className="d-flex flex-wrap gap-2 mb-2">
-  {rec.researchArea.split(',').map((area, i) => (
-    <span 
-      key={i} 
-      style={{
-        backgroundColor: '#274E6E',
-        padding: '0.4rem 0.8rem',
-        borderRadius: '0.5rem',
-        color: '#fff',
-        fontSize: '0.8rem',
-        fontWeight: '500',
-        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
-      }}
-    >
-      {area.trim()}
-    </span>
-  ))}
-</div>
-
-    <p>{rec.summary}</p>
-    <div className="d-flex flex-wrap gap-2 mt-2">
-      {rec.tags.map((tag, i) => (
-        <span 
-          key={i} 
-          style={{
-            backgroundColor: '#0d6efd', 
-            padding: '0.25rem 0.5rem', 
-            borderRadius: '0.5rem', 
-            fontSize: '0.75rem'
-          }}
-        >
-          {tag.label}
-        </span>
-      ))}
-    </div>
-  </article>
-))}
-
-
-
-      
+              <div className="d-flex flex-wrap gap-2 mt-3">
+                {rec.tags.map((tag, i) => (
+                  <span
+                    key={i}
+                    style={{
+                      backgroundColor: '#009688',
+                      padding: '0.3rem 0.8rem',
+                      borderRadius: '1.25rem',
+                      fontSize: '0.85rem',
+                      fontWeight: '500',
+                      color: '#fff',
+                    }}
+                  >
+                    {tag.label || tag.value || tag}
+                  </span>
+                ))}
+              </div>
+            </article>
+          </div>
+        ))}
+      </div>
     </section>
   );
 }
