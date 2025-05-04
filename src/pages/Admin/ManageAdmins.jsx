@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { db, auth } from "../../config/firebaseConfig";
+import { db } from "../../config/firebaseConfig";
 import { collection, getDocs, addDoc, deleteDoc, doc } from "firebase/firestore";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+//import { createUserWithEmailAndPassword } from "firebase/auth";
 
 export default function ManageAdmins() {
   const [admins, setAdmins] = useState([]);
@@ -27,6 +27,7 @@ export default function ManageAdmins() {
   const handleAddAdmin = async (e) => {
     e.preventDefault();
     setError(""); // Clear any previous error messages
+
     if (!newAdminEmail) {
       setError("Email is required.");
       return;
@@ -44,7 +45,7 @@ export default function ManageAdmins() {
       // Check if email already exists in Firestore
       const querySnapshot = await getDocs(collection(db, "users"));
       const existingAdmin = querySnapshot.docs.some(
-        (doc) => doc.data().email === newAdminEmail
+        (doc) => doc.data().email.toLowerCase() === newAdminEmail.toLowerCase()
       );
 
       if (existingAdmin) {
@@ -52,28 +53,20 @@ export default function ManageAdmins() {
         return;
       }
 
-      // Create a Firebase Auth user
-      const password = "TemporaryPassword123"; // Temp password for new admin
-      const userCred = await createUserWithEmailAndPassword(auth, newAdminEmail, password);
-      const user = userCred.user;
-
-      // Add the new admin to Firestore
-      await addDoc(collection(db, "users"), {
+      // Add the new admin email to the "newEmails" collection in Firestore
+      await addDoc(collection(db, "newEmails"), {
         email: newAdminEmail,
         role: "admin", // Assign the admin role
-        uid: user.uid, // Store the Firebase Auth UID
+        createdAt: new Date(), // Add a timestamp
       });
 
-      setNewAdminEmail(""); // Reset the form
+      // Reset the form and refresh the admin list
+      setNewAdminEmail("");
       fetchAdmins(); // Refresh the admin list
       setError(""); // Clear error if successful
     } catch (error) {
       console.error("Error adding admin:", error);
-      if (error.code === "auth/email-already-in-use") {
-        setError("This email is already in use. Please try a different one.");
-      } else {
-        setError("Failed to add admin. Please try again.");
-      }
+      setError("Failed to add admin. Please try again.");
     } finally {
       setLoading(false);
     }
