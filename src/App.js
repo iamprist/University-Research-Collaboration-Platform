@@ -4,7 +4,6 @@ import AdminPage from "./pages/Admin/AdminPage";
 import ReviewerPage from "./pages/Reviewer/ReviewerPage";
 import AddListing from "./pages/Researcher/AddListing";
 import ResearcherDashboard from "./pages/Researcher/ResearcherDashboard";
-import TermsAndConditions from './pages/TermsAndConditions';
 import LandingPage from "./pages/LandingPage";
 import { auth, db } from "./config/firebaseConfig";
 import { useEffect } from "react";
