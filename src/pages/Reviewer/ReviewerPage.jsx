@@ -1,3 +1,4 @@
+//ReviewerPage.jsx
 import React, { useEffect, useState } from 'react';
 import { doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db, auth } from '../../config/firebaseConfig';

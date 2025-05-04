@@ -1,3 +1,4 @@
+//ReviewerForm.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db, auth, storage } from '../../config/firebaseConfig';
@@ -5,6 +6,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import Select from 'react-select';
 import { toast } from 'react-toastify';
+import { Link } from 'react-router-dom';
 import 'react-toastify/dist/ReactToastify.css';
 import './ReviewerStyles.css';
 
@@ -209,7 +211,7 @@ const ReviewerForm = () => {
             required
           />
           <label htmlFor="terms">
-            I accept the <a href="/terms">Terms and Conditions</a> *
+            I accept the <Link to="/terms">Terms and Conditions</Link> *
           </label>
         </div>
 

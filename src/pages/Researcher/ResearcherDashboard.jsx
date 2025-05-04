@@ -1,14 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../../config/firebaseConfig';
-import {
-  collection,
-  getDocs,
-  query,
-  where,
-  doc,
-  getDoc
-} from 'firebase/firestore';
+import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
 import { logEvent } from '../../utils/logEvent';
 import './ResearcherDashboard.css';
 
@@ -175,23 +168,34 @@ const ResearcherDashboard = () => {
   }, []);
 
   const handleLogout = async () => {
-    const confirmLogout = window.confirm('Are you sure you want to logout?');
-    if (!confirmLogout) return;
-    if (auth.currentUser) {
-      await logEvent({
-        userId: auth.currentUser.uid,
-        role: 'Researcher',
-        userName: auth.currentUser.displayName || 'N/A',
-        action: 'Logout',
-        details: 'User logged out'
-      });
-    }
-    await auth.signOut();
-    navigate('/signin');
-  };
+    try {
+      console.log("Attempting to log out...");
 
-  const handleAddListing = () => navigate('/researcher/add-listing');
-  const handleCollaborate = () => navigate('/collaborate');
+      // Log the logout event before signing out
+      if (auth.currentUser) {
+        await logEvent({
+          userId: auth.currentUser.uid,
+          role: "Researcher",
+          userName: auth.currentUser.displayName || "N/A",
+          action: "Logout",
+          details: "User logged out",
+        });
+        console.log("Logout event recorded.");
+      } else {
+        console.warn("No authenticated user found to log the event.");
+      }
+
+      // Perform logout using Firebase Auth
+      await auth.signOut();
+
+      console.log("Logout successful. Redirecting to /signin...");
+      // Redirect the user to the login page
+      navigate("/signin");
+    } catch (error) {
+      console.error("Error logging out:", error);
+      alert("Failed to log out. Please try again.");
+    }
+  };
 
   const styles = {
     card: {
