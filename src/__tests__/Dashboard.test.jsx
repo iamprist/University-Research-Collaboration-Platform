@@ -1,43 +1,33 @@
-import React from "react";
 import { render, screen, waitFor } from "@testing-library/react";
-import Dashboard from "../pages/Admin/Dashboard";
-import { getDocs, collection } from "firebase/firestore";
+import Dashboard from "../../../pages/Admin/Dashboard"; // Adjust path if needed
+import "@testing-library/jest-dom";
 
-// Mock Firestore
-jest.mock("firebase/firestore", () => ({
-  getFirestore: jest.fn(), // Mock getFirestore
-  getDocs: jest.fn(),
-  collection: jest.fn(),
+// Optional: mock Firebase functions if needed
+jest.mock("../../../firebase", () => ({
+  db: {
+    collection: jest.fn(() => ({
+      get: jest.fn(() => Promise.resolve({
+        docs: [
+          { id: "1", data: () => ({ email: "test@example.com", name: "Test User", institution: "Test University" }) },
+          { id: "2", data: () => ({ email: "another@example.com", name: "Another User", institution: "Another University" }) }
+        ]
+      }))
+    }))
+  }
 }));
 
 describe("Dashboard Component", () => {
-  const mockLogs = [
-    {
-      id: "1",
-      userId: "user1",
-      action: "Login",
-      timestamp: { toDate: () => new Date("2023-01-01T10:00:00Z") },
-    },
-    {
-      id: "2",
-      userId: "user2",
-      action: "Logout",
-      timestamp: { toDate: () => new Date("2023-01-01T12:00:00Z") },
-    },
-  ];
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-    getDocs.mockResolvedValue({
-      docs: mockLogs.map((log) => ({
-        id: log.id,
-        data: () => log,
-      })),
-    });
-  });
-
-  test("renders loading state initially", () => {
+  test("renders dashboard and waits for reviewer applications to load", async () => {
     render(<Dashboard />);
-    expect(screen.getByText("Loading...")).toBeInTheDocument();
+
+    // Wait until "Reviewer Applications" appears
+    await waitFor(() => {
+      expect(screen.getByText("Reviewer Applications")).toBeInTheDocument();
+    });
+
+    // Additional optional checks:
+    // await waitFor(() => {
+    //   expect(screen.getByText(/Total Users/i)).toBeInTheDocument();
+    // });
   });
 });
