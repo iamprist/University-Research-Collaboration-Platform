@@ -1,278 +1,292 @@
-//ReviewerPage.jsx
-import React, { useEffect, useState } from 'react';
-import { doc, getDoc, deleteDoc } from 'firebase/firestore';
-import { db, auth } from '../../config/firebaseConfig';
-import { useAuth } from './authContext';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { logEvent } from '../../utils/logEvent';
-import { signOut } from 'firebase/auth';
-import ReviewerRecommendations from '../../components/ReviewerRecommendations'; // Import the component
+import { db, auth, storage } from '../../config/firebaseConfig';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import Select from 'react-select';
+import { toast } from 'react-toastify';
+import { Link } from 'react-router-dom';
+import 'react-toastify/dist/ReactToastify.css';
+import './ReviewerStyles.css';
 
-export default function ReviewerPage() {
-  const [status, setStatus] = useState('');
-  const [reason, setReason] = useState('');
-  const [loading, setLoading] = useState(true);
-  const { currentUser } = useAuth();
+const ReviewerForm = () => {
   const navigate = useNavigate();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [user, setUser] = useState(null);
+  const [errors, setErrors] = useState({});
+  const [formData, setFormData] = useState({
+    name: '',
+    institution: '',
+    expertiseTags: [],
+    yearsExperience: '',
+    cvFile: null,
+    publications: '',
+    acceptedTerms: false,
+  });
 
+  // Load saved form data from session storage on mount
   useEffect(() => {
-    const saveToken = async () => {
-      if (currentUser) {
-        const token = await currentUser.getIdToken();
-        localStorage.setItem('authToken', token);
-
-        // Log the login event
-        await logEvent({
-          userId: currentUser.uid,
-          role: "Reviewer",
-          userName: currentUser.displayName || "N/A",
-          action: "Login",
-          details: "User logged in",
-        });
-      }
-    };
-
-    saveToken();
-  }, [currentUser]);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const fetchReviewerStatus = async () => {
+    const savedData = sessionStorage.getItem('reviewerFormData');
+    if (savedData) {
       try {
-        const token = localStorage.getItem('authToken');
-        if (!token) {
-          navigate('/signin'); // Redirect to sign-in if no token is found
-          return;
-        }
-
-        if (!currentUser?.uid) {
-          return; // Wait until currentUser is available
-        }
-
-        const docRef = doc(db, "reviewers", currentUser.uid);
-        const docSnap = await getDoc(docRef);
-
-        if (isMounted) {
-          if (docSnap.exists()) {
-            const data = docSnap.data();
-            setStatus(data.status || 'in_progress');
-            setReason(data.rejectionReason || '');
-          } else {
-            setStatus('not_found');
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching reviewer status:", error);
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+        const parsedData = JSON.parse(savedData);
+        const { cvFile, ...rest } = parsedData;
+        setFormData((prev) => ({ ...prev, ...rest }));
+      } catch (err) {
+        console.error('Failed to parse saved form data:', err);
       }
-    };
-
-    fetchReviewerStatus();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [currentUser, navigate]);
-
-  useEffect(() => {
-    const handleTabClose = async () => {
-      if (auth.currentUser) {
-        await logEvent({
-          userId: auth.currentUser.uid,
-          role: "Reviewer",
-          userName: auth.currentUser.displayName || "N/A",
-          action: "Logout",
-          details: "User closed the browser/tab",
-        });
-      }
-    };
-
-    window.addEventListener("beforeunload", handleTabClose);
-    return () => window.removeEventListener("beforeunload", handleTabClose);
-  }, []);
-
-  const handleRevoke = async () => {
-    try {
-      if (!currentUser?.uid) {
-        throw new Error('User not authenticated');
-      }
-
-      const docRef = doc(db, "reviewers", currentUser.uid);
-      await deleteDoc(docRef);
-
-      setStatus('not_found');
-    } catch (error) {
-      console.error("Error revoking application:", error);
     }
+
+    const unsubscribe = auth.onAuthStateChanged((currentUser) => {
+      setUser(currentUser);
+      if (!currentUser) {
+        toast.warn('You must be logged in to submit an application');
+        navigate('/signin');
+      }
+    });
+
+    return unsubscribe;
+  }, [navigate]);
+
+  // Expertise options
+  const expertiseOptions = [
+    { value: 'PHYS', label: 'Physics' },
+    { value: 'CHEM', label: 'Chemistry' },
+    { value: 'BIO', label: 'Biology' },
+    { value: 'CS', label: 'Computer Science' },
+    { value: 'AI', label: 'Artificial Intelligence' },
+    { value: 'MED', label: 'Medicine' },
+    { value: 'LAW', label: 'Law' },
+    { value: 'BUS', label: 'Business Administration' },
+    { value: 'FIN', label: 'Finance' },
+    { value: 'MKT', label: 'Marketing' },
+    { value: 'HRM', label: 'Human Resources' },
+  ];
+
+  // Save form data to sessionStorage
+  const saveFormDataToSession = () => {
+    const { cvFile, ...saveData } = formData;
+    sessionStorage.setItem('reviewerFormData', JSON.stringify(saveData));
   };
 
-  const handleLogout = async () => {
-    try {
-      console.log("Attempting to log out...");
-
-      // Log the logout event before signing out
-      if (currentUser?.uid) {
-        const userName = currentUser.displayName || "N/A"; // Resolve userName
-        await logEvent({
-          userId: currentUser.uid,
-          role: "Reviewer",
-          userName: userName,
-          action: "Logout",
-          details: "User logged out",
-        });
-        console.log("Logout event recorded.");
-      } else {
-        console.warn("No userId found to log the event.");
-      }
-
-      // Perform logout
-      await signOut(auth);
-      localStorage.removeItem("authToken");
-      console.log("User signed out successfully.");
-      navigate("/signin");
-    } catch (error) {
-      console.error("Logout error:", error);
-      alert("Failed to log out. Please try again.");
+  // Validate form fields
+  const validateForm = () => {
+    const newErrors = {};
+    if (!formData.name.trim()) newErrors.name = 'Full name is required';
+    if (!formData.institution.trim()) newErrors.institution = 'Institution is required';
+    if (formData.expertiseTags.length === 0) newErrors.expertise = 'Select at least one expertise area';
+    if (!formData.yearsExperience || isNaN(formData.yearsExperience) || parseInt(formData.yearsExperience) <= 0) {
+      newErrors.experience = 'Valid years of experience required';
     }
+    if (!formData.cvFile) newErrors.cv = 'CV upload is required';
+    if (!formData.acceptedTerms) newErrors.terms = 'You must accept the terms';
+    return newErrors;
   };
 
-  const statusStyles = {
-    approved: {
-      backgroundColor: '#D1FAE5',
-      borderLeft: '4px solid #10B981',
-      color: '#065F46'
-    },
-    inProgress: {
-      backgroundColor: '#FEF3C7',
-      borderLeft: '4px solid #F59E0B',
-      color: '#92400E'
-    },
-    rejected: {
-      backgroundColor: '#FECACA',
-      borderLeft: '4px solid #EF4444',
-      color: '#991B1B'
+  // Handle form submission
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const formErrors = validateForm();
+    
+    if (Object.keys(formErrors).length > 0) {
+      setErrors(formErrors);
+      toast.error('Please fix the highlighted errors');
+      return;
+    }
+
+    if (formData.cvFile.size > 5 * 1024 * 1024) {
+      toast.error('CV must be less than 5MB');
+      return;
+    }
+
+    if (formData.cvFile.type !== 'application/pdf') {
+      toast.error('Only PDF files are accepted');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Upload CV to Firebase Storage
+      const storageRef = ref(
+        storage,
+        `reviewer-cvs/${user.uid}/${Date.now()}_${formData.cvFile.name}`
+      );
+      await uploadBytes(storageRef, formData.cvFile);
+      const cvUrl = await getDownloadURL(storageRef);
+
+      // Process publications
+      const publications = formData.publications
+        .split(/[\n,]+/)
+        .map((link) => link.trim())
+        .filter((link) => link);
+
+      // Save data to Firestore
+      await setDoc(doc(db, 'reviewers', user.uid), {
+        name: formData.name.trim(),
+        institution: formData.institution.trim(),
+        expertiseTags: formData.expertiseTags,
+        yearsExperience: parseInt(formData.yearsExperience),
+        cvUrl,
+        publications,
+        status: 'in_progress',
+        userId: user.uid,
+        email: user.email,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+
+      toast.success('Application submitted successfully!');
+      sessionStorage.removeItem('reviewerFormData');
+      navigate('/reviewer');
+    } catch (error) {
+      console.error('Submission error:', error);
+      toast.error(error.message || 'Submission failed. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <main 
-      className="min-vh-100 d-flex flex-column align-items-center justify-content-center p-4"
-      style={{ backgroundColor: '#1A2E40' }}
-      aria-label="Reviewer dashboard"
-    >
-      <header className="text-center text-white mb-4">
-        <h1>Reviewer Dashboard</h1>
-        <p className="lead">Manage and track your reviewer application status.</p>
-      </header>
+    <div className="reviewer-application-container" role="region" aria-labelledby="form-heading">
+      <h2 id="form-heading">Reviewer Application</h2>
+      <form onSubmit={handleSubmit} noValidate>
+        {/* Name Field */}
+        <div className="form-group">
+          <label htmlFor="name">Full Name *</label>
+          <input
+            type="text"
+            id="name"
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            aria-invalid={!!errors.name}
+            aria-describedby={errors.name ? "name-error" : undefined}
+          />
+          {errors.name && <span id="name-error" className="error-message">{errors.name}</span>}
+        </div>
 
-      {loading ? (
-        <section className="text-center text-muted" aria-live="polite">
-          <p className="mt-3">Retrieving your reviewer status...</p>
-          <progress className="spinner-border text-primary" aria-busy="true"></progress>
-        </section>
-      ) : (
-        <article 
-          className="card w-100 text-white"
-          style={{ 
-            maxWidth: '600px', 
-            backgroundColor: '#2B3E50',
-            border: 'none',
-            boxShadow: '0 4px 8px rgba(0,0,0,0.3)'
-          }}
-          aria-labelledby="reviewerStatusHeading"
-        >
-          <section className="card-body">
-            <h2 className="fs-5 mb-3" id="reviewerStatusHeading">Reviewer Status</h2>
+        {/* Institution Field */}
+        <div className="form-group">
+          <label htmlFor="institution">Institution *</label>
+          <input
+            type="text"
+            id="institution"
+            value={formData.institution}
+            onChange={(e) => setFormData({ ...formData, institution: e.target.value })}
+            aria-invalid={!!errors.institution}
+            aria-describedby={errors.institution ? "institution-error" : undefined}
+          />
+          {errors.institution && <span id="institution-error" className="error-message">{errors.institution}</span>}
+        </div>
 
-            {status === "approved" && (
-              <>
-                <section 
-                  className="p-3 rounded mt-2"
-                  style={statusStyles.approved}
-                  aria-live="polite"
-                >
-                  <p className="fw-medium mb-0">✅ You are an approved reviewer.</p>
-                  <button 
-                    className="btn btn-danger mt-3" 
-                    onClick={handleRevoke}
-                    aria-label="Stop being a reviewer"
-                  >
-                    Stop Being a Reviewer
-                  </button>
-                </section>
+        {/* Expertise Tags */}
+        <div className="form-group">
+          <label htmlFor="expertise">Areas of Expertise *</label>
+          <Select
+            id="expertise"
+            isMulti
+            options={expertiseOptions}
+            onChange={(selected) =>
+              setFormData({
+                ...formData,
+                expertiseTags: selected.map((opt) => opt.value),
+              })
+            }
+            className="expertise-select"
+            placeholder="Select your expertise areas..."
+            aria-invalid={!!errors.expertise}
+            aria-describedby={errors.expertise ? "expertise-error" : undefined}
+          />
+          {errors.expertise && <span id="expertise-error" className="error-message">{errors.expertise}</span>}
+        </div>
 
-                {/* Render ReviewerRecommendations for approved reviewers */}
-                <ReviewerRecommendations />
-              </>
-            )}
+        {/* Years of Experience */}
+        <div className="form-group">
+          <label htmlFor="experience">Years of Experience *</label>
+          <input
+            type="number"
+            id="experience"
+            min="1"
+            value={formData.yearsExperience}
+            onChange={(e) => setFormData({ ...formData, yearsExperience: e.target.value })}
+            aria-invalid={!!errors.experience}
+            aria-describedby={errors.experience ? "experience-error" : undefined}
+          />
+          {errors.experience && <span id="experience-error" className="error-message">{errors.experience}</span>}
+        </div>
 
-            {status === "in_progress" && (
-              <section
-                className="p-3 rounded mt-2"
-                style={statusStyles.inProgress}
-                aria-live="polite"
-              >
-                <p className="fw-medium mb-0">🕐 Your application is being reviewed.</p>
-                <button 
-                  className="btn btn-danger mt-3" 
-                  onClick={handleRevoke}
-                  aria-label="Revoke application"
-                >
-                  Revoke Application
-                </button>
-              </section>
-            )}
+        {/* CV Upload */}
+        <div className="form-group">
+          <label htmlFor="cv">Upload CV (PDF, max 5MB) *</label>
+          <input
+            type="file"
+            id="cv"
+            accept=".pdf"
+            onChange={(e) => setFormData({ ...formData, cvFile: e.target.files[0] })}
+            aria-invalid={!!errors.cv}
+            aria-describedby={errors.cv ? "cv-error" : undefined}
+          />
+          {formData.cvFile && <p className="file-info">Selected: {formData.cvFile.name}</p>}
+          {errors.cv && <span id="cv-error" className="error-message">{errors.cv}</span>}
+        </div>
 
-            {status === "rejected" && (
-              <section
-                className="p-3 rounded mt-2"
-                style={statusStyles.rejected}
-                aria-live="polite"
-              >
-                <p className="fw-medium mb-0">❌ Application rejected.</p>
-                <p className="small mt-2 mb-0">
-                  Reason: {reason || "No reason provided."}
-                </p>
-                <button 
-                  className="btn btn-danger mt-3" 
-                  onClick={handleRevoke}
-                  aria-label="Remove rejected application"
-                >
-                  Remove Rejected Application
-                </button>
-              </section>
-            )}
+        {/* Publications */}
+        <div className="form-group">
+          <label htmlFor="publications">
+            Publication Links (Optional)
+            <span className="hint">Separate with commas or new lines</span>
+          </label>
+          <textarea
+            id="publications"
+            value={formData.publications}
+            onChange={(e) => setFormData({ ...formData, publications: e.target.value })}
+            placeholder="https://example.com/pub1, https://example.com/pub2"
+          />
+        </div>
 
-            {status === "not_found" && (
-              <section className="text-center mt-4" aria-live="polite">
-                <p className="text-muted mb-3">No reviewer profile found.</p>
-                <button 
-                  className="btn btn-success" 
-                  onClick={() => navigate('/reviewer-form')} // Navigate to ReviewerForm
-                  aria-label="Apply as a reviewer"
-                >
-                  Apply Now
-                </button>
-              </section>
-            )}
-          </section>
-
-          {/* Logout Button */}
-          <footer className="card-footer text-center">
-            <button
-              className="btn btn-danger"
-              onClick={handleLogout}
-              aria-label="Logout"
+        {/* Terms Checkbox */}
+        <div className="form-group terms">
+          <input
+            type="checkbox"
+            id="terms"
+            checked={formData.acceptedTerms}
+            onChange={(e) => setFormData({ ...formData, acceptedTerms: e.target.checked })}
+            aria-invalid={!!errors.terms}
+            aria-describedby={errors.terms ? "terms-error" : undefined}
+          />
+          <label htmlFor="terms">
+            I accept the{' '}
+            <Link
+              to="/terms"
+              onClick={saveFormDataToSession}
+              aria-label="View Terms and Conditions"
             >
-              Logout
-            </button>
-          </footer>
-        </article>
-      )}
-    </main>
+              Terms and Conditions
+            </Link>{' '}
+            *
+          </label>
+          {errors.terms && <span id="terms-error" className="error-message">{errors.terms}</span>}
+        </div>
+
+        {/* Submit Button */}
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className={`submit-button ${isSubmitting ? 'submitting' : ''}`}
+          aria-busy={isSubmitting}
+        >
+          {isSubmitting ? (
+            <>
+              <span className="spinner" role="status" aria-hidden="true"></span>
+              Submitting...
+            </>
+          ) : (
+            'Submit Application'
+          )}
+        </button>
+      </form>
+    </div>
   );
-}
+};
+
+export default ReviewerForm;

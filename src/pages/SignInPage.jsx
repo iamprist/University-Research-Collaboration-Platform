@@ -1,7 +1,7 @@
 import React from "react";
 import { auth, provider, db } from "../config/firebaseConfig";
 import { signInWithPopup } from "firebase/auth";
-import { setDoc, doc } from "firebase/firestore";
+import { setDoc, doc, getDocs, collection } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { logEvent } from "../utils/logEvent";
 import { toast } from "react-toastify";
@@ -9,67 +9,75 @@ import { toast } from "react-toastify";
 function SignInPage() {
   const navigate = useNavigate();
 
-  const allowedAdmins = [
-    "2550411@students.wits.ac.za",
-    "2465030@students.wits.ac.za",
-    "2562270@students.wits.ac.za",
-    "2542032@students.wits.ac.za",
-    "2556239@students.wits.ac.za",
-    "2555497@students.wits.ac.za",
-  ];
-
   const handleSignIn = async (role) => {
     try {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
-  
-      if (role === "admin" && !allowedAdmins.includes(user.email)) {
-        // Styled popup for unauthorized admins
-        const popup = document.createElement("div");
-        popup.innerHTML = `
-          <div style="
-            position: fixed;
-            top: 0; 
-            left: 0;
-            width: 100%; 
-            height: 100%; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            background: rgba(0, 0, 0, 0.5); 
-            font-family: Inter, sans-serif;
-            z-index: 1000;
-          ">
+
+      if (role === "admin") {
+        // Check if the email exists in the "newEmails" collection
+        const newEmailsSnapshot = await getDocs(collection(db, "newEmails"));
+        const isAuthorizedInNewEmails = newEmailsSnapshot.docs.some(
+          (doc) => doc.data().email.toLowerCase() === user.email.toLowerCase()
+        );
+
+        // Check if the user exists in the "users" collection with the "admin" role
+        const usersSnapshot = await getDocs(collection(db, "users"));
+        const isAuthorizedInUsers = usersSnapshot.docs.some(
+          (doc) =>
+            doc.data().email.toLowerCase() === user.email.toLowerCase() &&
+            doc.data().role === "admin"
+        );
+
+        // If the user is not authorized in either collection, deny access
+        if (!isAuthorizedInNewEmails && !isAuthorizedInUsers) {
+          // Styled popup for unauthorized admins
+          const popup = document.createElement("div");
+          popup.innerHTML = `
             <div style="
-              background: #FFFFFF;
-              padding: 2rem;
-              border-radius: 1rem;
-              text-align: center;
-              box-shadow: 0 4px 6px rgba(18, 34, 56, 0.1);
+              position: fixed;
+              top: 0; 
+              left: 0;
+              width: 100%; 
+              height: 100%; 
+              display: flex; 
+              justify-content: center; 
+              align-items: center; 
+              background: rgba(0, 0, 0, 0.5); 
+              font-family: Inter, sans-serif;
+              z-index: 1000;
             ">
-              <h2 style="font-size: 1.5rem; color: #132238; margin-bottom: 1rem;">Access Denied</h2>
-              <p style="font-size: 1rem; color: #364E68; margin-bottom: 1.5rem;">
-                You are not authorized to access the admin dashboard.
-              </p>
-              <button style="
-                background-color: #FF0000;
-                color: #FFFFFF;
-                padding: 0.75rem 1.5rem;
-                border: none;
-                border-radius: 0.5rem;
-                cursor: pointer;
-              " onclick="this.parentElement.parentElement.remove()">Close</button>
+              <div style="
+                background: #FFFFFF;
+                padding: 2rem;
+                border-radius: 1rem;
+                text-align: center;
+                box-shadow: 0 4px 6px rgba(18, 34, 56, 0.1);
+              ">
+                <h2 style="font-size: 1.5rem; color: #132238; margin-bottom: 1rem;">Access Denied</h2>
+                <p style="font-size: 1rem; color: #364E68; margin-bottom: 1.5rem;">
+                  You are not authorized to access the admin dashboard.
+                </p>
+                <button style="
+                  background-color: #FF0000;
+                  color: #FFFFFF;
+                  padding: 0.75rem 1.5rem;
+                  border: none;
+                  border-radius: 0.5rem;
+                  cursor: pointer;
+                " onclick="this.parentElement.parentElement.remove()">Close</button>
+              </div>
             </div>
-          </div>
-        `;
-        document.body.appendChild(popup);
-        return;
+          `;
+          document.body.appendChild(popup);
+          return;
+        }
       }
-  
+
       // Save the token in localStorage
       const token = await user.getIdToken();
       localStorage.setItem("authToken", token);
-  
+
       // Save user details in Firestore
       await setDoc(doc(db, "users", user.uid), {
         name: user.displayName,
@@ -85,7 +93,7 @@ function SignInPage() {
         action: "Login",
         details: "User logged in",
       });
-  
+
       // Redirect to the appropriate page
       if (role === "researcher") navigate("/researcher-dashboard");
       else if (role === "reviewer") navigate("/reviewer");
