@@ -5,11 +5,6 @@ import LandingPage from "./pages/LandingPage";
 
 // Admin
 import AdminPage from "./pages/Admin/AdminPage";
-import Dashboard from "./pages/Admin/Dashboard";
-import ManageAdmins from "./pages/Admin/ManageAdmins";
-import ManageReviewers from "./pages/Admin/ManageReviewers";
-import ManageResearchers from "./pages/Admin/ManageResearchers";
-import Sidebar from "./pages/Admin/Sidebar";
 import ViewLogs from "./pages/Admin/ViewLogs";
 
 // Reviewer
