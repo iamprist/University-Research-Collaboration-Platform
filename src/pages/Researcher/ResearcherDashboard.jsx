@@ -142,6 +142,13 @@ const ResearcherDashboard = () => {
     }
   };
 
+  const handleAddListing = () => {
+    navigate('/researcher-add-listing');
+  };
+  const handleCollaborate = () => {
+    navigate('/researcher-collaborate');
+  };
+
   // Hide dropdown and allow new search when input is focused/changed
   const handleInputFocus = () => {
     setDropdownVisible(false);

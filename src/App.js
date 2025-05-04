@@ -1,54 +1,66 @@
+// src/App.js
 import { Routes, Route, Navigate } from "react-router-dom";
 import SignInPage from "./pages/SignInPage";
-import AdminPage from "./pages/Admin/AdminPage";
-import ReviewerPage from "./pages/Reviewer/ReviewerPage";
-import AddListing from "./pages/Researcher/AddListing";
-import ResearcherDashboard from "./pages/Researcher/ResearcherDashboard";
 import LandingPage from "./pages/LandingPage";
+
+// Admin
+import AdminPage from "./pages/Admin/AdminPage";
+import Dashboard from "./pages/Admin/Dashboard";
+import ManageAdmins from "./pages/Admin/ManageAdmins";
+import ManageReviewers from "./pages/Admin/ManageReviewers";
+import ManageResearchers from "./pages/Admin/ManageResearchers";
+import Sidebar from "./pages/Admin/Sidebar";
+import ViewLogs from "./pages/Admin/ViewLogs";
+
+// Reviewer
+import ReviewerPage from "./pages/Reviewer/ReviewerPage";
+import ReviewerForm from "./pages/Reviewer/ReviewerForm";
+import TermsAndConditions from "./pages/TermsAndConditions";
+import AdminRegister from "./pages/Admin/AdminRegister";
+
+// Researcher
+import ResearcherDashboard from "./pages/Researcher/ResearcherDashboard";
+import ResearcherProfile from "./pages/Researcher/ResearcherProfile";
+import EditProfile from "./pages/Researcher/EditProfile";
+import AddListing from "./pages/Researcher/AddListing";
+import CollaboratePage from "./pages/Researcher/CollaboratePage";
+import ChatRoom from "./pages/Researcher/ChatRoom";
+
 import { auth, db } from "./config/firebaseConfig";
 import { useEffect } from "react";
 import { doc, getDoc } from "firebase/firestore";
 import { logEvent } from "./utils/logEvent";
 import axios from "axios";
-import ReviewerForm from "./pages/Reviewer/ReviewerForm"; // Uncomment if ReviewerForm exists
-import ChatRoom from "./pages/Researcher/ChatRoom";
-
 
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("authToken");
-  if (!token) {
-    return <Navigate to="/signin" />;
-  }
-  return children;
+  return token ? children : <Navigate to="/signin" />;
 };
 
 function App() {
+  // Fetch IP for logging
   const fetchIpAddress = async () => {
     try {
-      const response = await axios.get("https://api.ipify.org?format=json");
-      return response.data.ip;
-    } catch (error) {
-      console.error("Error fetching IP address:", error);
+      const { data } = await axios.get("https://api.ipify.org?format=json");
+      return data.ip;
+    } catch {
       return "N/A";
     }
   };
 
+  // Log login events
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (authUser) => {
-      if (authUser) {
-        const userDocRef = doc(db, "users", authUser.uid);
-        const userDoc = await getDoc(userDocRef);
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        const userDoc = await getDoc(doc(db, "users", user.uid));
         const userName = userDoc.exists() ? userDoc.data().name : "N/A";
         const userRole = userDoc.exists() ? userDoc.data().role : "unknown";
-
         const ip = await fetchIpAddress();
-
         await logEvent({
-          userId: authUser.uid,
+          userId: user.uid,
           role: userRole,
           userName,
           action: "Login",
-          target: "N/A",
           details: "User logged in",
           ip,
         });
@@ -59,10 +71,11 @@ function App() {
 
   return (
     <Routes>
-      <Route path="/admin-register" element={<AdminRegister />} />
-      <Route path="/chat/:chatId" element={<ChatRoom />} />
+      {/* Public */}
       <Route path="/" element={<LandingPage />} />
       <Route path="/signin" element={<SignInPage />} />
+
+      {/* Admin */}
       <Route
         path="/admin"
         element={
@@ -71,15 +84,17 @@ function App() {
           </ProtectedRoute>
         }
       />
+      <Route path="/admin-register" element={<AdminRegister />} />
       <Route
         path="/logs"
         element={
           <ProtectedRoute>
-            <LogsPage />
+            <ViewLogs />
           </ProtectedRoute>
         }
       />
-      <Route path="/terms" element={<TermsAndConditions />} />
+
+      {/* Reviewer */}
       <Route
         path="/reviewer"
         element={
@@ -88,6 +103,11 @@ function App() {
           </ProtectedRoute>
         }
       />
+      <Route path="/reviewer-form" element={<ReviewerForm />} />
+      <Route path="/apply" element={<ReviewerForm />} />
+      <Route path="/terms" element={<TermsAndConditions />} />
+
+      {/* Researcher */}
       <Route
         path="/researcher-dashboard"
         element={
@@ -96,18 +116,42 @@ function App() {
           </ProtectedRoute>
         }
       />
-      
-      <Route path="/apply" element={<ReviewerForm />} />
-      <Route path="/reviewer-form" element={<ReviewerForm />} />
-      
-      {/* Researcher routes */}
-      <Route path="/researcher-dashboard" element={<ProtectedRoute><ResearcherDashboard /></ProtectedRoute>} />
-      <Route path="/researcher-profile" element={<ProtectedRoute><ResearcherProfile /></ProtectedRoute>} />
-      <Route path="/researcher-edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
-      <Route path="/researcher/add-listing" element={<ProtectedRoute><AddListing /></ProtectedRoute>} />
-      <Route path="/collaborate" element={<ProtectedRoute><CollaboratePage /></ProtectedRoute>} />
+      <Route
+        path="/researcher-profile"
+        element={
+          <ProtectedRoute>
+            <ResearcherProfile />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/researcher-edit-profile"
+        element={
+          <ProtectedRoute>
+            <EditProfile />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/researcher/add-listing"
+        element={
+          <ProtectedRoute>
+            <AddListing />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/researcher/collaborate"
+        element={
+          <ProtectedRoute>
+            <CollaboratePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route path="/chat/:chatId" element={<ChatRoom />} />
 
-      {/* Redirect all other routes to the landing page */}
+      {/* Catch-all redirect */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
