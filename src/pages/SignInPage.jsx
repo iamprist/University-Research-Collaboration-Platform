@@ -4,6 +4,7 @@ import { signInWithPopup } from "firebase/auth";
 import { setDoc, doc, getDocs, collection } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { logEvent } from "../utils/logEvent";
+import { toast } from "react-toastify";
 
 function SignInPage() {
   const navigate = useNavigate();
@@ -102,7 +103,7 @@ function SignInPage() {
         console.log("Login canceled by user");
       } else {
         console.error("Login error:", error);
-        alert("Login failed. Please try again.");
+        toast.error("Login failed. Please try again.");
       }
     }
   };

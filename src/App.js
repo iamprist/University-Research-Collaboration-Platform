@@ -12,14 +12,14 @@ import { logEvent } from "./utils/logEvent";
 import axios from "axios";
 import ReviewerForm from "./pages/Reviewer/ReviewerForm"; // Uncomment if ReviewerForm exists
 import ChatRoom from "./pages/Researcher/ChatRoom";
-import AdminRegister from "./pages/AdminRegister";
+
 
 const ProtectedRoute = ({ children }) => {
-  const token = localStorage.getItem("authToken"); // Check for the token in localStorage
+  const token = localStorage.getItem("authToken");
   if (!token) {
-    return <Navigate to="/signin" />; // Redirect to the login page if no token is found
+    return <Navigate to="/signin" />;
   }
-  return children; // Render the children if the token exists
+  return children;
 };
 
 function App() {
@@ -72,6 +72,15 @@ function App() {
         }
       />
       <Route
+        path="/logs"
+        element={
+          <ProtectedRoute>
+            <LogsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route path="/terms" element={<TermsAndConditions />} />
+      <Route
         path="/reviewer"
         element={
           <ProtectedRoute>
@@ -89,15 +98,16 @@ function App() {
       />
       
       <Route path="/apply" element={<ReviewerForm />} />
-      <Route
-        path="/dashboard"
-        element={
-          <ProtectedRoute>
-            <AddListing />
-          </ProtectedRoute>
-        }
-      />
       <Route path="/reviewer-form" element={<ReviewerForm />} />
+      
+      {/* Researcher routes */}
+      <Route path="/researcher-dashboard" element={<ProtectedRoute><ResearcherDashboard /></ProtectedRoute>} />
+      <Route path="/researcher-profile" element={<ProtectedRoute><ResearcherProfile /></ProtectedRoute>} />
+      <Route path="/researcher-edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
+      <Route path="/researcher/add-listing" element={<ProtectedRoute><AddListing /></ProtectedRoute>} />
+      <Route path="/collaborate" element={<ProtectedRoute><CollaboratePage /></ProtectedRoute>} />
+
+      {/* Redirect all other routes to the landing page */}
     </Routes>
   );
 }
