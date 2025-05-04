@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import ReviewerForm from '../pages/Reviewer/ReviewerForm';
 import { MemoryRouter } from 'react-router-dom';
 import userEvent from '@testing-library/user-event';
-import { act } from 'react-dom/test-utils';
+import { act } from 'react'; // <-- Updated import here
 
 // Mocking the necessary dependencies
 jest.mock('react-toastify', () => ({
