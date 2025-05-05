@@ -18,9 +18,7 @@ const CollaboratePage = () => {
   const navigate = useNavigate();
   const [collaborateListings, setCollaborateListings] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [requesting, setRequesting] = useState(false);
-  const [requestMessage, setRequestMessage] = useState("");
-  const [activeRequestId, setActiveRequestId] = useState(null);
+  const [requestStates, setRequestStates] = useState({}); // Holds message, requesting, and pending state per listing
 
   useEffect(() => {
     const fetchCollaborateListings = async () => {
@@ -28,41 +26,70 @@ const CollaboratePage = () => {
         setLoading(true);
         const user = auth.currentUser;
         if (!user) return;
-
-        // Fetch listings not created by current user
+  
+        // Get all listings where user is already collaborating
+        const collabSnapshot = await getDocs(
+          query(
+            collection(db, 'collaborations'),
+            where('collaboratorId', '==', user.uid)
+          )
+        );
+        const collaboratedListingIds = collabSnapshot.docs.map(doc => doc.data().listingId);
+  
+        // Fetch all listings NOT created by the current user
         const otherQuery = query(
           collection(db, 'research-listings'),
           where('userId', '!=', user.uid)
         );
         const otherSnapshot = await getDocs(otherQuery);
-
+  
         const listingsWithNames = await Promise.all(
           otherSnapshot.docs.map(async (docSnapshot) => {
             const listingData = docSnapshot.data();
+            const listingId = docSnapshot.id;
+  
+            // Skip listings the user is already collaborating on
+            if (collaboratedListingIds.includes(listingId)) return null;
+  
             const researcherDoc = await getDoc(doc(db, 'users', listingData.userId));
             const researcherName = researcherDoc.exists()
               ? researcherDoc.data().name
               : 'Unknown Researcher';
-            
-            // Check for existing requests
+  
+            // Check if there's a pending request for this listing
             const requestQuery = query(
               collection(db, 'collaboration-requests'),
-              where('listingId', '==', docSnapshot.id),
-              where('requesterId', '==', user.uid)
+              where('listingId', '==', listingId),
+              where('requesterId', '==', user.uid),
+              where('status', '==', 'pending')
             );
             const existingRequest = await getDocs(requestQuery);
-
+            const hasPendingRequest = !existingRequest.empty;
+  
             return {
-              id: docSnapshot.id,
+              id: listingId,
               ...listingData,
               researcherName,
               researcherId: listingData.userId,
-              hasPendingRequest: !existingRequest.empty
+              hasPendingRequest
             };
           })
         );
-
-        setCollaborateListings(listingsWithNames);
+  
+        // Filter out any nulls (i.e., skipped listings)
+        const filteredListings = listingsWithNames.filter(Boolean);
+        setCollaborateListings(filteredListings);
+  
+        // Initialize requestStates
+        const initialStates = {};
+        filteredListings.forEach(listing => {
+          initialStates[listing.id] = {
+            message: '',
+            requesting: false,
+            hasPendingRequest: listing.hasPendingRequest
+          };
+        });
+        setRequestStates(initialStates);
       } catch (error) {
         console.error('Error fetching listings:', error);
         toast.error('Failed to load listings');
@@ -70,20 +97,24 @@ const CollaboratePage = () => {
         setLoading(false);
       }
     };
-
+  
     fetchCollaborateListings();
   }, []);
+  
 
   const handleCollaborateRequest = async (listingId, researcherId) => {
     try {
-      setRequesting(true);
+      setRequestStates(prev => ({
+        ...prev,
+        [listingId]: { ...prev[listingId], requesting: true }
+      }));
+
       const currentUser = auth.currentUser;
       if (!currentUser) {
         toast.error("You need to be logged in to collaborate");
         return;
       }
 
-      // Check if already collaborating
       const collabQuery = query(
         collection(db, "collaborations"),
         where("listingId", "==", listingId),
@@ -95,7 +126,6 @@ const CollaboratePage = () => {
         return;
       }
 
-      // Check if request already exists
       const requestQuery = query(
         collection(db, "collaboration-requests"),
         where("listingId", "==", listingId),
@@ -108,34 +138,35 @@ const CollaboratePage = () => {
         return;
       }
 
-      // Create new request
-      const requestRef = await addDoc(collection(db, "collaboration-requests"), {
+      const message = requestStates[listingId]?.message || `Request to collaborate on your project`;
+
+      await addDoc(collection(db, "collaboration-requests"), {
         listingId,
         researcherId,
         requesterId: currentUser.uid,
         requesterName: currentUser.displayName || "Anonymous Researcher",
         status: "pending",
         createdAt: serverTimestamp(),
-        message: requestMessage || `Request to collaborate on your project`
+        message
       });
 
-      setActiveRequestId(requestRef.id);
-      toast.success("Collaboration request sent successfully!", {
-        onClose: () => {
-          // Refresh the listings to show the request status
-          setCollaborateListings(prev => prev.map(listing => 
-            listing.id === listingId 
-              ? { ...listing, hasPendingRequest: true } 
-              : listing
-          ));
-          setRequestMessage("");
+      toast.success("Collaboration request sent successfully!");
+      setRequestStates(prev => ({
+        ...prev,
+        [listingId]: {
+          ...prev[listingId],
+          requesting: false,
+          message: '',
+          hasPendingRequest: true
         }
-      });
+      }));
     } catch (error) {
       console.error("Error sending request:", error);
       toast.error("Failed to send collaboration request");
-    } finally {
-      setRequesting(false);
+      setRequestStates(prev => ({
+        ...prev,
+        [listingId]: { ...prev[listingId], requesting: false }
+      }));
     }
   };
 
@@ -211,46 +242,59 @@ const CollaboratePage = () => {
           {collaborateListings.length === 0 ? (
             <p style={{ textAlign: 'center' }}>No projects available for collaboration at this time.</p>
           ) : (
-            collaborateListings.map((listing) => (
-              <div key={listing.id} style={styles.card}>
-                <h4 style={styles.cardTitle}>{listing.title}</h4>
-                <p style={{ color: '#64CCC5', fontStyle: 'italic' }}>
-                  By: {listing.researcherName}
-                </p>
-                <p style={styles.cardText}>{listing.summary}</p>
-                
-                {!listing.hasPendingRequest && (
-                  <textarea
-                    style={styles.messageInput}
-                    placeholder="Add a message to the researcher (optional)"
-                    value={requestMessage}
-                    onChange={(e) => setRequestMessage(e.target.value)}
-                    rows={2}
-                  />
-                )}
+            collaborateListings.map((listing) => {
+              const state = requestStates[listing.id] || {};
+              const isRequesting = state.requesting;
+              const hasPending = state.hasPendingRequest;
 
-                <div style={styles.buttonContainer}>
-                  <button
-                    style={styles.viewButton}
-                    onClick={() => navigate(`/listing/${listing.id}`)}
-                  >
-                    View Details
-                  </button>
-                  <button
-                    style={listing.hasPendingRequest ? styles.disabledButton : styles.collabButton}
-                    onClick={() => !listing.hasPendingRequest && 
-                      handleCollaborateRequest(listing.id, listing.researcherId)}
-                    disabled={listing.hasPendingRequest || requesting}
-                  >
-                    {listing.hasPendingRequest 
-                      ? "Request Pending" 
-                      : requesting 
-                        ? "Sending..." 
-                        : "Request Collaboration"}
-                  </button>
+              return (
+                <div key={listing.id} style={styles.card}>
+                  <h4 style={styles.cardTitle}>{listing.title}</h4>
+                  <p style={{ color: '#64CCC5', fontStyle: 'italic' }}>
+                    By: {listing.researcherName}
+                  </p>
+                  <p style={styles.cardText}>{listing.summary}</p>
+
+                  {!hasPending && (
+                    <textarea
+                      style={styles.messageInput}
+                      placeholder="Add a message to the researcher (optional)"
+                      value={state.message || ""}
+                      onChange={(e) =>
+                        setRequestStates((prev) => ({
+                          ...prev,
+                          [listing.id]: {
+                            ...prev[listing.id],
+                            message: e.target.value
+                          }
+                        }))
+                      }
+                      rows={2}
+                    />
+                  )}
+
+                  <div style={styles.buttonContainer}>
+                    <button
+                      style={styles.viewButton}
+                      onClick={() => navigate(`/listing/${listing.id}`)}
+                    >
+                      View Details
+                    </button>
+                    <button
+                      style={hasPending ? styles.disabledButton : styles.collabButton}
+                      onClick={() => !hasPending && handleCollaborateRequest(listing.id, listing.researcherId)}
+                      disabled={hasPending || isRequesting}
+                    >
+                      {hasPending
+                        ? "Request Pending"
+                        : isRequesting
+                          ? "Sending..."
+                          : "Request Collaboration"}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </section>
       )}
