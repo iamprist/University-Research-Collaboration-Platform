@@ -15,6 +15,7 @@ import TermsAndConditions from "./pages/TermsAndConditions";
 import AdminRegister from "./pages/Admin/AdminRegister";
 
 // Researcher
+import ListingDetailPage from "./pages/Researcher/ListingDetailPage";
 import NotificationHandler from './components/NotificationHandler';
 import ResearcherDashboard from "./pages/Researcher/ResearcherDashboard";
 import ResearcherProfile from "./pages/Researcher/ResearcherProfile";
@@ -148,6 +149,15 @@ function App() {
           </ProtectedRoute>
         }
       />
+<Route 
+  path="/listing/:id" 
+  element={
+    <ProtectedRoute>
+      <ListingDetailPage /> 
+    </ProtectedRoute>
+  }
+/>
+
       <Route
         path="/researcher/collaborate"
         element={

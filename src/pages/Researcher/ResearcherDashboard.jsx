@@ -360,7 +360,7 @@ const ResearcherDashboard = () => {
                 <p style={styles.cardText}>{item.summary}</p>
                 <button
                   style={styles.viewButton}
-                  onClick={() => navigate(`/research-listing/${item.id}`)}
+                  onClick={() => navigate(`/listing/${item.id}`)}
                 >
                   View Listing
                 </button>
