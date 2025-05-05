@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/6</span>
+                <span class='fraction'>6/6</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/6</span>
+                <span class='fraction'>6/6</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -86,13 +86,14 @@
 <a name='L21'></a><a href='#L21'>21</a>
 <a name='L22'></a><a href='#L22'>22</a>
 <a name='L23'></a><a href='#L23'>23</a>
-<a name='L24'></a><a href='#L24'>24</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L24'></a><a href='#L24'>24</a>
+<a name='L25'></a><a href='#L25'>25</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -103,43 +104,45 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { initializeApp } from "firebase/app";
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 &nbsp;
 // Firebase configuration
-const firebaseConfig = <span class="cstat-no" title="statement not covered" >{</span>
+const firebaseConfig = {
   apiKey: "AIzaSyBX6kaF67ufXpxEBo4NMI4Sd6vWe0beu9k",
   authDomain: "syntellect-9ca3e.firebaseapp.com",
   projectId: "syntellect-9ca3e",
-  storageBucket: "syntellect-9ca3e.firebasestorage.app", // Corrected storage bucket URL
+  storageBucket: "syntellect-9ca3e.appspot.com",  // Fixed the storageBucket URL
   messagingSenderId: "774591466199",
   appId: "1:774591466199:web:180d687c3a40bad5f3fe92",
   measurementId: "G-LKXNZ2LPKT",
 };
 &nbsp;
 // Initialize Firebase
-const app = <span class="cstat-no" title="statement not covered" >initializeApp(firebaseConfig);</span>
+const app = initializeApp(firebaseConfig);
 &nbsp;
 // Initialize Firebase services
-export const auth = <span class="cstat-no" title="statement not covered" >getAuth(app);</span>
-export const provider = <span class="cstat-no" title="statement not covered" >new GoogleAuthProvider();</span>
-export const db = <span class="cstat-no" title="statement not covered" >getFirestore(app);</span>
-export const storage = <span class="cstat-no" title="statement not covered" >getStorage(app);</span> // Use app after it is defined</pre></td></tr></table></pre>
+export const auth = getAuth(app);         // Auth service
+export const provider = new GoogleAuthProvider();  // Google authentication provider
+export const db = getFirestore(app);      // Firestore database
+export const storage = getStorage(app);   // Firebase storage
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-04-28T18:44:19.897Z
+                at 2025-05-05T11:09:09.313Z
             </div>
         <script src="../prettify.js"></script>
         <script>

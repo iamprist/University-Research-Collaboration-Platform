@@ -1,14 +1,14 @@
+// If using jest.config.js
 module.exports = {
   testEnvironment: "jsdom",
   transform: {
-    "^.+\\.(js|jsx)$": "babel-jest"
+    "^.+\\.(js|jsx)$": "babel-jest",
   },
+  setupFilesAfterEnv: ["./src/setupTests.js"], // Use relative path instead of <rootDir>
   moduleNameMapper: {
-    "\\.(css|less|scss|sass)$": "identity-obj-proxy"
+    "\\.(css|less|scss|sass)$": "identity-obj-proxy",
   },
   transformIgnorePatterns: [
-    "node_modules/(?!axios)/"  // Ensure Axios is transformed
+    "node_modules/(?!axios)/",
   ],
-  setupFilesAfterEnv: ["@testing-library/jest-dom"],
-  //globalSetup: "./__mocks__/firebase.js",  // Optional if you want to globally mock Firebase
 };
