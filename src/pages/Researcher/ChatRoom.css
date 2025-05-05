@@ -116,3 +116,16 @@
   width: 100%;
   height: 1px;
 }
+.message-header {
+  margin-bottom: 4px;
+}
+
+.sender-name {
+  font-weight: bold;
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.message.sent .sender-name {
+  color: #fff;
+}

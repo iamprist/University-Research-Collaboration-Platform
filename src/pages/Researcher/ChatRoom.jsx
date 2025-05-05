@@ -9,6 +9,7 @@ export default function ChatRoom() {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [status, setStatus] = useState({ loading: true, error: null });
+  const [userData, setUserData] = useState({});
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
@@ -16,12 +17,12 @@ export default function ChatRoom() {
       setStatus({ loading: false, error: 'No chat ID provided' });
       return;
     }
-
+  
     const loadMessages = async () => {
       try {
         const chatRef = doc(db, 'chats', chatId);
         const docSnap = await getDoc(chatRef);
-
+  
         if (!docSnap.exists()) {
           await setDoc(chatRef, {
             participants: [auth.currentUser?.uid],
@@ -33,17 +34,44 @@ export default function ChatRoom() {
         } else {
           const messagesData = docSnap.data().messages || [];
           setMessages(Array.isArray(messagesData) ? messagesData : []);
+          
+          // Fetch user data for all unique senders
+          const uniqueSenderIds = [...new Set(messagesData.map(msg => msg.senderId))];
+          await fetchUserData(uniqueSenderIds);
         }
-
+  
         setStatus({ loading: false, error: null });
       } catch (err) {
         console.error('Failed to load chat:', err);
         setStatus({ loading: false, error: 'Failed to load chat' });
       }
     };
-
+  
+    const fetchUserData = async (userIds) => {
+      try {
+        const usersData = {};
+        for (const uid of userIds) {
+          if (uid) { // Removed the userData check here
+            const userDoc = await getDoc(doc(db, 'users', uid));
+            if (userDoc.exists()) {
+              usersData[uid] = userDoc.data().name || 'Unknown User';
+            } else {
+              usersData[uid] = 'Unknown User';
+            }
+          }
+        }
+        // Using functional update to avoid needing userData as dependency
+        setUserData(prev => ({ ...prev, ...usersData }));
+      } catch (err) {
+        console.error('Error fetching user data:', err);
+      }
+    };
+  
     loadMessages();
-  }, [chatId]);
+  }, [chatId]); // Removed userData from dependencies
+    
+
+    
 
   const sendMessage = async (e) => {
     e.preventDefault();
@@ -70,6 +98,17 @@ export default function ChatRoom() {
       });
 
       setMessages(prev => [...prev, { ...newMsg, timestamp: new Date() }]);
+      
+      // Add current user to userData if not already present
+      if (!userData[auth.currentUser.uid]) {
+        const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+        const userName = userDoc.exists() ? userDoc.data().name : 'You';
+        setUserData(prev => ({
+          ...prev,
+          [auth.currentUser.uid]: userName
+        }));
+      }
+      
       setNewMessage('');
       setStatus({ loading: false, error: null });
 
@@ -103,24 +142,30 @@ export default function ChatRoom() {
             key={i}
             className={`message ${msg.senderId === auth.currentUser?.uid ? 'sent' : 'received'}`}
           >
+            <div className="message-header">
+              <span className="sender-name">
+                {msg.senderId === auth.currentUser?.uid 
+                  ? 'You' 
+                  : userData[msg.senderId] || 'Loading...'}
+              </span>
+            </div>
             <p className="message-text">{msg.text}</p>
             <time className="message-time" dateTime={msg.timestamp}>
-  {(() => {
-    try {
-      const time =
-        typeof msg.timestamp === 'string'
-          ? new Date(msg.timestamp)
-          : msg.timestamp?.toDate?.();
+              {(() => {
+                try {
+                  const time =
+                    typeof msg.timestamp === 'string'
+                      ? new Date(msg.timestamp)
+                      : msg.timestamp?.toDate?.();
 
-      return time
-        ? time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        : 'Sending...';
-    } catch (e) {
-      return 'Unknown time';
-    }
-  })()}
-</time>
-
+                  return time
+                    ? time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    : 'Sending...';
+                } catch (e) {
+                  return 'Unknown time';
+                }
+              })()}
+            </time>
           </article>
         ))}
         <span ref={messagesEndRef} />
