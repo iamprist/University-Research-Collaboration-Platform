@@ -176,82 +176,85 @@ function SignInPage() {
     },
     heroSection: {
       background: "linear-gradient(135deg, #132238 0%, #364E68 100%)",
-      padding: "2rem",
+      padding: "clamp(1.5rem, 5vw, 3rem)",
       color: "#FFFFFF",
       textAlign: "center",
       position: "relative",
     },
     content: {
-      maxWidth: "1200px",
+      maxWidth: "90%",
       margin: "0 auto",
-      padding: "2rem 0",
+      padding: "1rem 0",
     },
     heading: {
-      fontSize: "2.5rem",
+      fontSize: "clamp(2rem, 5vw, 2.5rem)",
       fontWeight: "700",
-      marginBottom: "1rem",
+      marginBottom: "0.5rem",
     },
     tagline: {
-      fontSize: "1.5rem",
+      fontSize: "clamp(1.2rem, 3vw, 1.5rem)",
       fontWeight: "600",
       color: "#B1EDE8",
-      marginBottom: "1rem",
+      marginBottom: "0.75rem",
     },
     description: {
-      fontSize: "1.1rem",
+      fontSize: "clamp(0.9rem, 1.5vw, 1.1rem)",
       color: "#FFFFFF",
-      maxWidth: "800px",
-      margin: "0 auto 2rem",
-      lineHeight: "1.6",
+      maxWidth: "90%",
+      margin: "0 auto 1.5rem",
+      lineHeight: "1.5",
       textShadow: "0 2px 4px rgba(0,0,0,0.1)",
     },
     statsContainer: {
       display: "flex",
       justifyContent: "center",
-      gap: "3rem",
-      margin: "2rem 0",
+      gap: "clamp(1.5rem, 5vw, 3rem)",
+      margin: "1.5rem 0",
+      flexWrap: "wrap",
     },
     statItem: {
       textAlign: "center",
-      padding: "1rem",
+      padding: "0.75rem 1rem",
       background: "rgba(99, 204, 197, 0.15)",
       borderRadius: "0.5rem",
+      minWidth: "120px",
     },
     statNumber: {
-      fontSize: "1.75rem",
+      fontSize: "clamp(1.25rem, 3vw, 1.75rem)",
       fontWeight: "700",
       color: "#64CCC5",
     },
     statLabel: {
-      fontSize: "0.9rem",
+      fontSize: "clamp(0.75rem, 1vw, 0.9rem)",
       color: "#B1EDE8",
     },
     featureList: {
       display: "flex",
       flexWrap: "wrap",
       justifyContent: "center",
-      gap: "1rem",
-      marginBottom: "2rem",
+      gap: "0.75rem",
+      marginBottom: "1.5rem",
     },
     featureItem: {
       display: "flex",
       alignItems: "center",
       gap: "0.5rem",
-      padding: "0.75rem 1.5rem",
+      padding: "0.5rem 1rem",
       borderRadius: "2rem",
       background: "rgba(255, 255, 255, 0.1)",
-      fontSize: "0.95rem",
+      fontSize: "clamp(0.8rem, 1.2vw, 0.95rem)",
       color: "#FFFFFF",
+      flexShrink: 0,
     },
     featureIcon: {
-      height: "1.25rem",
-      width: "1.25rem",
+      height: "1rem",
+      width: "1rem",
       color: "#64CCC5",
     },
     subheading: {
-      fontSize: "1.25rem",
+      fontSize: "clamp(1rem, 2vw, 1.25rem)",
       color: "#B1EDE8",
-      marginBottom: "2rem",
+      marginBottom: "1.5rem",
     },
     card: {
       background: "rgba(255, 255, 255, 0.9)",
@@ -325,6 +328,7 @@ function SignInPage() {
 
   return (
     <main role="main" style={styles.container}>
+      {/* Hero Section */}
       <section className="hero-section" style={styles.heroSection}>
         <button style={styles.backButton} onClick={() => navigate('/')}>
           <ArrowLeftIcon style={{ height: '1.25rem' }} />
@@ -334,44 +338,48 @@ function SignInPage() {
           <h1 style={styles.heading}>Welcome to Innerk Hub</h1>
           <p style={styles.tagline}>Your Gateway to Cutting-Edge Scientific Collaboration</p>
           <p style={styles.description}>
-            Join a vibrant ecosystem researchers and institutions pushing the boundaries of knowledge. 
+            Join a vibrant ecosystem of researchers and institutions pushing the boundaries of knowledge. 
             Innerk Hub empowers global scientific progress through secure collaboration, peer-reviewed excellence, 
             and AI-enhanced research management.
           </p>
-          <div style={styles.statsContainer} aria-label="Platform statistics">
-            <div style={styles.statItem}>
-              <div style={styles.statNumber}>Multiple</div>
-              <div style={styles.statLabel}>Daily Collaborations</div>
-            </div>
-            <div style={styles.statItem}>
-              <div style={styles.statNumber}>Protected</div>
-              <div style={styles.statLabel}>Submission Integrity</div>
-            </div>
-            <div style={styles.statItem}>
-              <div style={styles.statNumber}>Guaranteed </div>
-              <div style={styles.statLabel}>Faster Peer Review</div>
-            </div>
-          </div>
-          <div style={styles.featureList} aria-label="Key features">
-            <div style={styles.featureItem}>
+          
+          {/* Stats Section */}
+          <section aria-label="Platform statistics" style={styles.statsContainer}>
+            {[
+              { number: "Multiple", label: "Daily Collaborations" },
+              { number: "Protected", label: "Submission Integrity" },
+              { number: "Guaranteed", label: "Faster Peer Review" }
+            ].map((stat, index) => (
+              <article key={index} style={styles.statItem}>
+                <div style={styles.statNumber}>{stat.number}</div>
+                <div style={styles.statLabel}>{stat.label}</div>
+              </article>
+            ))}
+          </section>
+
+          {/* Features Section */}
+          <section aria-label="Key features" style={styles.featureList}>
+            <article style={styles.featureItem}>
               <SparklesIcon style={styles.featureIcon} />
               <span>Peer-Powered Research Validation</span>
-            </div>
-            <div style={styles.featureItem}>
+            </article>
+            <article style={styles.featureItem}>
               <GlobeAltIcon style={styles.featureIcon} />
               <span>Global Academic Network</span>
-            </div>
-            <div style={styles.featureItem}>
+            </article>
+            <article style={styles.featureItem}>
               <ShieldCheckIcon style={styles.featureIcon} />
               <span>Ensures Academic Integrity</span>
-            </div>
-          </div>
+            </article>
+          </section>
+
           <p style={styles.subheading}>
             Secure authentication powered by Google Cloud. Choose your role to continue:
           </p>
         </header>
       </section>
-      {/* Changed from <article> to <section> to avoid redundant role="region" */}
+
+      {/* Sign-In Card */}
       <section 
         aria-label="Sign in options"
         style={styles.card} 
@@ -408,6 +416,8 @@ function SignInPage() {
           </button>
         ))}
       </section>
+
+      {/* Footer */}
       <footer style={styles.footer} role="contentinfo">
         <nav style={styles.footerLinks} aria-label="Footer navigation">
           <a href="/privacy-policy" style={styles.footerLink}>
