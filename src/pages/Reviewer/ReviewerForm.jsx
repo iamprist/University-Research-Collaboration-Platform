@@ -186,9 +186,10 @@ const ReviewerForm = () => {
             onChange={(selected) =>
               setFormData({
                 ...formData,
-                expertiseTags: selected.map((opt) => opt.value),
+                expertiseTags: selected,
               })
             }
+            
             className="expertise-select"
             placeholder="Select your expertise areas..."
             aria-invalid={!!errors.expertise}

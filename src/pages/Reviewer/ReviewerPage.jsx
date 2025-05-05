@@ -1,18 +1,45 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { db, auth, storage } from '../../config/firebaseConfig';
+import { doc, getDoc, deleteDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { signOut } from 'firebase/auth';
+import { useAuth } from './authContext';
+import { logEvent } from '../../utils/logEvent';
+import ReviewerRecommendations from '../../components/ReviewerRecommendations';
+import ReviewerNavbar from '../../components/ReviewerNavbar';
 import Select from 'react-select';
 import { toast } from 'react-toastify';
-import { Link } from 'react-router-dom';
 import 'react-toastify/dist/ReactToastify.css';
 import './ReviewerStyles.css';
 
-const ReviewerForm = () => {
+const expertiseOptions = [
+  { value: 'PHYS', label: 'Physics' },
+  { value: 'CHEM', label: 'Chemistry' },
+  { value: 'BIO', label: 'Biology' },
+  { value: 'CS', label: 'Computer Science' },
+  { value: 'AI', label: 'Artificial Intelligence' },
+  { value: 'MED', label: 'Medicine' },
+  { value: 'LAW', label: 'Law' },
+  { value: 'BUS', label: 'Business Administration' },
+  { value: 'FIN', label: 'Finance' },
+  { value: 'MKT', label: 'Marketing' },
+  { value: 'HRM', label: 'Human Resources' },
+];
+
+const statusStyles = {
+  inProgress: { backgroundColor: '#ffc1071a', color: '#ffc107' },
+  rejected: { backgroundColor: '#dc35451a', color: '#dc3545' },
+};
+
+const ReviewerPage = () => {
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
+
+  const [status, setStatus] = useState('');
+  const [reason, setReason] = useState('');
+  const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [user, setUser] = useState(null);
   const [errors, setErrors] = useState({});
   const [formData, setFormData] = useState({
     name: '',
@@ -24,269 +51,198 @@ const ReviewerForm = () => {
     acceptedTerms: false,
   });
 
-  // Load saved form data from session storage on mount
+  // Auth & tracking
+  useEffect(() => {
+    const saveToken = async () => {
+      if (currentUser) {
+        const token = await currentUser.getIdToken();
+        localStorage.setItem('authToken', token);
+        await logEvent({
+          userId: currentUser.uid,
+          role: "Reviewer",
+          userName: currentUser.displayName || "N/A",
+          action: "Login",
+          details: "User logged in",
+        });
+      }
+    };
+    if (currentUser) saveToken();
+  }, [currentUser]);
+
+  // Form restoration + fetch reviewer status
   useEffect(() => {
     const savedData = sessionStorage.getItem('reviewerFormData');
     if (savedData) {
       try {
         const parsedData = JSON.parse(savedData);
-        const { cvFile, ...rest } = parsedData;
-        setFormData((prev) => ({ ...prev, ...rest }));
+        setFormData((prev) => ({ ...prev, ...parsedData }));
       } catch (err) {
         console.error('Failed to parse saved form data:', err);
       }
     }
 
-    const unsubscribe = auth.onAuthStateChanged((currentUser) => {
-      setUser(currentUser);
+    const fetchReviewerStatus = async () => {
       if (!currentUser) {
-        toast.warn('You must be logged in to submit an application');
         navigate('/signin');
+        return;
       }
-    });
+      try {
+        const docRef = doc(db, "reviewers", currentUser.uid);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setStatus(data.status || 'in_progress');
+          setReason(data.rejectionReason || '');
+        } else {
+          setStatus('not_found');
+        }
+      } catch (error) {
+        console.error("Error fetching reviewer status:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    return unsubscribe;
-  }, [navigate]);
+    if (currentUser) fetchReviewerStatus();
+  }, [currentUser, navigate]);
 
-  // Expertise options
-  const expertiseOptions = [
-    { value: 'PHYS', label: 'Physics' },
-    { value: 'CHEM', label: 'Chemistry' },
-    { value: 'BIO', label: 'Biology' },
-    { value: 'CS', label: 'Computer Science' },
-    { value: 'AI', label: 'Artificial Intelligence' },
-    { value: 'MED', label: 'Medicine' },
-    { value: 'LAW', label: 'Law' },
-    { value: 'BUS', label: 'Business Administration' },
-    { value: 'FIN', label: 'Finance' },
-    { value: 'MKT', label: 'Marketing' },
-    { value: 'HRM', label: 'Human Resources' },
-  ];
-
-  // Save form data to sessionStorage
-  const saveFormDataToSession = () => {
-    const { cvFile, ...saveData } = formData;
-    sessionStorage.setItem('reviewerFormData', JSON.stringify(saveData));
-  };
-
-  // Validate form fields
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.name.trim()) newErrors.name = 'Full name is required';
-    if (!formData.institution.trim()) newErrors.institution = 'Institution is required';
-    if (formData.expertiseTags.length === 0) newErrors.expertise = 'Select at least one expertise area';
-    if (!formData.yearsExperience || isNaN(formData.yearsExperience) || parseInt(formData.yearsExperience) <= 0) {
-      newErrors.experience = 'Valid years of experience required';
+    const { name, institution, expertiseTags, yearsExperience, cvFile, acceptedTerms } = formData;
+    if (!name.trim()) newErrors.name = 'Full name is required';
+    if (!institution.trim()) newErrors.institution = 'Institution is required';
+    if (!expertiseTags.length) newErrors.expertiseTags = 'Select at least one expertise area';
+    if (!yearsExperience || isNaN(yearsExperience) || parseInt(yearsExperience) <= 0) {
+      newErrors.yearsExperience = 'Valid years of experience required';
     }
-    if (!formData.cvFile) newErrors.cv = 'CV upload is required';
-    if (!formData.acceptedTerms) newErrors.terms = 'You must accept the terms';
+    if (!cvFile) newErrors.cvFile = 'CV upload is required';
+    if (!acceptedTerms) newErrors.acceptedTerms = 'You must accept the terms';
     return newErrors;
   };
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     const formErrors = validateForm();
-    
-    if (Object.keys(formErrors).length > 0) {
+    if (Object.keys(formErrors).length) {
       setErrors(formErrors);
       toast.error('Please fix the highlighted errors');
       return;
     }
 
-    if (formData.cvFile.size > 5 * 1024 * 1024) {
-      toast.error('CV must be less than 5MB');
-      return;
-    }
-
-    if (formData.cvFile.type !== 'application/pdf') {
-      toast.error('Only PDF files are accepted');
+    if (formData.cvFile.size > 5 * 1024 * 1024 || formData.cvFile.type !== 'application/pdf') {
+      toast.error('CV must be a PDF under 5MB');
       return;
     }
 
     setIsSubmitting(true);
-
     try {
-      // Upload CV to Firebase Storage
-      const storageRef = ref(
-        storage,
-        `reviewer-cvs/${user.uid}/${Date.now()}_${formData.cvFile.name}`
-      );
+      const storageRef = ref(storage, `reviewer-cvs/${currentUser.uid}/${Date.now()}_${formData.cvFile.name}`);
       await uploadBytes(storageRef, formData.cvFile);
       const cvUrl = await getDownloadURL(storageRef);
 
-      // Process publications
-      const publications = formData.publications
-        .split(/[\n,]+/)
-        .map((link) => link.trim())
-        .filter((link) => link);
+      const publications = formData.publications.split(/[\n,]+/)
+        .map(link => link.trim()).filter(Boolean);
 
-      // Save data to Firestore
-      await setDoc(doc(db, 'reviewers', user.uid), {
-        name: formData.name.trim(),
-        institution: formData.institution.trim(),
+      await setDoc(doc(db, 'reviewers', currentUser.uid), {
+        name: formData.name,
+        institution: formData.institution,
         expertiseTags: formData.expertiseTags,
         yearsExperience: parseInt(formData.yearsExperience),
         cvUrl,
         publications,
         status: 'in_progress',
-        userId: user.uid,
-        email: user.email,
+        userId: currentUser.uid,
+        email: currentUser.email,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
 
-      toast.success('Application submitted successfully!');
       sessionStorage.removeItem('reviewerFormData');
+      toast.success('Application submitted!');
       navigate('/reviewer');
-    } catch (error) {
-      console.error('Submission error:', error);
-      toast.error(error.message || 'Submission failed. Please try again.');
+    } catch (err) {
+      console.error('Submission failed:', err);
+      toast.error('Submission failed. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const handleRevoke = async () => {
+    try {
+      await deleteDoc(doc(db, 'reviewers', currentUser.uid));
+      setStatus('not_found');
+    } catch (err) {
+      console.error('Error revoking application:', err);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      localStorage.removeItem('authToken');
+      navigate('/signin');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
+
   return (
-    <div className="reviewer-application-container" role="region" aria-labelledby="form-heading">
-      <h2 id="form-heading">Reviewer Application</h2>
-      <form onSubmit={handleSubmit} noValidate>
-        {/* Name Field */}
-        <div className="form-group">
-          <label htmlFor="name">Full Name *</label>
-          <input
-            type="text"
-            id="name"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            aria-invalid={!!errors.name}
-            aria-describedby={errors.name ? "name-error" : undefined}
-          />
-          {errors.name && <span id="name-error" className="error-message">{errors.name}</span>}
-        </div>
+    <>
+      <ReviewerNavbar onRevoke={handleRevoke} />
+      <main className="min-vh-100 p-4" style={{ backgroundColor: '#1A2E40' }}>
+        <header className="text-white mb-4">
+          <h1>Reviewer Dashboard</h1>
+          <p>Hi {currentUser?.displayName || 'Reviewer'}</p>
+        </header>
 
-        {/* Institution Field */}
-        <div className="form-group">
-          <label htmlFor="institution">Institution *</label>
-          <input
-            type="text"
-            id="institution"
-            value={formData.institution}
-            onChange={(e) => setFormData({ ...formData, institution: e.target.value })}
-            aria-invalid={!!errors.institution}
-            aria-describedby={errors.institution ? "institution-error" : undefined}
-          />
-          {errors.institution && <span id="institution-error" className="error-message">{errors.institution}</span>}
-        </div>
-
-        {/* Expertise Tags */}
-        <div className="form-group">
-          <label htmlFor="expertise">Areas of Expertise *</label>
-          <Select
-            id="expertise"
-            isMulti
-            options={expertiseOptions}
-            onChange={(selected) =>
-              setFormData({
-                ...formData,
-                expertiseTags: selected.map((opt) => opt.value),
-              })
-            }
-            className="expertise-select"
-            placeholder="Select your expertise areas..."
-            aria-invalid={!!errors.expertise}
-            aria-describedby={errors.expertise ? "expertise-error" : undefined}
-          />
-          {errors.expertise && <span id="expertise-error" className="error-message">{errors.expertise}</span>}
-        </div>
-
-        {/* Years of Experience */}
-        <div className="form-group">
-          <label htmlFor="experience">Years of Experience *</label>
-          <input
-            type="number"
-            id="experience"
-            min="1"
-            value={formData.yearsExperience}
-            onChange={(e) => setFormData({ ...formData, yearsExperience: e.target.value })}
-            aria-invalid={!!errors.experience}
-            aria-describedby={errors.experience ? "experience-error" : undefined}
-          />
-          {errors.experience && <span id="experience-error" className="error-message">{errors.experience}</span>}
-        </div>
-
-        {/* CV Upload */}
-        <div className="form-group">
-          <label htmlFor="cv">Upload CV (PDF, max 5MB) *</label>
-          <input
-            type="file"
-            id="cv"
-            accept=".pdf"
-            onChange={(e) => setFormData({ ...formData, cvFile: e.target.files[0] })}
-            aria-invalid={!!errors.cv}
-            aria-describedby={errors.cv ? "cv-error" : undefined}
-          />
-          {formData.cvFile && <p className="file-info">Selected: {formData.cvFile.name}</p>}
-          {errors.cv && <span id="cv-error" className="error-message">{errors.cv}</span>}
-        </div>
-
-        {/* Publications */}
-        <div className="form-group">
-          <label htmlFor="publications">
-            Publication Links (Optional)
-            <span className="hint">Separate with commas or new lines</span>
-          </label>
-          <textarea
-            id="publications"
-            value={formData.publications}
-            onChange={(e) => setFormData({ ...formData, publications: e.target.value })}
-            placeholder="https://example.com/pub1, https://example.com/pub2"
-          />
-        </div>
-
-        {/* Terms Checkbox */}
-        <div className="form-group terms">
-          <input
-            type="checkbox"
-            id="terms"
-            checked={formData.acceptedTerms}
-            onChange={(e) => setFormData({ ...formData, acceptedTerms: e.target.checked })}
-            aria-invalid={!!errors.terms}
-            aria-describedby={errors.terms ? "terms-error" : undefined}
-          />
-          <label htmlFor="terms">
-            I accept the{' '}
-            <Link
-              to="/terms"
-              onClick={saveFormDataToSession}
-              aria-label="View Terms and Conditions"
-            >
-              Terms and Conditions
-            </Link>{' '}
-            *
-          </label>
-          {errors.terms && <span id="terms-error" className="error-message">{errors.terms}</span>}
-        </div>
-
-        {/* Submit Button */}
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className={`submit-button ${isSubmitting ? 'submitting' : ''}`}
-          aria-busy={isSubmitting}
-        >
-          {isSubmitting ? (
-            <>
-              <span className="spinner" role="status" aria-hidden="true"></span>
-              Submitting...
-            </>
-          ) : (
-            'Submit Application'
-          )}
-        </button>
-      </form>
-    </div>
+        {loading ? (
+          <p className="text-white">Loading status...</p>
+        ) : status === 'approved' ? (
+          <ReviewerRecommendations userId={currentUser.uid} />
+        ) : (
+          <form onSubmit={handleSubmit} className="bg-white p-4 rounded shadow-sm">
+            <h2>Apply to be a Reviewer</h2>
+            <div className="form-group">
+              <label>Full Name</label>
+              <input className="form-control" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+              {errors.name && <div className="text-danger">{errors.name}</div>}
+            </div>
+            <div className="form-group">
+              <label>Institution</label>
+              <input className="form-control" value={formData.institution} onChange={(e) => setFormData({ ...formData, institution: e.target.value })} />
+              {errors.institution && <div className="text-danger">{errors.institution}</div>}
+            </div>
+            <div className="form-group">
+              <label>Expertise Areas</label>
+              <Select options={expertiseOptions} isMulti onChange={(selected) => setFormData({ ...formData, expertiseTags: selected.map(opt => opt.value) })} />
+              {errors.expertiseTags && <div className="text-danger">{errors.expertiseTags}</div>}
+            </div>
+            <div className="form-group">
+              <label>Years of Experience</label>
+              <input type="number" className="form-control" value={formData.yearsExperience} onChange={(e) => setFormData({ ...formData, yearsExperience: e.target.value })} />
+              {errors.yearsExperience && <div className="text-danger">{errors.yearsExperience}</div>}
+            </div>
+            <div className="form-group">
+              <label>Upload CV (PDF)</label>
+              <input type="file" accept="application/pdf" onChange={(e) => setFormData({ ...formData, cvFile: e.target.files[0] })} />
+              {errors.cvFile && <div className="text-danger">{errors.cvFile}</div>}
+            </div>
+            <div className="form-group">
+              <label>Publications (comma or newline separated)</label>
+              <textarea className="form-control" value={formData.publications} onChange={(e) => setFormData({ ...formData, publications: e.target.value })} />
+            </div>
+            <div className="form-check mt-2">
+              <input type="checkbox" className="form-check-input" checked={formData.acceptedTerms} onChange={(e) => setFormData({ ...formData, acceptedTerms: e.target.checked })} />
+              <label className="form-check-label">I accept the terms and conditions</label>
+              {errors.acceptedTerms && <div className="text-danger">{errors.acceptedTerms}</div>}
+            </div>
+            <button className="btn btn-primary mt-3" disabled={isSubmitting}>Submit Application</button>
+          </form>
+        )}
+      </main>
+    </>
   );
 };
 
-export default ReviewerForm;
+export default ReviewerPage;
