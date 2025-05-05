@@ -1,7 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1746444491068" clover="3.2.0">
-  <project timestamp="1746444491068" name="All files">
-    <metrics statements="82" coveredstatements="42" conditionals="67" coveredconditionals="33" methods="22" coveredmethods="10" elements="171" coveredelements="85" complexity="0" loc="82" ncloc="82" packages="3" files="4" classes="4"/>
+<coverage generated="1746445925758" clover="3.2.0">
+  <project timestamp="1746445925758" name="All files">
+    <metrics statements="118" coveredstatements="74" conditionals="79" coveredconditionals="43" methods="30" coveredmethods="17" elements="227" coveredelements="134" complexity="0" loc="118" ncloc="118" packages="4" files="6" classes="6"/>
+    <package name="config">
+      <metrics statements="6" coveredstatements="6" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+      <file name="firebaseConfig.js" path="C:\Users\prist\OneDrive\Documents\Desktop\Advanced analysis\University-Research-Collaboration-Platform\src\config\firebaseConfig.js">
+        <metrics statements="6" coveredstatements="6" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+        <line num="7" count="1" type="stmt"/>
+        <line num="18" count="1" type="stmt"/>
+        <line num="21" count="1" type="stmt"/>
+        <line num="22" count="1" type="stmt"/>
+        <line num="23" count="1" type="stmt"/>
+        <line num="24" count="1" type="stmt"/>
+      </file>
+    </package>
     <package name="pages">
       <metrics statements="13" coveredstatements="13" conditionals="0" coveredconditionals="0" methods="6" coveredmethods="6"/>
       <file name="LandingPage.jsx" path="C:\Users\prist\OneDrive\Documents\Desktop\Advanced analysis\University-Research-Collaboration-Platform\src\pages\LandingPage.jsx">
@@ -35,7 +47,7 @@
       </file>
     </package>
     <package name="pages.Researcher">
-      <metrics statements="65" coveredstatements="25" conditionals="36" coveredconditionals="4" methods="15" coveredmethods="3"/>
+      <metrics statements="95" coveredstatements="51" conditionals="48" coveredconditionals="14" methods="23" coveredmethods="10"/>
       <file name="CollaboratePage.jsx" path="C:\Users\prist\OneDrive\Documents\Desktop\Advanced analysis\University-Research-Collaboration-Platform\src\pages\Researcher\CollaboratePage.jsx">
         <metrics statements="65" coveredstatements="25" conditionals="36" coveredconditionals="4" methods="15" coveredmethods="3"/>
         <line num="18" count="1" type="stmt"/>
@@ -103,6 +115,39 @@
         <line num="200" count="0" type="stmt"/>
         <line num="214" count="0" type="stmt"/>
         <line num="220" count="0" type="cond" truecount="0" falsecount="2"/>
+      </file>
+      <file name="ResearcherProfile.jsx" path="C:\Users\prist\OneDrive\Documents\Desktop\Advanced analysis\University-Research-Collaboration-Platform\src\pages\Researcher\ResearcherProfile.jsx">
+        <metrics statements="30" coveredstatements="26" conditionals="12" coveredconditionals="10" methods="8" coveredmethods="7"/>
+        <line num="7" count="1" type="stmt"/>
+        <line num="8" count="7" type="stmt"/>
+        <line num="9" count="7" type="stmt"/>
+        <line num="10" count="7" type="stmt"/>
+        <line num="12" count="7" type="stmt"/>
+        <line num="13" count="3" type="stmt"/>
+        <line num="14" count="3" type="stmt"/>
+        <line num="15" count="3" type="cond" truecount="2" falsecount="0"/>
+        <line num="16" count="1" type="stmt"/>
+        <line num="17" count="1" type="stmt"/>
+        <line num="20" count="2" type="stmt"/>
+        <line num="21" count="2" type="cond" truecount="1" falsecount="1"/>
+        <line num="22" count="2" type="stmt"/>
+        <line num="24" count="0" type="stmt"/>
+        <line num="25" count="0" type="stmt"/>
+        <line num="29" count="2" type="stmt"/>
+        <line num="32" count="3" type="stmt"/>
+        <line num="35" count="7" type="stmt"/>
+        <line num="36" count="5" type="stmt"/>
+        <line num="37" count="5" type="cond" truecount="2" falsecount="0"/>
+        <line num="39" count="2" type="stmt"/>
+        <line num="40" count="2" type="stmt"/>
+        <line num="41" count="2" type="stmt"/>
+        <line num="43" count="2" type="cond" truecount="1" falsecount="1"/>
+        <line num="44" count="2" type="stmt"/>
+        <line num="46" count="0" type="stmt"/>
+        <line num="49" count="0" type="stmt"/>
+        <line num="53" count="5" type="stmt"/>
+        <line num="56" count="7" type="stmt"/>
+        <line num="108" count="1" type="stmt"/>
       </file>
     </package>
   </project>
