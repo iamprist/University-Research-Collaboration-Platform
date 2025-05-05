@@ -1,5 +1,3 @@
-/* ResearcherDashboard.css */
-
 body {
   font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
   background: #ffffff;
@@ -332,3 +330,12 @@ body {
   background: rgba(26, 46, 64, 0.2);
   border-radius: 0.5rem;
 }
+
+.collaboration-requests-section {
+  background: #1A2E40;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin: 1rem 0;
+  color: white;
+}
+

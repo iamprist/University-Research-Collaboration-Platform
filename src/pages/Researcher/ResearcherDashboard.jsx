@@ -1,9 +1,11 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../../config/firebaseConfig';
 import { collection, getDocs, query, where, doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { logEvent } from '../../utils/logEvent';
 import './ResearcherDashboard.css';
+import CollaborationRequestsPanel from '../../components/CollaborationRequestsPanel';
 
 const ResearcherDashboard = () => {
   const navigate = useNavigate();
@@ -364,11 +366,26 @@ const ResearcherDashboard = () => {
                 >
                   View Listing
                 </button>
+                <button
+            style={{ 
+              ...styles.viewButton, 
+              backgroundColor: '#B1EDE8',
+              color: '#132238'
+            }}
+            onClick={() => navigate(`/chat/${item.id}`)}
+          >
+            Chat
+          </button>
               </article>
             ))
           )}
         </section>
       </section>
+
+      <section className="collaboration-requests-section">
+
+  <CollaborationRequestsPanel />
+</section>
       <section className="collaborations-section">
   <h3>Your Collaborations</h3>
   {collabListings.length > 0 ? (
@@ -413,3 +430,4 @@ const ResearcherDashboard = () => {
 };
 
 export default ResearcherDashboard;
+

@@ -105,11 +105,22 @@ export default function ChatRoom() {
           >
             <p className="message-text">{msg.text}</p>
             <time className="message-time" dateTime={msg.timestamp}>
-              {msg.timestamp?.toDate?.().toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit'
-              }) || 'Now'}
-            </time>
+  {(() => {
+    try {
+      const time =
+        typeof msg.timestamp === 'string'
+          ? new Date(msg.timestamp)
+          : msg.timestamp?.toDate?.();
+
+      return time
+        ? time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        : 'Sending...';
+    } catch (e) {
+      return 'Unknown time';
+    }
+  })()}
+</time>
+
           </article>
         ))}
         <span ref={messagesEndRef} />
