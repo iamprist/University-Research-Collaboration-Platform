@@ -295,16 +295,16 @@ function SignInPage() {
     },
     backButton: {
       position: "absolute",
-      left: "2rem",
-      top: "2rem",
+      left: "clamp(1rem, 5vw, 2rem)",
+      top: "clamp(1rem, 3vw, 2rem)",
       display: "flex",
       alignItems: "center",
-      gap: "0.5rem",
+      gap: "clamp(0.25rem, 1vw, 0.5rem)",
       color: "#B1EDE8",
       cursor: "pointer",
       background: "none",
       border: "none",
-      fontSize: "1rem",
+      fontSize: "clamp(0.875rem, 3vw, 1rem)",
     },
     footer: {
       backgroundColor: "#364E68",
@@ -330,9 +330,9 @@ function SignInPage() {
     <main role="main" style={styles.container}>
       {/* Hero Section */}
       <section className="hero-section" style={styles.heroSection}>
-        <button style={styles.backButton} onClick={() => navigate('/')}>
-          <ArrowLeftIcon style={{ height: '1.25rem' }} />
-          Back to Home
+      <button style={styles.backButton} onClick={() => navigate('/')}>
+        <ArrowLeftIcon style={{ height: 'clamp(1rem, 3vw, 1.25rem)' }} />
+           Back to Home
         </button>
         <header style={styles.content}>
           <h1 style={styles.heading}>Welcome to Innerk Hub</h1>
