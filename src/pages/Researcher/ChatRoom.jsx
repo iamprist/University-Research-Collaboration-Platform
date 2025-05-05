@@ -17,12 +17,12 @@ export default function ChatRoom() {
       setStatus({ loading: false, error: 'No chat ID provided' });
       return;
     }
-  
+
     const loadMessages = async () => {
       try {
         const chatRef = doc(db, 'chats', chatId);
         const docSnap = await getDoc(chatRef);
-  
+
         if (!docSnap.exists()) {
           await setDoc(chatRef, {
             participants: [auth.currentUser?.uid],
@@ -33,25 +33,28 @@ export default function ChatRoom() {
           setMessages([]);
         } else {
           const messagesData = docSnap.data().messages || [];
-          setMessages(Array.isArray(messagesData) ? messagesData : []);
+          setMessages(messagesData.map(msg => ({
+            ...msg,
+            timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date()
+          })));
           
           // Fetch user data for all unique senders
           const uniqueSenderIds = [...new Set(messagesData.map(msg => msg.senderId))];
           await fetchUserData(uniqueSenderIds);
         }
-  
+
         setStatus({ loading: false, error: null });
       } catch (err) {
         console.error('Failed to load chat:', err);
         setStatus({ loading: false, error: 'Failed to load chat' });
       }
     };
-  
+
     const fetchUserData = async (userIds) => {
       try {
         const usersData = {};
         for (const uid of userIds) {
-          if (uid) { // Removed the userData check here
+          if (uid) {
             const userDoc = await getDoc(doc(db, 'users', uid));
             if (userDoc.exists()) {
               usersData[uid] = userDoc.data().name || 'Unknown User';
@@ -60,18 +63,14 @@ export default function ChatRoom() {
             }
           }
         }
-        // Using functional update to avoid needing userData as dependency
         setUserData(prev => ({ ...prev, ...usersData }));
       } catch (err) {
         console.error('Error fetching user data:', err);
       }
     };
-  
-    loadMessages();
-  }, [chatId]); // Removed userData from dependencies
-    
 
-    
+    loadMessages();
+  }, [chatId]);
 
   const sendMessage = async (e) => {
     e.preventDefault();
@@ -86,19 +85,21 @@ export default function ChatRoom() {
         ? docSnap.data().messages
         : [];
 
+      const timestamp = new Date().toISOString();
       const newMsg = {
         text: newMessage,
         senderId: auth.currentUser.uid,
-        timestamp: new Date().toISOString()
+        timestamp: timestamp
       };
+
+      // Optimistic update
+      setMessages(prev => [...prev, { ...newMsg, timestamp: new Date(timestamp) }]);
 
       await updateDoc(chatRef, {
         messages: [...currentMessages, newMsg],
         lastUpdated: serverTimestamp()
       });
 
-      setMessages(prev => [...prev, { ...newMsg, timestamp: new Date() }]);
-      
       // Add current user to userData if not already present
       if (!userData[auth.currentUser.uid]) {
         const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
@@ -118,6 +119,8 @@ export default function ChatRoom() {
     } catch (err) {
       console.error('Message send failed:', err);
       setStatus({ loading: false, error: 'Failed to send message. Please try again.' });
+      // Rollback optimistic update
+      setMessages(prev => prev.slice(0, -1));
     }
   };
 
@@ -150,21 +153,8 @@ export default function ChatRoom() {
               </span>
             </div>
             <p className="message-text">{msg.text}</p>
-            <time className="message-time" dateTime={msg.timestamp}>
-              {(() => {
-                try {
-                  const time =
-                    typeof msg.timestamp === 'string'
-                      ? new Date(msg.timestamp)
-                      : msg.timestamp?.toDate?.();
-
-                  return time
-                    ? time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                    : 'Sending...';
-                } catch (e) {
-                  return 'Unknown time';
-                }
-              })()}
+            <time className="message-time" dateTime={msg.timestamp.toISOString()}>
+              {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </time>
           </article>
         ))}
