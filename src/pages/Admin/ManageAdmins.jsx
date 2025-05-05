@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { db } from "../../config/firebaseConfig";
 import { collection, getDocs, addDoc, deleteDoc, doc } from "firebase/firestore";
-//import { createUserWithEmailAndPassword } from "firebase/auth";
 
 export default function ManageAdmins() {
   const [admins, setAdmins] = useState([]);
   const [newAdminEmail, setNewAdminEmail] = useState("");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState(""); // State for success message
   const [loading, setLoading] = useState(false);
 
   // Fetch admins from Firestore
@@ -23,10 +23,11 @@ export default function ManageAdmins() {
     }
   };
 
-  // Add a new admin (also create Firebase Auth user)
+  // Add a new admin
   const handleAddAdmin = async (e) => {
     e.preventDefault();
     setError(""); // Clear any previous error messages
+    setSuccess(""); // Clear any previous success messages
 
     if (!newAdminEmail) {
       setError("Email is required.");
@@ -56,14 +57,14 @@ export default function ManageAdmins() {
       // Add the new admin email to the "newEmails" collection in Firestore
       await addDoc(collection(db, "newEmails"), {
         email: newAdminEmail,
-        role: "admin", // Assign the admin role
-        createdAt: new Date(), // Add a timestamp
+        role: "admin",
+        createdAt: new Date(),
       });
 
-      // Reset the form and refresh the admin list
+      // Reset the form, refresh the admin list, and show success message
       setNewAdminEmail("");
-      fetchAdmins(); // Refresh the admin list
-      setError(""); // Clear error if successful
+      fetchAdmins();
+      setSuccess("Admin email added successfully!"); // Set success message
     } catch (error) {
       console.error("Error adding admin:", error);
       setError("Failed to add admin. Please try again.");
@@ -72,14 +73,12 @@ export default function ManageAdmins() {
     }
   };
 
-  // Revoke an admin (delete from Firestore)
+  // Revoke an admin
   const handleRevokeAdmin = async (id) => {
     try {
-      console.log("Revoking admin with ID:", id); // Debugging
       const adminDoc = doc(db, "users", id);
-      await deleteDoc(adminDoc); // Delete the admin document from Firestore
-      setAdmins((prev) => prev.filter((admin) => admin.id !== id)); // Remove from the list
-      console.log("Admin deleted:", id);
+      await deleteDoc(adminDoc);
+      setAdmins((prev) => prev.filter((admin) => admin.id !== id));
     } catch (error) {
       console.error("Error revoking admin:", error);
       setError("Failed to revoke admin. Please try again.");
@@ -94,7 +93,7 @@ export default function ManageAdmins() {
   const styles = {
     container: {
       minHeight: "100vh",
-      background: "#1a2e40", // Consistent with the sidebar color
+      background: "#1a2e40",
       color: "#FFFFFF",
       padding: "1rem",
     },
@@ -102,7 +101,7 @@ export default function ManageAdmins() {
       maxWidth: "960px",
       margin: "0 auto",
       padding: "1.5rem",
-      backgroundColor: "#243447", // Updated to a slightly lighter shade for better contrast
+      backgroundColor: "#243447",
       borderRadius: "0.5rem",
       boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
     },
@@ -138,8 +137,8 @@ export default function ManageAdmins() {
     },
     button: {
       padding: "0.75rem 1.5rem",
-      backgroundColor: "#64CCC5", // Original button color
-      color: "#132238", // Original text color
+      backgroundColor: "#64CCC5",
+      color: "#132238",
       border: "none",
       borderRadius: "0.5rem",
       fontSize: "1rem",
@@ -148,6 +147,11 @@ export default function ManageAdmins() {
     },
     error: {
       color: "#E53E3E",
+      textAlign: "center",
+      marginTop: "0.5rem",
+    },
+    success: {
+      color: "#38A169",
       textAlign: "center",
       marginTop: "0.5rem",
     },
@@ -160,14 +164,14 @@ export default function ManageAdmins() {
       boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
     },
     adminName: {
-      color: "#64CCC5", // Consistent with the button color
+      color: "#64CCC5",
       marginBottom: "0.5rem",
     },
     revokeButton: {
       marginTop: "0.5rem",
       padding: "0.5rem 1rem",
-      backgroundColor: "#E53E3E", // Red color for revoke button
-      color: "#FFFFFF", // White text for contrast
+      backgroundColor: "#E53E3E",
+      color: "#FFFFFF",
       border: "none",
       borderRadius: "0.5rem",
       cursor: "pointer",
@@ -196,6 +200,7 @@ export default function ManageAdmins() {
           </button>
         </form>
         {error && <p style={styles.error}>{error}</p>}
+        {success && <p style={styles.success}>{success}</p>}
 
         {/* List of Admins */}
         {admins.length > 0 ? (
