@@ -49,4 +49,55 @@ describe('CollaboratePage', () => {
       expect(screen.getByText(/Collaborate with Other Researchers/i)).toBeInTheDocument();
     });
   });
+  
+  // New test case to check "no projects" message appears
+  test('displays no projects message when no listings are available', async () => {
+    // Ensure getDocs returns empty array
+    require('firebase/firestore').getDocs.mockResolvedValue({ 
+      docs: [],
+      empty: true
+    });
+    
+    await act(async () => {
+      render(
+        <MemoryRouter>
+          <CollaboratePage />
+        </MemoryRouter>
+      );
+    });
+    
+    // First wait for loading to finish
+    await waitFor(() => {
+      expect(screen.queryByText(/loading available projects/i)).not.toBeInTheDocument();
+    });
+    
+    // Then check for the "no projects" message
+    expect(screen.getByText(/no projects available for collaboration at this time/i)).toBeInTheDocument();
+  });
+  
+  // Test that the component handles loading state properly
+  test('displays loading state initially', async () => {
+    // Make the firebase query take longer to resolve
+    require('firebase/firestore').getDocs.mockImplementation(() => {
+      return new Promise(resolve => {
+        setTimeout(() => {
+          resolve({ docs: [] });
+        }, 100);
+      });
+    });
+    
+    render(
+      <MemoryRouter>
+        <CollaboratePage />
+      </MemoryRouter>
+    );
+    
+    // Check loading message appears
+    expect(screen.getByText(/loading available projects/i)).toBeInTheDocument();
+    
+    // Wait for loading to finish
+    await waitFor(() => {
+      expect(screen.queryByText(/loading available projects/i)).not.toBeInTheDocument();
+    });
+  });
 });
