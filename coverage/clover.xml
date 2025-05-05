@@ -1,22 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1746433643337" clover="3.2.0">
-  <project timestamp="1746433643337" name="All files">
-    <metrics statements="17" coveredstatements="13" conditionals="31" coveredconditionals="29" methods="7" coveredmethods="5" elements="55" coveredelements="47" complexity="0" loc="17" ncloc="17" packages="2" files="3" classes="3"/>
+<coverage generated="1746436367774" clover="3.2.0">
+  <project timestamp="1746436367774" name="All files">
+    <metrics statements="17" coveredstatements="17" conditionals="31" coveredconditionals="29" methods="7" coveredmethods="7" elements="55" coveredelements="53" complexity="0" loc="17" ncloc="17" packages="2" files="3" classes="3"/>
     <package name="pages">
-      <metrics statements="13" coveredstatements="9" conditionals="0" coveredconditionals="0" methods="6" coveredmethods="4"/>
-      <file name="LandingPage.jsx" path="C:\Users\bozon\Videos\lm\University-Research-Collaboration-Platform\src\pages\LandingPage.jsx">
-        <metrics statements="9" coveredstatements="5" conditionals="0" coveredconditionals="0" methods="4" coveredmethods="2"/>
+      <metrics statements="13" coveredstatements="13" conditionals="0" coveredconditionals="0" methods="6" coveredmethods="6"/>
+      <file name="LandingPage.jsx" path="C:\Users\AdmiN\University-Research-Collaboration-Platform\src\pages\LandingPage.jsx">
+        <metrics statements="9" coveredstatements="9" conditionals="0" coveredconditionals="0" methods="4" coveredmethods="4"/>
         <line num="5" count="1" type="stmt"/>
-        <line num="6" count="1" type="stmt"/>
-        <line num="7" count="1" type="stmt"/>
-        <line num="74" count="1" type="stmt"/>
-        <line num="85" count="0" type="stmt"/>
-        <line num="86" count="0" type="stmt"/>
-        <line num="89" count="0" type="stmt"/>
-        <line num="90" count="0" type="stmt"/>
+        <line num="6" count="5" type="stmt"/>
+        <line num="7" count="5" type="stmt"/>
+        <line num="74" count="5" type="stmt"/>
+        <line num="85" count="1" type="stmt"/>
+        <line num="86" count="1" type="stmt"/>
+        <line num="89" count="1" type="stmt"/>
+        <line num="90" count="1" type="stmt"/>
         <line num="92" count="1" type="stmt"/>
       </file>
-      <file name="TermsAndConditions.jsx" path="C:\Users\bozon\Videos\lm\University-Research-Collaboration-Platform\src\pages\TermsAndConditions.jsx">
+      <file name="TermsAndConditions.jsx" path="C:\Users\AdmiN\University-Research-Collaboration-Platform\src\pages\TermsAndConditions.jsx">
         <metrics statements="4" coveredstatements="4" conditionals="0" coveredconditionals="0" methods="2" coveredmethods="2"/>
         <line num="6" count="1" type="stmt"/>
         <line num="7" count="5" type="stmt"/>
@@ -26,7 +26,7 @@
     </package>
     <package name="pages.Admin">
       <metrics statements="4" coveredstatements="4" conditionals="31" coveredconditionals="29" methods="1" coveredmethods="1"/>
-      <file name="AdminPage.jsx" path="C:\Users\bozon\Videos\lm\University-Research-Collaboration-Platform\src\pages\Admin\AdminPage.jsx">
+      <file name="AdminPage.jsx" path="C:\Users\AdmiN\University-Research-Collaboration-Platform\src\pages\Admin\AdminPage.jsx">
         <metrics statements="4" coveredstatements="4" conditionals="31" coveredconditionals="29" methods="1" coveredmethods="1"/>
         <line num="12" count="12" type="stmt"/>
         <line num="14" count="12" type="stmt"/>
