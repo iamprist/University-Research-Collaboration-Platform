@@ -18,17 +18,18 @@ body {
 
 .header-title h1 {
   margin: 0;
-  font-size: 2rem;
-  color: #64CCC5;
+  font-size: 1.3rem;
+  color: white;
   letter-spacing: 0.04em;
   font-weight: 700;
 }
 
 .header-title p {
   margin: 0.5rem 0 0;
-  font-size: 1.05rem;
-  color: #B1EDE8;
+  font-size: 0.8rem;
+  color: white;
   font-weight: 400;
+  font-style: italic;
 }
 
 .header-actions {
@@ -100,9 +101,9 @@ body {
 }
 
 .search-section form,
-.search-section > div {
+.search-section > section {
   width: 100%;
-  max-width: 520px;
+  max-width: 500px;
   position: relative;
   display: flex;
   gap: 0.5rem;
@@ -128,14 +129,12 @@ body {
 
 .search-section button {
   padding: 0.75rem 1.7rem;
-  background: #64CCC5;
   color: #132238;
-  border: 2px solid #64CCC5;
   border-radius: 0.5rem;
   font-weight: 700;
+  display: flex;
   font-size: 1.08rem;
   cursor: pointer;
-  transition: background 0.2s, color 0.2s;
 }
 
 .search-section button[type="button"] {
@@ -147,9 +146,9 @@ body {
 }
 
 .search-section button:hover {
-  background: #5AA9A3;
+  
   color: #fff;
-  border-color: #5AA9A3;
+  
 }
 
 /* SEARCH DROPDOWN */
