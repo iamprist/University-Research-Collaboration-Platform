@@ -4,6 +4,38 @@ import { getDoc, doc, setDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import './ResearcherDashboard.css'; // Make sure to import the shared CSS
 
+const researchAreas = [
+  'Physics',
+  'Chemistry',
+  'Biology',
+  'Computer Science',
+  'Mathematics',
+  'Statistics',
+  'Engineering',
+  'Medicine',
+  'Nursing',
+  'Pharmacy',
+  'Law',
+  'Business',
+  'Economics',
+  'Political Science',
+  'Psychology',
+  'Sociology',
+  'Anthropology',
+  'Education',
+  'Environmental Science',
+  'History',
+  'Artificial Intelligence',
+  'Data Science',
+  'Agriculture',
+  'Architecture',
+  'Geography',
+  'Philosophy',
+  'Linguistics',
+  'Communication',
+  'Other'
+];
+
 const EditProfile = () => {
   const navigate = useNavigate();
   const [profile, setProfile] = useState({
@@ -99,6 +131,7 @@ const EditProfile = () => {
             padding: '2rem',
             color: '#FFFFFF'
           }}>
+            {/* 
             <section style={{ marginBottom: '1.5rem' }}>
               <label style={{ display: 'block', marginBottom: '0.5rem', color: '#64CCC5', fontWeight: '600' }}>
                 Profile Picture
@@ -118,6 +151,7 @@ const EditProfile = () => {
                 }}
               />
             </section>
+            */}
 
             <section style={{ marginBottom: '1.5rem' }}>
               <label style={{ display: 'block', marginBottom: '0.5rem', color: '#64CCC5', fontWeight: '600' }}>
@@ -192,17 +226,17 @@ const EditProfile = () => {
               />
             </section>
 
+            {/* Research Area Dropdown */}
             <section style={{ marginBottom: '1.5rem' }}>
               <label style={{ display: 'block', marginBottom: '0.5rem', color: '#64CCC5', fontWeight: '600' }}>
                 Research Area
               </label>
-              <input
-                type="text"
+              <select
                 name="researchArea"
                 value={profile.researchArea || ''}
                 onChange={handleChange}
                 required
-                style={{ 
+                style={{
                   width: '100%',
                   padding: '0.7rem',
                   backgroundColor: '#132238',
@@ -210,7 +244,12 @@ const EditProfile = () => {
                   borderRadius: '0.5rem',
                   color: '#FFFFFF'
                 }}
-              />
+              >
+                <option value="">-- Select Research Area --</option>
+                {researchAreas.map((area) => (
+                  <option key={area} value={area}>{area}</option>
+                ))}
+              </select>
             </section>
 
             <section style={{ marginBottom: '1.5rem' }}>
