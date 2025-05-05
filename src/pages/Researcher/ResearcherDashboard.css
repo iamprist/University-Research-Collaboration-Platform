@@ -1,0 +1,341 @@
+body {
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+  background: #ffffff;
+  margin: 0;
+  padding: 0;
+}
+
+/* HEADER */
+.researcher-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #132238;
+  color: #fff;
+  border-bottom: 2px solid #64CCC5;
+  padding: 1.5rem 2rem;
+}
+
+.header-title h1 {
+  margin: 0;
+  font-size: 2rem;
+  color: #64CCC5;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+}
+
+.header-title p {
+  margin: 0.5rem 0 0;
+  font-size: 1.05rem;
+  color: #B1EDE8;
+  font-weight: 400;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.menu-toggle-btn {
+  background: #64CCC5;
+  color: #132238;
+  padding: 0.5rem 1.3rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 1.08rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  box-shadow: 0 2px 8px rgba(100,204,197,0.08);
+}
+
+.menu-toggle-btn:hover {
+  background: #5AA9A3;
+  color: #fff;
+}
+
+.dropdown-menu-container {
+  position: relative;
+  display: inline-block;
+}
+
+.menu-dropdown {
+  position: absolute;
+  right: 0;
+  top: 2.8rem;
+  background: #1A2E40;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+  padding: 0.7rem 1.2rem;
+  border-radius: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+  min-width: 180px;
+}
+
+.menu-dropdown button {
+  background: none;
+  border: none;
+  color: #B1EDE8;
+  padding: 0.6rem 0;
+  text-align: left;
+  cursor: pointer;
+  font-size: 1.05rem;
+  border-radius: 0.3rem;
+  transition: background 0.2s, color 0.2s;
+}
+
+.menu-dropdown button:hover {
+  background: #64CCC5;
+  color: #132238;
+}
+
+/* SEARCH SECTION */
+.search-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 2rem 0 1.5rem 0;
+}
+
+.search-section form,
+.search-section > div {
+  width: 100%;
+  max-width: 520px;
+  position: relative;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.search-section input[type="text"] {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  border: 1.5px solid #64CCC5;
+  font-size: 1.1rem;
+  outline: none;
+  color: #132238;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(100,204,197,0.04);
+  transition: border 0.2s;
+}
+
+.search-section input[type="text"]:focus {
+  border: 1.5px solid #1A2E40;
+  background: #f8fafa;
+}
+
+.search-section button {
+  padding: 0.75rem 1.7rem;
+  background: #64CCC5;
+  color: #132238;
+  border: 2px solid #64CCC5;
+  border-radius: 0.5rem;
+  font-weight: 700;
+  font-size: 1.08rem;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.search-section button[type="button"] {
+  background: #fff;
+  color: #132238;
+  border: 1.5px solid #ccc;
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+.search-section button:hover {
+  background: #5AA9A3;
+  color: #fff;
+  border-color: #5AA9A3;
+}
+
+/* SEARCH DROPDOWN */
+.search-section .search-dropdown,
+.search-section .dropdown {
+  position: absolute;
+  top: 3.2rem;
+  left: 0;
+  width: 100%;
+  background: #fff;
+  border: 1.5px solid #64CCC5;
+  border-radius: 0.5rem;
+  z-index: 1000;
+  max-height: 260px;
+  overflow-y: auto;
+  box-shadow: 0 4px 16px rgba(100,204,197,0.08);
+}
+
+.search-section .search-dropdown > div,
+.search-section .dropdown > div {
+  padding: 1rem;
+  color: #888;
+  text-align: center;
+  font-weight: 500;
+}
+
+.search-section .search-dropdown .dropdown-item,
+.search-section .dropdown .dropdown-item {
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  border-bottom: 1px solid #eee;
+  transition: background 0.15s;
+}
+
+.search-section .search-dropdown .dropdown-item:last-child,
+.search-section .dropdown .dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.search-section .search-dropdown .dropdown-item:hover,
+.search-section .dropdown .dropdown-item:hover {
+  background: #64CCC5;
+  color: #132238;
+}
+
+.search-section .search-dropdown .dropdown-item strong {
+  font-weight: 600;
+  color: #132238;
+}
+
+/* "YOUR RESEARCH" SECTION */
+.dashboard-content {
+  max-width: 900px;
+  margin: auto;
+}
+
+.dashboard-content h3 {
+  color: #132238;
+  font-size: 1.35rem;
+  margin: 2.2rem 0 1.2rem 0;
+  font-weight: 700;
+}
+
+.dashboard-content section {
+  margin-bottom: 2rem;
+}
+
+.dashboard-content article {
+  background: #1A2E40;
+  border-radius: 1rem;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.12);
+  padding: 1.5rem;
+  margin: 1rem auto;
+  max-width: 600px;
+  color: #FFFFFF;
+  transition: box-shadow 0.2s;
+}
+
+.dashboard-content article:hover {
+  box-shadow: 0 6px 16px rgba(100,204,197,0.18);
+}
+
+.dashboard-content h4 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.dashboard-content p {
+  font-size: 1rem;
+  color: #B1EDE8;
+  margin-bottom: 1rem;
+}
+
+.dashboard-content button {
+  background: #64CCC5;
+  color: #132238;
+  border: none;
+  padding: 0.5rem 1.2rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  margin-top: 1rem;
+  transition: background 0.2s, color 0.2s;
+}
+
+.dashboard-content button:hover {
+  background: #5AA9A3;
+  color: #fff;
+}
+
+/* ERROR MODAL */
+.error-modal {
+  position: fixed;
+  top: 20vh;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fff;
+  color: #132238;
+  border: 2px solid #64CCC5;
+  border-radius: 1rem;
+  padding: 2rem 2.5rem;
+  z-index: 2000;
+  box-shadow: 0 8px 32px rgba(100,204,197,0.13);
+  text-align: center;
+}
+
+.error-modal p {
+  margin-bottom: 1.5rem;
+  font-size: 1.1rem;
+}
+
+.error-modal button {
+  background: #64CCC5;
+  color: #fff;
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.5rem 1.3rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.error-modal button:hover {
+  background: #5AA9A3;
+}
+
+/* FOOTER */
+.researcher-footer {
+  text-align: center;
+  margin-top: 3rem;
+  color: #B1EDE8;
+  font-size: 1rem;
+}
+
+.researcher-footer a {
+  color: #B1EDE8;
+  margin: 0 1rem;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.researcher-footer a:hover {
+  color: #64CCC5;
+}
+
+.researcher-footer p {
+  margin-top: 1rem;
+  color: #132238;
+  font-size: 1.02rem;
+  font-weight: 600;
+}
+
+.collaborations-section {
+  margin-top: 2rem;
+  padding: 1rem;
+  background: rgba(26, 46, 64, 0.2);
+  border-radius: 0.5rem;
+}
+
+.collaboration-requests-section {
+  background: #1A2E40;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin: 1rem 0;
+  color: white;
+}
+
