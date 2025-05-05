@@ -1,4 +1,6 @@
+//AdminPage.jsx
 import { useState } from "react";
+import React from 'react';
 import Sidebar from "./Sidebar";
 import Dashboard from "./Dashboard";
 import ManageReviewers from "./ManageReviewers";
@@ -6,9 +8,9 @@ import ManageResearchers from "./ManageResearchers";
 import ManageAdmins from "./ManageAdmins";
 import ViewLogs from "./ViewLogs";
 
-export default function AdminPage() {
-  const [activeTab, setActiveTab] = useState("dashboard"); // Set "dashboard" as the default tab
-
+export default function AdminPage({ initialTab = "dashboard" }) { // Allow an initial tab
+  const [activeTab, setActiveTab] = useState(initialTab); // Set state from prop
+  
   const styles = {
     container: {
       display: "flex",
@@ -38,25 +40,26 @@ export default function AdminPage() {
       color: "#B1EDE8", // Light teal for subtitles
     },
   };
-
+  console.log("ActiveTab is:", activeTab);
   return (
     <section style={styles.container}>
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
       <main style={styles.main}>
         <header style={styles.header}>
-          <h1 style={styles.title}>
-            {activeTab === "dashboard"
-              ? "Dashboard"
-              : activeTab === "logs"
-              ? "System Logs"
-              : activeTab === "researchers"
-              ? "Manage Researchers"
-              : activeTab === "admins"
-              ? "Manage Admins"
-              : activeTab === "reviewers"
-              ? "Manage Reviewers"
-              : "User Management"}
-          </h1>
+        <h1 style={styles.title}>
+  {console.log("Heading is rendering for:", activeTab)}
+  {activeTab === "dashboard"
+    ? "Dashboard"
+    : activeTab === "logs"
+    ? "System Logs"
+    : activeTab === "researchers"
+    ? "Manage Researchers"
+    : activeTab === "admins"
+    ? "Manage Admins"
+    : activeTab === "reviewers"
+    ? "Manage Reviewers"
+    : "User Management"}
+</h1>
           <p style={styles.subtitle}>
             {activeTab === "dashboard"
               ? "Overview of platform usage and engagement."
