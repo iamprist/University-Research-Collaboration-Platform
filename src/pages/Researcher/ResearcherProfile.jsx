@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { db, auth } from '../../config/firebaseConfig';
 import { doc, getDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
+import './ResearcherDashboard.css';
 
 const ResearcherProfile = () => {
   const navigate = useNavigate();
@@ -51,98 +52,87 @@ const ResearcherProfile = () => {
     
     fetchProfile();
   }, [userId]);
-const goBack = () => navigate('/researcher-dashboard');
-  return (
-    <main style={styles.main}>
-      <button onClick={goBack} style={styles.backLink}>← Back</button>
 
-      <header style={styles.header}>
-        <h1>Your Profile</h1>
+  return (
+    <main>
+      <header className="researcher-header">
+        <section className="header-title">
+          <h1>Researcher Profile</h1>
+          <p>View and manage your professional details</p>
+        </section>
+        <nav className="header-nav">
+          <a href="/researcher-dashboard" className="header-link">Dashboard</a>
+          <a href="/researcher/add-listing" className="header-link">Add Listing</a>
+          <a href="/researcher/collaborate" className="header-link">Collaborate</a>
+        </nav>
       </header>
 
-      <section style={styles.section}>
+      <section style={{ maxWidth: '700px', margin: '2rem auto', padding: '0 1.5rem' }}>
         {profile ? (
-          <div style={styles.profileBox}>
-            {profile.profilePicture && (
-              <img
-                src={URL.createObjectURL(profile.profilePicture)}
-                alt="Profile"
-                style={styles.image}
-              />
-            )}
-
-            <h2>{profile.title} {profile.name}</h2>
-            <p><strong>Email:</strong> {profile.email}</p>
-            <p><strong>Research Area:</strong> {profile.researchArea}</p>
-            <p><strong>Biography:</strong> {profile.biography}</p>
-          </div>
+          <article style={{ 
+            background: '#1A2E40', 
+            borderRadius: '1rem',
+            boxShadow: '0 4px 6px rgba(0,0,0,0.12)',
+            padding: '2rem',
+            color: '#FFFFFF'
+          }}>
+            <header style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+              {profile.profilePicture && (
+                <img
+                  src={URL.createObjectURL(profile.profilePicture)}
+                  alt="Profile"
+                  style={{ 
+                    width: '120px',
+                    height: '120px',
+                    borderRadius: '50%',
+                    objectFit: 'cover',
+                    border: '3px solid #64CCC5'
+                  }}
+                />
+              )}
+              <h2 style={{ color: '#64CCC5', marginTop: '1rem' }}>{profile.title} {profile.name}</h2>
+            </header>
+            
+            <section style={{ marginBottom: '1.5rem' }}>
+              <p><strong style={{ color: '#64CCC5' }}>Email:</strong> <span style={{ color: '#B1EDE8' }}>{profile.email}</span></p>
+              <p><strong style={{ color: '#64CCC5' }}>Research Area:</strong> <span style={{ color: '#B1EDE8' }}>{profile.researchArea}</span></p>
+            </section>
+            
+            <section style={{ marginBottom: '1.5rem' }}>
+              <h3 style={{ color: '#64CCC5', fontSize: '1.2rem', marginBottom: '0.5rem' }}>Biography</h3>
+              <p style={{ color: '#B1EDE8', lineHeight: '1.6' }}>{profile.biography}</p>
+            </section>
+            
+            <footer style={{ textAlign: 'center', marginTop: '2rem' }}>
+              <button
+                onClick={() => navigate('/researcher-edit-profile')}
+                style={{ 
+                  backgroundColor: '#64CCC5',
+                  color: '#132238',
+                  border: 'none',
+                  padding: '0.7rem 1.5rem',
+                  borderRadius: '0.5rem',
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }}
+              >
+                Edit Profile
+              </button>
+            </footer>
+          </article>
         ) : (
-          <p>Loading profile...</p>
+          <p style={{ textAlign: 'center', color: '#132238' }}>Loading profile...</p>
         )}
       </section>
 
-      <button onClick={() => navigate('/researcher-edit-profile')} style={styles.button}>
-        Edit Profile
-      </button>
+      <footer className="researcher-footer">
+        <a href="/contact">Contact</a>
+        <a href="/privacy-policy">Privacy Policy</a>
+        <a href="/terms-of-service">Terms of Service</a>
+        <p>&copy; 2025 Innerk Hub</p>
+      </footer>
     </main>
   );
 };
 
-const styles = {
-  main: {
-    maxWidth: '700px',
-    margin: '0 auto',
-    padding: '20px',
-    fontFamily: 'Arial, sans-serif',
-    backgroundColor: '#fff',
-    border: '1px solid #eee',
-    borderRadius: '8px',
-    boxShadow: '0 4px 8px rgba(0,0,0,0.05)',
-    color: '#333'
-  },
-  header: {
-    textAlign: 'center',
-    marginBottom: '30px'
-  },
-  section: {
-    display: 'flex',
-    justifyContent: 'center'
-  },
-  profileBox: {
-    textAlign: 'left',
-    width: '100%'
-  },
-  image: {
-    width: '120px',
-    height: '120px',
-    borderRadius: '50%',
-    objectFit: 'cover',
-    marginBottom: '20px'
-  },
-  backLink: {
-    background: 'none',
-    border: 'none',
-    color: 'black',
-    fontSize: '1em',
-    cursor: 'pointer',
-    padding: 0,
-    marginBottom: '15px',
-    textDecoration: 'underline',
-    display: 'inline-block'
-  },
-  button: {
-    display: 'block',
-    marginTop: '30px',
-    padding: '10px 15px',
-    fontSize: '1em',
-    backgroundColor: '#007bff',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '5px',
-    cursor: 'pointer'
-  }
-};
-
 export default ResearcherProfile;
-
-

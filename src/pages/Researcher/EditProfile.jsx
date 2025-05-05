@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { db, auth } from '../../config/firebaseConfig';
 import { getDoc, doc, setDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
+import './ResearcherDashboard.css'; // Make sure to import the shared CSS
 
 const EditProfile = () => {
   const navigate = useNavigate();
@@ -75,166 +76,207 @@ const EditProfile = () => {
     }
   };
 
-  const goBack = () => navigate(-1);
-
   return (
-    <main style={styles.main}>
-      <button onClick={goBack} style={styles.backLink}>← Back</button>
-
-      <header style={styles.header}>
-        <h1 style={styles.title}>Edit Your Profile</h1>
+    <main>
+      <header className="researcher-header">
+        <section className="header-title">
+          <h1>Edit Your Profile</h1>
+          <p>Update your research profile information</p>
+        </section>
+        <nav className="header-nav">
+          <a href="/researcher-dashboard" className="header-link">Dashboard</a>
+          <a href="/researcher-profile" className="header-link">Profile</a>
+          <a href="/researcher/add-listing" className="header-link">Add Listing</a>
+        </nav>
       </header>
 
-      <section style={styles.section}>
-        <form onSubmit={handleSubmit} style={styles.form}>
-          <label style={styles.label}>
-            Profile Picture:
-            <input
-              type="file"
-              name="profilePicture"
-              accept="image/*"
-              onChange={handleChange}
-              style={styles.input}
-            />
-          </label>
+      <section style={{ maxWidth: '700px', margin: '2rem auto', padding: '0 1.5rem' }}>
+        <form onSubmit={handleSubmit}>
+          <article style={{ 
+            background: '#1A2E40', 
+            borderRadius: '1rem',
+            boxShadow: '0 4px 6px rgba(0,0,0,0.12)',
+            padding: '2rem',
+            color: '#FFFFFF'
+          }}>
+            <section style={{ marginBottom: '1.5rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', color: '#64CCC5', fontWeight: '600' }}>
+                Profile Picture
+              </label>
+              <input
+                type="file"
+                name="profilePicture"
+                accept="image/*"
+                onChange={handleChange}
+                style={{ 
+                  width: '100%',
+                  padding: '0.7rem',
+                  backgroundColor: '#132238',
+                  border: '1.5px solid #64CCC5',
+                  borderRadius: '0.5rem',
+                  color: '#FFFFFF'
+                }}
+              />
+            </section>
 
-          <label style={styles.label}>
-            Title:
-            <select
-              name="title"
-              value={profile.title || ''}
-              onChange={handleChange}
-              required
-              style={styles.input}
-            >
-              <option value="">-- Select Title --</option>
-              {[
-                'Mr', 'Mrs', 'Ms', 'Miss', 'Mx', 'Dr', 'Prof', 'Professor', 'Rev',
-                'Father', 'Sister', 'Brother', 'Imam', 'Rabbi', 'Sheikh', 'Eng',
-                'Engr', 'Hon', 'Capt', 'Major', 'Colonel', 'Lt', 'Lt. Col',
-                'Sir', 'Dame', 'Judge', 'Attorney', 'Principal', 'Dean',
-                'Chancellor', 'President', 'CEO', 'Chairperson'
-              ].map((t) => (
-                <option key={t} value={t}>{t}</option>
-              ))}
-            </select>
-          </label>
+            <section style={{ marginBottom: '1.5rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', color: '#64CCC5', fontWeight: '600' }}>
+                Title
+              </label>
+              <select
+                name="title"
+                value={profile.title || ''}
+                onChange={handleChange}
+                required
+                style={{ 
+                  width: '100%',
+                  padding: '0.7rem',
+                  backgroundColor: '#132238',
+                  border: '1.5px solid #64CCC5',
+                  borderRadius: '0.5rem',
+                  color: '#FFFFFF'
+                }}
+              >
+                <option value="">-- Select Title --</option>
+                {[
+                  'Mr', 'Mrs', 'Ms', 'Miss', 'Mx', 'Dr', 'Prof', 'Professor', 'Rev',
+                  'Father', 'Sister', 'Brother', 'Imam', 'Rabbi', 'Sheikh', 'Eng',
+                  'Engr', 'Hon', 'Capt', 'Major', 'Colonel', 'Lt', 'Lt. Col',
+                  'Sir', 'Dame', 'Judge', 'Attorney', 'Principal', 'Dean',
+                  'Chancellor', 'President', 'CEO', 'Chairperson'
+                ].map((t) => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+            </section>
 
-          <label style={styles.label}>
-            Name and Surname:
-            <input
-              type="text"
-              name="name"
-              value={profile.name}
-              onChange={handleChange}
-              required
-              style={styles.input}
-            />
-          </label>
+            <section style={{ marginBottom: '1.5rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', color: '#64CCC5', fontWeight: '600' }}>
+                Name and Surname
+              </label>
+              <input
+                type="text"
+                name="name"
+                value={profile.name || ''}
+                onChange={handleChange}
+                required
+                style={{ 
+                  width: '100%',
+                  padding: '0.7rem',
+                  backgroundColor: '#132238',
+                  border: '1.5px solid #64CCC5',
+                  borderRadius: '0.5rem',
+                  color: '#FFFFFF'
+                }}
+              />
+            </section>
 
-          <label style={styles.label}>
-            Email:
-            <input
-              type="email"
-              name="email"
-              value={profile.email}
-              onChange={handleChange}
-              required
-              style={styles.input}
-            />
-          </label>
+            <section style={{ marginBottom: '1.5rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', color: '#64CCC5', fontWeight: '600' }}>
+                Email
+              </label>
+              <input
+                type="email"
+                name="email"
+                value={profile.email || ''}
+                onChange={handleChange}
+                required
+                style={{ 
+                  width: '100%',
+                  padding: '0.7rem',
+                  backgroundColor: '#132238',
+                  border: '1.5px solid #64CCC5',
+                  borderRadius: '0.5rem',
+                  color: '#FFFFFF'
+                }}
+              />
+            </section>
 
-          <label style={styles.label}>
-            Research Area:
-            <input
-              type="text"
-              name="researchArea"
-              value={profile.researchArea}
-              onChange={handleChange}
-              required
-              style={styles.input}
-            />
-          </label>
+            <section style={{ marginBottom: '1.5rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', color: '#64CCC5', fontWeight: '600' }}>
+                Research Area
+              </label>
+              <input
+                type="text"
+                name="researchArea"
+                value={profile.researchArea || ''}
+                onChange={handleChange}
+                required
+                style={{ 
+                  width: '100%',
+                  padding: '0.7rem',
+                  backgroundColor: '#132238',
+                  border: '1.5px solid #64CCC5',
+                  borderRadius: '0.5rem',
+                  color: '#FFFFFF'
+                }}
+              />
+            </section>
 
-          <label style={styles.label}>
-            Biography:
-            <textarea
-              name="biography"
-              value={profile.biography}
-              onChange={handleChange}
-              style={{ ...styles.input, height: '100px' }}
-            />
-          </label>
+            <section style={{ marginBottom: '1.5rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', color: '#64CCC5', fontWeight: '600' }}>
+                Biography
+              </label>
+              <textarea
+                name="biography"
+                value={profile.biography || ''}
+                onChange={handleChange}
+                rows="6"
+                style={{ 
+                  width: '100%',
+                  padding: '0.7rem',
+                  backgroundColor: '#132238',
+                  border: '1.5px solid #64CCC5',
+                  borderRadius: '0.5rem',
+                  color: '#FFFFFF',
+                  resize: 'vertical'
+                }}
+              />
+            </section>
 
-          <button type="submit" style={styles.button}>Save Changes</button>
+            <section style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <button 
+                type="button" 
+                onClick={() => navigate(-1)}
+                style={{ 
+                  backgroundColor: '#B1EDE8',
+                  color: '#132238',
+                  border: 'none',
+                  padding: '0.7rem 1.5rem',
+                  borderRadius: '0.5rem',
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+              <button 
+                type="submit"
+                style={{ 
+                  backgroundColor: '#64CCC5',
+                  color: '#132238',
+                  border: 'none',
+                  padding: '0.7rem 1.5rem',
+                  borderRadius: '0.5rem',
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }}
+              >
+                Save Changes
+              </button>
+            </section>
+          </article>
         </form>
       </section>
+
+      <footer className="researcher-footer">
+        <a href="/contact">Contact</a>
+        <a href="/privacy-policy">Privacy Policy</a>
+        <a href="/terms-of-service">Terms of Service</a>
+        <p>&copy; 2025 Innerk Hub</p>
+      </footer>
     </main>
   );
-};
-
-const styles = {
-  main: {
-    maxWidth: '700px',
-    margin: '0 auto',
-    padding: '20px',
-    fontFamily: 'Arial, sans-serif',
-    backgroundColor: '#ffffff',
-    color: '#333',
-    border: '1px solid #eee',
-    borderRadius: '8px',
-    boxShadow: '0 4px 8px rgba(0,0,0,0.05)'
-  },
-  backLink: {
-    background: 'none',
-    border: 'none',
-    color: 'black',
-    fontSize: '1em',
-    cursor: 'pointer',
-    padding: 0,
-    marginBottom: '15px',
-    textDecoration: 'underline',
-    display: 'inline-block'
-  },
-  header: {
-    textAlign: 'center',
-    marginBottom: '30px'
-  },
-  title: {
-    fontSize: '1.8em',
-    color: '#222'
-  },
-  section: {
-    display: 'flex',
-    justifyContent: 'center'
-  },
-  form: {
-    display: 'flex',
-    flexDirection: 'column',
-    width: '100%'
-  },
-  label: {
-    marginBottom: '15px',
-    fontWeight: 'bold'
-  },
-  input: {
-    width: '100%',
-    padding: '8px 10px',
-    marginTop: '5px',
-    fontSize: '1em',
-    borderRadius: '5px',
-    border: '1px solid #ccc'
-  },
-  button: {
-    marginTop: '20px',
-    padding: '10px',
-    fontSize: '1em',
-    backgroundColor: '#007bff',
-    color: 'white',
-    border: 'none',
-    borderRadius: '5px',
-    cursor: 'pointer'
-  }
 };
 
 export default EditProfile;

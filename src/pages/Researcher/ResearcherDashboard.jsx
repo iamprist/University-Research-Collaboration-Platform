@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../../config/firebaseConfig';
@@ -15,24 +14,15 @@ const ResearcherDashboard = () => {
   const [hasProfile, setHasProfile] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [collabListings, setCollabListings] = useState([]);
-  // Search state
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const [showNoResults, setShowNoResults] = useState(false);
   const dropdownTimeout = useRef(null);
-
-  // Modal state
   const [showErrorModal, setShowErrorModal] = useState(false);
-
-  // Filtered listings for "Your Research"
   const [filteredListings, setFilteredListings] = useState([]);
-
-  //for username 
   const [userName, setUserName] = useState('');
 
-
-  // Validate user auth
   useEffect(() => {
     const token = localStorage.getItem('authToken');
     if (!token) {
@@ -49,7 +39,6 @@ const ResearcherDashboard = () => {
     return () => unsubscribe();
   }, [navigate]);
 
-  // Check if researcher profile exists
   useEffect(() => {
     if (!userId) return;
     (async () => {
@@ -62,27 +51,20 @@ const ResearcherDashboard = () => {
           navigate('/researcher-edit-profile');
         }
       } catch (err) {
-        console.error('Error checking user profile:', err);
         setShowErrorModal(true);
       }
     })();
   }, [userId, navigate]);
-  
-  
 
   useEffect(() => {
     if (!userId) return;
-    
     const q = query(
       collection(db, "collaborations"),
       where("collaboratorId", "==", userId)
     );
-    
     const unsubscribe = onSnapshot(q, async (snapshot) => {
       const collabs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setCollabListings(collabs);
-  
-      // Fetch listing details for each collaboration
       const listings = await Promise.all(
         collabs.map(async collab => {
           const listingDoc = await getDoc(doc(db, "research-listings", collab.listingId));
@@ -91,12 +73,9 @@ const ResearcherDashboard = () => {
       );
       setCollabListings(listings.filter(Boolean));
     });
-    
     return () => unsubscribe();
   }, [userId]);
 
-
-  // Fetch ALL listings for search dropdown
   useEffect(() => {
     if (!userId || !hasProfile) return;
     (async () => {
@@ -122,7 +101,6 @@ const ResearcherDashboard = () => {
     })();
   }, [userId, hasProfile]);
 
-  // Fetch only MY listings for "Your Research"
   useEffect(() => {
     if (!userId || !hasProfile) return;
     (async () => {
@@ -135,12 +113,10 @@ const ResearcherDashboard = () => {
     })();
   }, [userId, hasProfile]);
 
-  // Filter MY listings for "Your Research" section
   useEffect(() => {
     setFilteredListings(myListings);
   }, [myListings]);
 
-  // SEARCH BUTTON logic for dropdown (searches ALL listings)
   const handleSearch = () => {
     if (!searchTerm.trim()) {
       setSearchResults([]);
@@ -156,13 +132,11 @@ const ResearcherDashboard = () => {
     setSearchResults(filtered);
     setDropdownVisible(true);
 
-    // Set timeout for dropdown to disappear after 5 seconds
     clearTimeout(dropdownTimeout.current);
     dropdownTimeout.current = setTimeout(() => {
       setDropdownVisible(false);
     }, 5000);
 
-    // Set timeout for "No results" message
     if (filtered.length === 0) {
       setShowNoResults(true);
       setTimeout(() => setShowNoResults(false), 3000);
@@ -171,14 +145,9 @@ const ResearcherDashboard = () => {
     }
   };
 
-  const handleAddListing = () => {
-    navigate('/researcher/add-listing');
-  };
-  const handleCollaborate = () => {
-    navigate('/researcher/collaborate');
-  };
+  const handleAddListing = () => navigate('/researcher/add-listing');
+  const handleCollaborate = () => navigate('/researcher/collaborate');
 
-  // Hide dropdown and allow new search when input is focused/changed
   const handleInputFocus = () => {
     setDropdownVisible(false);
     clearTimeout(dropdownTimeout.current);
@@ -196,7 +165,6 @@ const ResearcherDashboard = () => {
     setDropdownVisible(false);
   };
 
-  // Cleanup timeout when component unmounts
   useEffect(() => {
     return () => {
       clearTimeout(dropdownTimeout.current);
@@ -205,9 +173,6 @@ const ResearcherDashboard = () => {
 
   const handleLogout = async () => {
     try {
-      console.log("Attempting to log out...");
-
-      // Log the logout event before signing out
       if (auth.currentUser) {
         await logEvent({
           userId: auth.currentUser.uid,
@@ -216,49 +181,21 @@ const ResearcherDashboard = () => {
           action: "Logout",
           details: "User logged out",
         });
-        console.log("Logout event recorded.");
-      } else {
-        console.warn("No authenticated user found to log the event.");
       }
-
-      // Perform logout using Firebase Auth
       await auth.signOut();
-
-      console.log("Logout successful. Redirecting to /signin...");
-      // Redirect the user to the login page
       navigate("/signin");
-    } catch (error) {
-      console.error("Error logging out:", error);
+    } catch {
       alert("Failed to log out. Please try again.");
     }
   };
 
-  const styles = {
-    card: {
-      backgroundColor: '#1A2E40', borderRadius: '1rem',
-      boxShadow: '0 4px 6px rgba(0,0,0,0.2)', padding: '1.5rem',
-      margin: '1rem auto', maxWidth: '600px', color: '#FFFFFF'
-    },
-    cardTitle: { fontSize: '1.25rem', fontWeight: '600' },
-    cardText: { fontSize: '1rem', color: '#B1EDE8' },
-    viewButton: {
-      backgroundColor: '#64CCC5', color: '#FFFFFF', border: 'none',
-      padding: '0.5rem 1rem', borderRadius: '0.5rem',
-      cursor: 'pointer', transition: 'background-color 0.3s ease'
-    },
-    footerLink: {
-      color: '#B1EDE8', textDecoration: 'none',
-      margin: '0 1rem', fontSize: '0.9rem'
-    }
-  };
-
   return (
-    <main className="researcher-dashboard">
+    <main>
       {showErrorModal && (
-        <div className="error-modal">
+        <section className="error-modal">
           <p>Error loading profile. Please try again.</p>
           <button onClick={() => setShowErrorModal(false)}>Close</button>
-        </div>
+        </section>
       )}
 
       <header className="researcher-header">
@@ -266,89 +203,73 @@ const ResearcherDashboard = () => {
           <h1>Welcome, {userName}</h1>
           <p>Manage your research and collaborate with other researchers</p>
         </section>
-
         <section className="header-actions">
-          <div className="dropdown-menu-container">
+          <section className="dropdown-menu-container">
             <button
               className="menu-toggle-btn"
               onClick={() => setShowMenu(prev => !prev)}
             >
               ☰ Menu
             </button>
-
             {showMenu && (
-              <div className="menu-dropdown">
+              <section className="menu-dropdown">
                 <button onClick={() => navigate('/researcher-profile')}>View Profile</button>
                 <button onClick={handleAddListing}>New Research</button>
                 <button onClick={handleCollaborate}>Collaborate</button>
                 <button onClick={handleLogout}>Logout</button>
-              </div>
+              </section>
             )}
-          </div>
+          </section>
         </section>
       </header>
 
       <section className="dashboard-content">
-        <section className="search-section" style={{ textAlign: 'center', margin: '1rem 0' }}>
-          <div style={{ position: 'relative', width: '60%', margin: '1rem auto' }}>
+        <section className="search-section">
+          <form onSubmit={e => { e.preventDefault(); handleSearch(); }}>
             <input
               type="text"
               placeholder="Search for research by title or researcher name..."
               value={searchTerm}
               onChange={handleInputChange}
               onFocus={handleInputFocus}
-              style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', border: '1px solid #ccc', fontSize: '1rem' }}
             />
-            <button
-              onClick={handleSearch}
-              style={{ marginLeft: '1rem', padding: '0.5rem 1.5rem' }}
-            >
-              Search
-            </button>
-            <button
-              onClick={handleClear}
-              style={{ marginLeft: '0.5rem', padding: '0.5rem 1.5rem', background: '#eee', color: '#333', border: 'none', borderRadius: '0.5rem' }}
-            >
-              Clear
-            </button>
-            {dropdownVisible && (
-              <div style={{
-                position: 'absolute',
-                top: '2.5rem',
-                left: 0,
-                width: '100%',
-                background: '#fff',
-                border: '1px solid #ccc',
-                borderRadius: '0.5rem',
-                zIndex: 1000,
-                maxHeight: '200px',
-                overflowY: 'auto'
-              }}>
-                {searchResults.length === 0 ? (
-                  <div style={{ padding: '1rem', color: '#888' }}>
-                    {showNoResults && "No research listings found."}
-                  </div>
-                ) : (
-                  searchResults.map(item => (
-                    <div
-                      key={item.id}
-                      style={{ padding: '0.75rem 1rem', cursor: 'pointer', borderBottom: '1px solid #eee' }}
-                      onClick={() => {
+            <button type="submit">Search</button>
+            <button type="button" onClick={handleClear}>Clear</button>
+          </form>
+          {dropdownVisible && (
+            <section className="search-dropdown">
+              {searchResults.length === 0 ? (
+                <section>
+                  {showNoResults && "No research listings found."}
+                </section>
+              ) : (
+                searchResults.map(item => (
+                  <section
+                    key={item.id}
+                    className="dropdown-item"
+                    tabIndex={0}
+                    role="button"
+                    onClick={() => {
+                      setDropdownVisible(false);
+                      navigate(`/listing/${item.id}`);
+                    }}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
                         setDropdownVisible(false);
                         navigate(`/listing/${item.id}`);
-                      }}
-                    >
-                      <strong>{item.title}</strong>
-                      <div style={{ fontSize: '0.95em', color: '#666' }}>
-                        By: {item.researcherName || 'Unknown Researcher'}
-                      </div>
-                      <div style={{ fontSize: '0.9em', color: '#666' }}>{item.summary}</div>
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
-          </div>
+                      }
+                    }}
+                  >
+                    <strong>{item.title}</strong>
+                    <section style={{ fontSize: '0.95em', color: '#B1EDE8' }}>
+                      By: {item.researcherName || 'Unknown Researcher'}
+                    </section>
+                    <section style={{ fontSize: '0.9em', color: '#B1EDE8' }}>{item.summary}</section>
+                  </section>
+                ))
+              )}
+            </section>
+          )}
         </section>
 
         <h3>Your Research</h3>
@@ -357,25 +278,24 @@ const ResearcherDashboard = () => {
             <p style={{ color: '#B1EDE8', textAlign: 'center' }}>No research listings found.</p>
           ) : (
             filteredListings.map(item => (
-              <article key={item.id} style={styles.card}>
-                <h4 style={styles.cardTitle}>{item.title}</h4>
-                <p style={styles.cardText}>{item.summary}</p>
+              <article key={item.id}>
+                <h4>{item.title}</h4>
+                <p>{item.summary}</p>
                 <button
-                  style={styles.viewButton}
                   onClick={() => navigate(`/listing/${item.id}`)}
                 >
                   View Listing
                 </button>
                 <button
-            style={{ 
-              ...styles.viewButton, 
-              backgroundColor: '#B1EDE8',
-              color: '#132238'
-            }}
-            onClick={() => navigate(`/chat/${item.id}`)}
-          >
-            Chat
-          </button>
+                  style={{
+                    background: '#B1EDE8',
+                    color: '#132238',
+                    marginLeft: '0.5rem'
+                  }}
+                  onClick={() => navigate(`/chat/${item.id}`)}
+                >
+                  Chat
+                </button>
               </article>
             ))
           )}
@@ -383,46 +303,44 @@ const ResearcherDashboard = () => {
       </section>
 
       <section className="collaboration-requests-section">
+        <CollaborationRequestsPanel />
+      </section>
 
-  <CollaborationRequestsPanel />
-</section>
       <section className="collaborations-section">
-  <h3>Your Collaborations</h3>
-  {collabListings.length > 0 ? (
-    collabListings.map(listing => (
-      <article key={listing.id} style={styles.card}>
-        <h4 style={styles.cardTitle}>{listing.title}</h4>
-        <p style={styles.cardText}>{listing.summary}</p>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button
-            style={styles.viewButton}
-            onClick={() => navigate(`/listing/${listing.id}`)}
-          >
-            View Project
-          </button>
-          <button
-            style={{ 
-              ...styles.viewButton, 
-              backgroundColor: '#B1EDE8',
-              color: '#132238'
-            }}
-            onClick={() => navigate(`/chat/${listing.id}`)}
-          >
-            Chat
-          </button>
-        </div>
-      </article>
-    ))
-  ) : (
-    <p style={{ color: '#B1EDE8', textAlign: 'center' }}>
-      No active collaborations yet. Browse projects to collaborate!
-    </p>
-  )}
-</section>
+        <h3>Your Collaborations</h3>
+        {collabListings.length > 0 ? (
+          collabListings.map(listing => (
+            <article key={listing.id}>
+              <h4>{listing.title}</h4>
+              <p>{listing.summary}</p>
+              <button
+                onClick={() => navigate(`/listing/${listing.id}`)}
+              >
+                View Project
+              </button>
+              <button
+                style={{
+                  background: '#B1EDE8',
+                  color: '#132238',
+                  marginLeft: '0.5rem'
+                }}
+                onClick={() => navigate(`/chat/${listing.id}`)}
+              >
+                Chat
+              </button>
+            </article>
+          ))
+        ) : (
+          <p style={{ color: '#B1EDE8', textAlign: 'center' }}>
+            No active collaborations yet. Browse projects to collaborate!
+          </p>
+        )}
+      </section>
+
       <footer className="researcher-footer">
-        <a href="/some-path" style={styles.footerLink}>Contact</a>
-        <a href="/some-path" style={styles.footerLink}>Privacy Policy</a>
-        <a href="/some-path" style={styles.footerLink}>Terms of Service</a>
+        <a href="/some-path">Contact</a>
+        <a href="/some-path">Privacy Policy</a>
+        <a href="/some-path">Terms of Service</a>
         <p>&copy; 2025 Innerk Hub</p>
       </footer>
     </main>
@@ -430,4 +348,3 @@ const ResearcherDashboard = () => {
 };
 
 export default ResearcherDashboard;
-
