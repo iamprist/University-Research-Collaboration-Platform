@@ -12,7 +12,7 @@ const ResearcherDashboard = () => {
   const [userId, setUserId] = useState(null);
   const [hasProfile, setHasProfile] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
-  const [collaborations, setCollaborations] = useState([]);
+  const [collabListings, setCollabListings] = useState([]);
   // Search state
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -66,6 +66,8 @@ const ResearcherDashboard = () => {
     })();
   }, [userId, navigate]);
   
+  
+
   useEffect(() => {
     if (!userId) return;
     
@@ -74,15 +76,24 @@ const ResearcherDashboard = () => {
       where("collaboratorId", "==", userId)
     );
     
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setCollaborations(snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })));
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
+      const collabs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setCollabListings(collabs);
+  
+      // Fetch listing details for each collaboration
+      const listings = await Promise.all(
+        collabs.map(async collab => {
+          const listingDoc = await getDoc(doc(db, "research-listings", collab.listingId));
+          return listingDoc.exists() ? { id: listingDoc.id, ...listingDoc.data() } : null;
+        })
+      );
+      setCollabListings(listings.filter(Boolean));
     });
     
     return () => unsubscribe();
   }, [userId]);
+
+
   // Fetch ALL listings for search dropdown
   useEffect(() => {
     if (!userId || !hasProfile) return;
@@ -349,7 +360,7 @@ const ResearcherDashboard = () => {
                 <p style={styles.cardText}>{item.summary}</p>
                 <button
                   style={styles.viewButton}
-                  onClick={() => navigate(`/listing/${item.id}`)}
+                  onClick={() => navigate(`/research-listing/${item.id}`)}
                 >
                   View Listing
                 </button>
@@ -358,19 +369,37 @@ const ResearcherDashboard = () => {
           )}
         </section>
       </section>
-      <section>
+      <section className="collaborations-section">
   <h3>Your Collaborations</h3>
-  {collaborations.length > 0 ? (
-    collaborations.map(collab => (
-      <article key={collab.id} style={styles.card}>
-        <h4>Collaboration on: {collab.listingId}</h4>
-        <button onClick={() => navigate(`/listing/${collab.listingId}`)}>
-          View Project
-        </button>
+  {collabListings.length > 0 ? (
+    collabListings.map(listing => (
+      <article key={listing.id} style={styles.card}>
+        <h4 style={styles.cardTitle}>{listing.title}</h4>
+        <p style={styles.cardText}>{listing.summary}</p>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button
+            style={styles.viewButton}
+            onClick={() => navigate(`/listing/${listing.id}`)}
+          >
+            View Project
+          </button>
+          <button
+            style={{ 
+              ...styles.viewButton, 
+              backgroundColor: '#B1EDE8',
+              color: '#132238'
+            }}
+            onClick={() => navigate(`/chat/${listing.id}`)}
+          >
+            Chat
+          </button>
+        </div>
       </article>
     ))
   ) : (
-    <p>No active collaborations</p>
+    <p style={{ color: '#B1EDE8', textAlign: 'center' }}>
+      No active collaborations yet. Browse projects to collaborate!
+    </p>
   )}
 </section>
       <footer className="researcher-footer">

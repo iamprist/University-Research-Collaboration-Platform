@@ -325,3 +325,10 @@ body {
   font-size: 1.02rem;
   font-weight: 600;
 }
+
+.collaborations-section {
+  margin-top: 2rem;
+  padding: 1rem;
+  background: rgba(26, 46, 64, 0.2);
+  border-radius: 0.5rem;
+}
