@@ -78,19 +78,21 @@ function SignInPage() {
     try {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
-      
+
       if (role === "admin") {
         const newEmailsSnapshot = await getDocs(collection(db, "newEmails"));
         const isAuthorizedInNewEmails = newEmailsSnapshot.docs.some(
           (doc) => doc.data().email.toLowerCase() === user.email.toLowerCase()
         );
+
         const usersSnapshot = await getDocs(collection(db, "users"));
         const isAuthorizedInUsers = usersSnapshot.docs.some(
           (doc) =>
             doc.data().email.toLowerCase() === user.email.toLowerCase() &&
             doc.data().role === "admin"
         );
-        
+
+        // Check if the email is in either `newEmails` or `users` collection
         if (!isAuthorizedInNewEmails && !isAuthorizedInUsers) {
           const modal = document.createElement("section");
           modal.setAttribute("role", "dialog");
@@ -135,16 +137,16 @@ function SignInPage() {
           return;
         }
       }
-      
+
       const token = await user.getIdToken();
       localStorage.setItem("authToken", token);
-      
+
       await setDoc(doc(db, "users", user.uid), {
         name: user.displayName,
         email: user.email,
         role,
       });
-      
+
       await logEvent({
         userId: user.uid,
         role,
@@ -152,7 +154,7 @@ function SignInPage() {
         action: "Login",
         details: "User logged in",
       });
-      
+
       if (role === "researcher") navigate("/researcher-dashboard");
       else if (role === "reviewer") navigate("/reviewer");
       else if (role === "admin") navigate("/admin");

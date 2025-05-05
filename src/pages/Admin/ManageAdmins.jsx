@@ -43,10 +43,12 @@ export default function ManageAdmins() {
 
     setLoading(true);
     try {
-      // Check if email already exists in Firestore
+      // Check if email already exists in Firestore with the role `admin`
       const querySnapshot = await getDocs(collection(db, "users"));
       const existingAdmin = querySnapshot.docs.some(
-        (doc) => doc.data().email.toLowerCase() === newAdminEmail.toLowerCase()
+        (doc) =>
+          doc.data().email.toLowerCase() === newAdminEmail.toLowerCase() &&
+          doc.data().role?.toLowerCase() === "admin"
       );
 
       if (existingAdmin) {
