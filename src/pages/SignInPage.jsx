@@ -10,33 +10,36 @@ import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 function SignInPage() {
   const navigate = useNavigate();
 
-  // Add animations via dynamic <style>
+  // Add enhanced animations via dynamic <style>
   useEffect(() => {
     const style = document.createElement("style");
     style.textContent = `
+      /* Background animation */
       @keyframes gradientBG {
         0% { background-position: 0% 50%; }
         50% { background-position: 100% 50%; }
         100% { background-position: 0% 50%; }
       }
-      .hero-section {
-        background-size: 400% 400%;
-        animation: gradientBG 15s ease infinite;
+      
+      /* Neon glow animation */
+      @keyframes neon-glow {
+        0%, 100% {
+          box-shadow: 0 0 5px #64CCC5, 0 0 10px #64CCC5, 0 0 20px #64CCC5;
+        }
+        50% {
+          box-shadow: 0 0 10px #B1EDE8, 0 0 20px #B1EDE8, 0 0 30px #B1EDE8;
+        }
       }
-      .card {
-        opacity: 0;
-        transform: translateY(20px);
-        animation: fadeInUp 0.6s ease forwards;
-      }
+
+      /* Card fade-in animation */
       @keyframes fadeInUp {
         to {
           opacity: 1;
           transform: translateY(0);
         }
       }
-      .modal {
-        animation: fadeInScale 0.3s ease forwards;
-      }
+
+      /* Modal animation */
       @keyframes fadeInScale {
         from {
           opacity: 0;
@@ -47,6 +50,25 @@ function SignInPage() {
           transform: scale(1);
         }
       }
+
+      /* Button radial effect */
+      .neon-button::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 300%;
+        height: 300%;
+        background: radial-gradient(circle, rgba(99,204,200,0.2) 0%, transparent 70%);
+        transform: translate(-50%, -50%) scale(0.5);
+        transition: transform 0.5s ease;
+        border-radius: 50%;
+      }
+
+      .hero-section {
+        background-size: 400% 400%;
+        animation: gradientBG 15s ease infinite;
+      }
     `;
     document.head.appendChild(style);
     return () => document.head.removeChild(style);
@@ -56,20 +78,18 @@ function SignInPage() {
     try {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
-
+      
       if (role === "admin") {
         const newEmailsSnapshot = await getDocs(collection(db, "newEmails"));
         const isAuthorizedInNewEmails = newEmailsSnapshot.docs.some(
           (doc) => doc.data().email.toLowerCase() === user.email.toLowerCase()
         );
-
         const usersSnapshot = await getDocs(collection(db, "users"));
         const isAuthorizedInUsers = usersSnapshot.docs.some(
           (doc) =>
             doc.data().email.toLowerCase() === user.email.toLowerCase() &&
             doc.data().role === "admin"
         );
-
         if (!isAuthorizedInNewEmails && !isAuthorizedInUsers) {
           const modal = document.createElement("section");
           modal.setAttribute("role", "dialog");
@@ -85,6 +105,7 @@ function SignInPage() {
             background: rgba(0, 0, 0, 0.5);
             font-family: Inter, sans-serif;
             z-index: 1000;
+            animation: fadeInScale 0.3s ease forwards;
           `;
           modal.innerHTML = `
             <article role="document" style="
@@ -113,16 +134,16 @@ function SignInPage() {
           return;
         }
       }
-
+      
       const token = await user.getIdToken();
       localStorage.setItem("authToken", token);
-
+      
       await setDoc(doc(db, "users", user.uid), {
         name: user.displayName,
         email: user.email,
         role,
       });
-
+      
       await logEvent({
         userId: user.uid,
         role,
@@ -130,10 +151,11 @@ function SignInPage() {
         action: "Login",
         details: "User logged in",
       });
-
+      
       if (role === "researcher") navigate("/researcher-dashboard");
       else if (role === "reviewer") navigate("/reviewer");
       else if (role === "admin") navigate("/admin");
+      
     } catch (error) {
       if (error.code === "auth/popup-closed-by-user") {
         console.log("Login canceled by user");
@@ -175,19 +197,28 @@ function SignInPage() {
       marginBottom: "2rem",
     },
     card: {
-      backgroundColor: "#FFFFFF",
-      borderRadius: "1rem",
+      // Glassmorphism style
+      background: "rgba(255, 255, 255, 0.9)",
+      backdropFilter: "blur(12px)",
+      border: "1px solid rgba(255, 255, 255, 0.3)",
+      boxShadow: "0 8px 32px 0 rgba(18, 34, 56, 0.2)",
+      borderRadius: "1.5rem",
       padding: "2.5rem",
-      boxShadow: "0 4px 6px rgba(18, 34, 56, 0.1)",
       maxWidth: "400px",
       width: "100%",
       margin: "2rem auto",
       position: "relative",
       zIndex: 1,
+      opacity: 0,
+      transform: "translateY(20px)",
+      animation: "fadeInUp 0.6s ease forwards",
+      // Subtle pattern overlay
+      backgroundImage: "radial-gradient(circle at 2px 2px, rgba(99,204,200,0.05) 2px, transparent 0)",
+      backgroundSize: "40px 40px"
     },
     button: {
-      backgroundColor: "#64CCC5",
-      color: "#132238",
+      backgroundColor: "#132238",
+      color: "#64CCC5",
       padding: "1rem 2rem",
       borderRadius: "2rem",
       border: "none",
@@ -249,81 +280,45 @@ function SignInPage() {
           <p style={styles.subheading}>Continue with Google to access your account</p>
         </header>
       </section>
-
-      <article role="region" aria-label="Sign in options" style={styles.card} className="card">
-        <button
-          style={{
-            ...styles.button,
-            transition: "background-color 0.3s ease, transform 0.3s ease",
-          }}
-          onMouseOver={(e) => {
-            e.target.style.backgroundColor = "#B1EDE8";
-            e.target.style.transform = "translateY(-2px) scale(1.03)";
-          }}
-          onMouseOut={(e) => {
-            e.target.style.backgroundColor = "#64CCC5";
-            e.target.style.transform = "translateY(0) scale(1)";
-          }}
-          onClick={() => handleSignIn("researcher")}
-        >
-          <img
-            src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-            alt=""
-            aria-hidden="true"
-            style={{ height: "1.5rem" }}
-          />
-          Continue as Researcher
-        </button>
-
-        <button
-          style={{
-            ...styles.button,
-            transition: "background-color 0.3s ease, transform 0.3s ease",
-          }}
-          onMouseOver={(e) => {
-            e.target.style.backgroundColor = "#B1EDE8";
-            e.target.style.transform = "translateY(-2px) scale(1.03)";
-          }}
-          onMouseOut={(e) => {
-            e.target.style.backgroundColor = "#64CCC5";
-            e.target.style.transform = "translateY(0) scale(1)";
-          }}
-          onClick={() => handleSignIn("reviewer")}
-        >
-          <img
-            src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-            alt=""
-            aria-hidden="true"
-            style={{ height: "1.5rem" }}
-          />
-          Continue as Reviewer
-        </button>
-
-        <button
-          style={{
-            ...styles.button,
-            transition: "background-color 0.3s ease, transform 0.3s ease",
-          }}
-          onMouseOver={(e) => {
-            e.target.style.backgroundColor = "#B1EDE8";
-            e.target.style.transform = "translateY(-2px) scale(1.03)";
-          }}
-          onMouseOut={(e) => {
-            e.target.style.backgroundColor = "#64CCC5";
-            e.target.style.transform = "translateY(0) scale(1)";
-          }}
-          onClick={() => handleSignIn("admin")}
-        >
-          <img
-            src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-            alt=""
-            aria-hidden="true"
-            style={{ height: "1.5rem" }}
-          />
-          Continue as Admin
-        </button>
+      
+      <article 
+        role="region" 
+        aria-label="Sign in options" 
+        style={styles.card} 
+        className="card"
+      >
+        {["researcher", "reviewer", "admin"].map((role) => (
+          <button
+            key={role}
+            className="neon-button"
+            style={{
+              ...styles.button,
+              transition: "all 0.3s ease",
+            }}
+            onMouseOver={(e) => {
+              e.target.style.animation = "neon-glow 1.5s ease-in-out infinite";
+              e.target.querySelector("img").style.filter = "brightness(1.2)";
+            }}
+            onMouseOut={(e) => {
+              e.target.style.animation = "none";
+              e.target.querySelector("img").style.filter = "brightness(1)";
+            }}
+            onClick={() => handleSignIn(role)}
+          >
+            <img
+              src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+              alt=""
+              aria-hidden="true"
+              style={{ 
+                height: "1.5rem",
+                transition: "filter 0.3s ease"
+              }}
+            />
+            Continue as {role.charAt(0).toUpperCase() + role.slice(1)}
+          </button>
+        ))}
       </article>
-
+      
       <footer style={styles.footer}>
         <nav style={styles.footerLinks}>
           <a href="/privacy-policy" style={styles.footerLink}>
