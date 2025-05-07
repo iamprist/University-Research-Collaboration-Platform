@@ -145,6 +145,7 @@ function AddListing() {
   const [universities, setUniversities] = useState([]);
   const [selectedUniversity, setSelectedUniversity] = useState(null);
   const [selectedCountry, setSelectedCountry] = useState('');
+  const [tags, setTags] = useState([]);
   const countries = ['South Africa', 'United States', 'United Kingdom', 'Canada', 'Kenya', 'Nigeria'];
 
   useEffect(() => {
@@ -200,6 +201,7 @@ function AddListing() {
         publicationLink,
         fundingInfo,
         userId,
+        tags: tags.map(tag => tag.value),
         createdAt: serverTimestamp(),
       };
 
@@ -221,241 +223,310 @@ function AddListing() {
     }
   };
 
+  const styles = {
+    outerContainer: {
+      backgroundColor: '#f8f9fa',
+      minHeight: '100vh',
+      padding: '20px 0',
+    },
+    container: {
+      backgroundColor: 'white',
+      borderRadius: '8px',
+      boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+      padding: '30px',
+      maxWidth: '850px',
+      margin: '0 auto',
+    },
+    header: {
+      marginBottom: '30px',
+      textAlign: 'center',
+    },
+    form: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '20px',
+    },
+    label: {
+      display: 'block',
+      marginBottom: '8px',
+      fontWeight: '600',
+    },
+    input: {
+      width: '100%',
+      padding: '10px',
+      borderRadius: '4px',
+      border: '1px solid #ddd',
+      fontSize: '16px',
+    },
+    textarea: {
+      width: '100%',
+      padding: '10px',
+      borderRadius: '4px',
+      border: '1px solid #ddd',
+      fontSize: '16px',
+      minHeight: '120px',
+    },
+    select: {
+      width: '100%',
+      padding: '10px',
+      borderRadius: '4px',
+      border: '1px solid #ddd',
+      fontSize: '16px',
+      backgroundColor: 'white',
+    },
+    button: {
+      backgroundColor: '#0d6efd',
+      color: 'white',
+      padding: '12px 20px',
+      border: 'none',
+      borderRadius: '4px',
+      cursor: 'pointer',
+      fontSize: '16px',
+      fontWeight: '600',
+      marginTop: '20px',
+    },
+    buttonHover: {
+      backgroundColor: '#0b5ed7',
+    },
+    fullWidth: {
+      gridColumn: '1 / -1',
+    },
+  };
+
   return (
-    <main className="bg-dark min-vh-100 d-flex align-items-center justify-content-center py-4">
-      <section className="container bg-white rounded shadow-lg p-4" style={{maxWidth: 850}}>
-          <header className="researcher-header">
-      <section className="header-title">
-        <h1>New Research</h1>
-        <p>Fill out the form below to create a new research listing.</p>
-      </section>
-      <nav className="header-nav">
-        <a href="/researcher-dashboard" className="header-link">Dashboard</a>
-        <a href="/researcher-profile" className="header-link">Profile</a>
-        <a href="/researcher/add-listing" className="header-link">Add Listing</a>
-      </nav>
-    </header>
-        <form onSubmit={handleSubmit} className="row g-4">
-          <fieldset className="col-12 border-0">
-            <legend className="fw-bold fs-5 mb-3">Research Details</legend>
-            <section className="row g-3">
-              <section className="col-md-6">
-                <label className="form-label fw-semibold">Research Title</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  value={title}
-                  onChange={e => setTitle(e.target.value)}
-                  required
-                />
-              </section>
-              <section className="col-md-6">
-                <label className="form-label fw-semibold">Research Area</label>
-                <Select
-                  options={researchAreaOptions}
-                  value={researchAreaOptions.find(o => o.value === researchArea) || null}
-                  onChange={selected => setResearchArea(selected ? selected.value : '')}
-                  placeholder="Select research area..."
-                  isClearable
-                />
-                {researchArea === 'Other' && (
-                  <section className="mt-2">
-                    <label className="form-label">Please specify:</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={customResearchArea}
-                      onChange={e => setCustomResearchArea(e.target.value)}
-                      required
-                    />
-                  </section>
-                )}
-              </section>
-              <section className="col-12">
-                <label className="form-label fw-semibold">Abstract/Summary</label>
-                <textarea
-                  rows="4"
-                  className="form-control"
-                  value={summary}
-                  onChange={e => setSummary(e.target.value)}
-                  required
-                />
-              </section>
-              <section className="col-md-6">
-                <label className="form-label fw-semibold">Keywords</label>
-                <Select
-                  isMulti
-                  options={keywordOptions}
-                  value={keywords}
-                  onChange={setKeywords}
-                  placeholder="Select keywords..."
-                  isClearable
-                />
-                {keywords.some(k => k.value === 'Other') && (
-                  <section className="mt-2">
-                    <label className="form-label">Please specify:</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={customKeyword}
-                      onChange={e => setCustomKeyword(e.target.value)}
-                      required
-                    />
-                  </section>
-                )}
-              </section>
-              <section className="col-md-6">
-                <label className="form-label fw-semibold">Methodology</label>
-                <Select
-                  options={methodologyOptions}
-                  value={methodologyOptions.find(o => o.value === methodology) || null}
-                  onChange={selected => setMethodology(selected ? selected.value : '')}
-                  placeholder="Select methodology..."
-                  isClearable
-                />
-                {methodology === 'Other' && (
-                  <section className="mt-2">
-                    <label className="form-label">Please specify:</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={customMethodology}
-                      onChange={e => setCustomMethodology(e.target.value)}
-                      required
-                    />
-                  </section>
-                )}
-              </section>
-            </section>
-          </fieldset>
-          <fieldset className="col-12 border-0">
-            <legend className="fw-bold fs-5 mb-3">Institution Information</legend>
-            <section className="row g-3">
-              <section className="col-md-4">
-                <label className="form-label fw-semibold">Country</label>
-                <select
-                  className="form-select"
-                  value={selectedCountry}
-                  onChange={e => setSelectedCountry(e.target.value)}
-                >
-                  <option value="">Select a country</option>
-                  {countries.map((country, idx) => (
-                    <option key={idx} value={country}>{country}</option>
-                  ))}
-                </select>
-              </section>
-              <section className="col-md-4">
-                <label className="form-label fw-semibold">University</label>
-                <Select
-                  options={universities}
-                  value={selectedUniversity}
-                  onChange={setSelectedUniversity}
-                  placeholder="Search for your university..."
-                  isClearable
-                />
-              </section>
-              <section className="col-md-4">
-                <label className="form-label fw-semibold">Department</label>
-                <Select
-                  options={departmentOptions}
-                  value={departmentOptions.find(o => o.value === department) || null}
-                  onChange={selected => setDepartment(selected ? selected.value : '')}
-                  placeholder="Select department..."
-                  isClearable
-                />
-                {department === 'Other' && (
-                  <section className="mt-2">
-                    <label className="form-label">Please specify:</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={customDepartment}
-                      onChange={e => setCustomDepartment(e.target.value)}
-                      required
-                    />
-                  </section>
-                )}
-              </section>
-            </section>
-          </fieldset>
-          <fieldset className="col-12 border-0">
-            <legend className="fw-bold fs-5 mb-3">Project Details</legend>
-            <section className="row g-3">
-              <section className="col-12">
-                <label className="form-label fw-semibold">Collaborator Needs</label>
-                <textarea
-                  rows="8"
-                  className="form-control"
-                  style={{ minHeight: '140px' }}
-                  value={collaboratorNeeds}
-                  onChange={e => setCollaboratorNeeds(e.target.value)}
-                  placeholder="Describe the collaborator needs in detail..."
-                  required
-                />
-              </section>
-              <section className="col-md-4">
-                <label className="form-label fw-semibold">Project Status</label>
-                <select
-                  className="form-select"
-                  value={status}
-                  onChange={e => setStatus(e.target.value)}
-                >
-                  <option value="Active">Active</option>
-                  <option value="Completed">Completed</option>
-                </select>
-              </section>
-              <section className="col-md-4">
-                <label className="form-label fw-semibold">End Date</label>
-                <input
-                  type="date"
-                  className="form-control"
-                  value={endDate}
-                  onChange={e => setEndDate(e.target.value)}
-                />
-              </section>
-              <section className="col-md-4">
-                <label className="form-label fw-semibold">Links to Publications</label>
-                <input
-                  type="url"
-                  className="form-control"
-                  value={publicationLink}
-                  onChange={e => setPublicationLink(e.target.value)}
-                />
-              </section>
-              <section className="col-12 mt-2">
-                <label className="form-label fw-semibold d-block">Funding Information</label>
-                <section className="form-check form-check-inline">
+    <main style={styles.outerContainer}>
+      <section style={styles.container}>
+        <header style={styles.header}>
+          <h1>New Research</h1>
+          <p>Fill out the form below to create a new research listing.</p>
+        </header>
+        <form onSubmit={handleSubmit} style={styles.form}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px' }}>
+            <div>
+              <label style={styles.label}>Research Title</label>
+              <input
+                type="text"
+                style={styles.input}
+                value={title}
+                onChange={e => setTitle(e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <label style={styles.label}>Research Area</label>
+              <Select
+                options={researchAreaOptions}
+                value={researchAreaOptions.find(o => o.value === researchArea) || null}
+                onChange={selected => setResearchArea(selected ? selected.value : '')}
+                placeholder="Select research area..."
+                isClearable
+              />
+              {researchArea === 'Other' && (
+                <div style={{ marginTop: '10px' }}>
+                  <label style={styles.label}>Please specify:</label>
                   <input
-                    className="form-check-input"
+                    type="text"
+                    style={styles.input}
+                    value={customResearchArea}
+                    onChange={e => setCustomResearchArea(e.target.value)}
+                    required
+                  />
+                </div>
+              )}
+            </div>
+            <div style={styles.fullWidth}>
+              <label style={styles.label}>Abstract/Summary</label>
+              <textarea
+                rows="4"
+                style={styles.textarea}
+                value={summary}
+                onChange={e => setSummary(e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <label style={styles.label}>Keywords</label>
+              <Select
+                isMulti
+                options={keywordOptions}
+                value={keywords}
+                onChange={setKeywords}
+                placeholder="Select keywords..."
+                isClearable
+              />
+              {keywords.some(k => k.value === 'Other') && (
+                <div style={{ marginTop: '10px' }}>
+                  <label style={styles.label}>Please specify:</label>
+                  <input
+                    type="text"
+                    style={styles.input}
+                    value={customKeyword}
+                    onChange={e => setCustomKeyword(e.target.value)}
+                    required
+                  />
+                </div>
+              )}
+            </div>
+            <div>
+              <label style={styles.label}>Methodology</label>
+              <Select
+                options={methodologyOptions}
+                value={methodologyOptions.find(o => o.value === methodology) || null}
+                onChange={selected => setMethodology(selected ? selected.value : '')}
+                placeholder="Select methodology..."
+                isClearable
+              />
+              {methodology === 'Other' && (
+                <div style={{ marginTop: '10px' }}>
+                  <label style={styles.label}>Please specify:</label>
+                  <input
+                    type="text"
+                    style={styles.input}
+                    value={customMethodology}
+                    onChange={e => setCustomMethodology(e.target.value)}
+                    required
+                  />
+                </div>
+              )}
+            </div>
+            <div>
+              <label style={styles.label}>Country</label>
+              <select
+                style={styles.select}
+                value={selectedCountry}
+                onChange={e => setSelectedCountry(e.target.value)}
+              >
+                <option value="">Select a country</option>
+                {countries.map((country, idx) => (
+                  <option key={idx} value={country}>{country}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label style={styles.label}>University</label>
+              <Select
+                options={universities}
+                value={selectedUniversity}
+                onChange={setSelectedUniversity}
+                placeholder="Search for your university..."
+                isClearable
+              />
+            </div>
+            <div>
+              <label style={styles.label}>Department</label>
+              <Select
+                options={departmentOptions}
+                value={departmentOptions.find(o => o.value === department) || null}
+                onChange={selected => setDepartment(selected ? selected.value : '')}
+                placeholder="Select department..."
+                isClearable
+              />
+              {department === 'Other' && (
+                <div style={{ marginTop: '10px' }}>
+                  <label style={styles.label}>Please specify:</label>
+                  <input
+                    type="text"
+                    style={styles.input}
+                    value={customDepartment}
+                    onChange={e => setCustomDepartment(e.target.value)}
+                    required
+                  />
+                </div>
+              )}
+            </div>
+            <div style={styles.fullWidth}>
+              <label style={styles.label}>Collaborator Needs</label>
+              <textarea
+                rows="4"
+                style={styles.textarea}
+                value={collaboratorNeeds}
+                onChange={e => setCollaboratorNeeds(e.target.value)}
+                placeholder="Describe the collaborator needs in detail..."
+                required
+              />
+            </div>
+            <div>
+              <label style={styles.label}>Project Status</label>
+              <select
+                style={styles.select}
+                value={status}
+                onChange={e => setStatus(e.target.value)}
+              >
+                <option value="Active">Active</option>
+                <option value="Completed">Completed</option>
+              </select>
+            </div>
+            <div>
+              <label style={styles.label}>End Date</label>
+              <input
+                type="date"
+                style={styles.input}
+                value={endDate}
+                onChange={e => setEndDate(e.target.value)}
+              />
+            </div>
+            <div>
+              <label style={styles.label}>Links to Publications</label>
+              <input
+                type="url"
+                style={styles.input}
+                value={publicationLink}
+                onChange={e => setPublicationLink(e.target.value)}
+              />
+            </div>
+            <div>
+              <label style={styles.label}>Funding Information</label>
+              <div>
+                <label style={{ marginRight: '15px' }}>
+                  <input
                     type="radio"
                     name="funding"
                     value="Funded"
                     checked={fundingInfo === 'Funded'}
                     onChange={() => setFundingInfo('Funded')}
                     required
-                  />
-                  <label className="form-check-label">Funded</label>
-                </section>
-                <section className="form-check form-check-inline">
+                  /> Funded
+                </label>
+                <label>
                   <input
-                    className="form-check-input"
                     type="radio"
                     name="funding"
                     value="Looking for Funding"
                     checked={fundingInfo === 'Looking for Funding'}
                     onChange={() => setFundingInfo('Looking for Funding')}
                     required
-                  />
-                  <label className="form-check-label">Looking for Funding</label>
-                </section>
-              </section>
-            </section>
-          </fieldset>
-          <section className="col-12 d-flex justify-content-center">
-            <button type="submit" className="btn btn-primary px-4 py-2 fw-bold">
-              Create Listing
-            </button>
-          </section>
+                  /> Looking for Funding
+                </label>
+              </div>
+            </div>
+            <div style={styles.fullWidth}>
+              <label style={styles.label}>Tags (up to 5)</label>
+              <Select
+                isMulti
+                options={keywordOptions}
+                value={tags}
+                onChange={(selectedOptions) => {
+                  if (selectedOptions.length <= 5) {
+                    setTags(selectedOptions);
+                  } else {
+                    alert('Please select up to 5 tags only.');
+                  }
+                }}
+                placeholder="Select or type tags..."
+                isClearable
+              />
+            </div>
+            <div style={styles.fullWidth}>
+              <button
+                type="submit"
+                style={styles.button}
+                onMouseOver={(e) => (e.target.style.backgroundColor = '#0b5ed7')}
+                onMouseOut={(e) => (e.target.style.backgroundColor = '#0d6efd')}
+              >
+                Create Listing
+              </button>
+            </div>
+          </div>
         </form>
       </section>
     </main>

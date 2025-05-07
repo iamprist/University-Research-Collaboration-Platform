@@ -1,6 +1,7 @@
 import { collection, addDoc, serverTimestamp, doc, getDoc } from "firebase/firestore";
 import { db } from "../config/firebaseConfig";
 import { auth } from "../config/firebaseConfig";
+
 // Function to store user details locally when they log in
 export const storeUserDetailsLocally = ({ userId, role, userName, ip }) => {
   localStorage.setItem("userDetails", JSON.stringify({ userId, role, userName, ip }));
@@ -18,27 +19,20 @@ export const logEvent = async ({ userId, role, userName, action, target, details
       resolvedUserName = userDoc.exists() ? userDoc.data().name : "N/A";
     }
 
-    // Add event log to Firestore
-    await addDoc(collection(db, "logs"), {
-      userId,
-      role,
-      userName: resolvedUserName,
-      action,
-      target,
-      details,
-      ip,
+    const logData = {
+      userId: userId || "unknown",
+      role: role || "unknown",
+      userName: resolvedUserName || "unknown",
+      action: action || "unspecified",
+      target: target || "unspecified",
+      details: details || "",
+      ip: ip || "N/A",
       timestamp: serverTimestamp(),
-    });
+    };
 
-    console.log("Event logged successfully:", {
-      userId,
-      role,
-      userName: resolvedUserName,
-      action,
-      target,
-      details,
-      ip,
-    });
+    await addDoc(collection(db, "logs"), logData);
+
+    console.log("Event logged successfully:", logData);
   } catch (error) {
     console.error("Error logging event:", error.message);
   }
@@ -67,7 +61,6 @@ export const handleLogout = async () => {
       localStorage.removeItem("userDetails");
 
       // Proceed with the logout process
-      // Assuming `auth` is already imported and configured in Firebase
       await auth.signOut();
       console.log("User logged out successfully.");
     } else {

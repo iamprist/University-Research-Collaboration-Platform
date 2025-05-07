@@ -1,67 +1,163 @@
-// ReviewerRecommendations.jsx
 import React, { useEffect, useState } from 'react';
-import { auth, db } from '../config/firebaseConfig';
-import { collection, getDocs} from 'firebase/firestore';
-import { toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
+import { db } from '../config/firebaseConfig';
+import { useAuth } from '../pages/Reviewer/authContext';
 
-const ReviewerRecommendations = () => {
-  const [recommendedResearch, setRecommendedResearch] = useState([]);
+export default function ReviewerRecommendations() {
+  const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { currentUser } = useAuth();
 
   useEffect(() => {
     const fetchRecommendations = async () => {
+      if (!currentUser?.uid) return;
+
       try {
-        const user = auth.currentUser;
-        if (!user) return toast.warn('User not authenticated');
+        // Get reviewer's expertiseTags
+        const reviewerRef = doc(db, 'reviewers', currentUser.uid);
+        const reviewerSnap = await getDoc(reviewerRef);
 
-        // Get expertiseTags from reviewerApplications
-        const applicationDoc = await db.collection('reviewApplications').doc(user.uid).get();
-        if (!applicationDoc.exists) throw new Error('Application not found');
+        if (!reviewerSnap.exists()) {
+          console.warn('Reviewer profile not found');
+          return;
+        }
 
-        const { expertiseTags } = applicationDoc.data();
+        const { expertiseTags = [] } = reviewerSnap.data();
+        const expertiseValues = expertiseTags.map(tag => tag?.value || tag);
 
-        // Fetch research listings
-        const researchSnapshot = await getDocs(collection(db, 'research'));
-        const allResearch = researchSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        // Match research listings with expertiseTags
-        const matched = allResearch.filter(research =>
-          research.tags?.some(tag => expertiseTags.includes(tag))
-        );
+        // Get all research listings
+        const listingsRef = collection(db, 'research-listings');
+        const listingsSnap = await getDocs(listingsRef);
 
-        setRecommendedResearch(matched);
-      } catch (err) {
-        console.error('Failed to fetch recommendations:', err);
-        toast.error('Error fetching recommendations.');
+        const matches = [];
+
+
+        //
+        console.log("Expertise Values:", expertiseValues);
+        //
+
+
+        listingsSnap.forEach(docSnap => {
+          const data = docSnap.data();
+          const rawTags = Array.isArray(data.tags) ? data.tags : [];
+          const listingTags = rawTags.map(tag => tag?.value || tag);
+
+
+
+          //
+          console.log(`Research "${data.title}" tags:`, listingTags);
+          //
+
+
+
+          // Check if any tag matches
+          const hasMatch = expertiseValues.some(val => listingTags.includes(val));
+          if (hasMatch) {
+            matches.push({
+              id: docSnap.id,
+              title: data.title,
+              summary: data.summary,
+              tags: data.tags || [],
+              researchArea: data.researchArea || '',
+            });
+          }
+        });
+
+        setRecommendations(matches);
+      } catch (error) {
+        console.error('Error fetching recommendations:', error);
       } finally {
         setLoading(false);
       }
     };
 
     fetchRecommendations();
-  }, []);
+  }, [currentUser]);
 
-  if (loading) return <p>Loading recommendations...</p>;
+  if (loading) {
+    return (
+      <section className="mt-4 text-white">
+        <p>Loading recommendations...</p>
+      </section>
+    );
+  }
+
+  if (recommendations.length === 0) {
+    return (
+      <section className="mt-4 text-white">
+        <p>No matching research found based on your expertise.</p>
+      </section>
+    );
+  }
+  const cardStyle = {
+    backgroundColor: '#1A2E40',
+    borderRadius: '1rem',
+    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.2)',
+    padding: '1.5rem',
+    marginBottom: '1.5rem',
+    textAlign: 'left',
+    maxWidth: '600px',
+    margin: '1rem auto',
+    color: '#FFFFFF',
+  };
+  
 
   return (
-    <div className="recommended-research p-4">
-      <h3 className="text-xl font-semibold mb-4">Recommended Research</h3>
-      {recommendedResearch.length === 0 ? (
-        <p className="text-gray-600">No recommendations available at this time.</p>
-      ) : (
-        <ul className="space-y-3">
-          {recommendedResearch.map(research => (
-            <li key={research.id} className="bg-white p-4 shadow rounded-lg">
-              <h4 className="font-bold text-lg">{research.title}</h4>
-              <p className="text-sm text-gray-700">Tags: {research.tags.join(', ')}</p>
-              <p className="text-sm text-gray-600">{research.description}</p>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-};
+    <section className="mt-4">
+      <h3 className="text-white mb-3">🔍 Recommended Research</h3>
 
-export default ReviewerRecommendations;
+
+
+
+      {recommendations.map((rec) => (
+  <article 
+    key={rec.id} 
+    style={cardStyle}
+    aria-label={`Recommended research titled ${rec.title}`}
+  >
+    <h5 className="mb-2">{rec.title}</h5>
+    <div className="d-flex flex-wrap gap-2 mb-2">
+  {rec.researchArea.split(',').map((area, i) => (
+    <span 
+      key={i} 
+      style={{
+        backgroundColor: '#274E6E',
+        padding: '0.4rem 0.8rem',
+        borderRadius: '0.5rem',
+        color: '#fff',
+        fontSize: '0.8rem',
+        fontWeight: '500',
+        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
+      }}
+    >
+      {area.trim()}
+    </span>
+  ))}
+</div>
+
+    <p>{rec.summary}</p>
+    <div className="d-flex flex-wrap gap-2 mt-2">
+      {rec.tags.map((tag, i) => (
+        <span 
+          key={i} 
+          style={{
+            backgroundColor: '#0d6efd', 
+            padding: '0.25rem 0.5rem', 
+            borderRadius: '0.5rem', 
+            fontSize: '0.75rem'
+          }}
+        >
+          {tag.label}
+        </span>
+      ))}
+    </div>
+  </article>
+))}
+
+
+
+      
+    </section>
+  );
+}

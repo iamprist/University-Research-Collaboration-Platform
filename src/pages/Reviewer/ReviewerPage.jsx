@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db, auth, storage } from '../../config/firebaseConfig';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, getDoc, deleteDoc } from 'firebase/firestore';
+import { useAuth } from './authContext';
 import Select from 'react-select';
 import { toast } from 'react-toastify';
 import { Link } from 'react-router-dom';
 import 'react-toastify/dist/ReactToastify.css';
 import './ReviewerStyles.css';
+import ReviewerRecommendations from './ReviewerRecommendations';
 
 const ReviewerForm = () => {
   const navigate = useNavigate();
@@ -23,6 +25,7 @@ const ReviewerForm = () => {
     publications: '',
     acceptedTerms: false,
   });
+  const { currentUser } = useAuth();
 
   // Load saved form data from session storage on mount
   useEffect(() => {
@@ -285,6 +288,13 @@ const ReviewerForm = () => {
           )}
         </button>
       </form>
+
+      {/* Render ReviewerRecommendations for approved reviewers */}
+      {currentUser && (
+        <section className="mt-4 w-100">
+          <ReviewerRecommendations userId={currentUser.uid} />
+        </section>
+      )}
     </div>
   );
 };
