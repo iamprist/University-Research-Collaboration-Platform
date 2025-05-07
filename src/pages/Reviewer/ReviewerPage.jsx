@@ -9,7 +9,7 @@ import { toast } from 'react-toastify';
 import { Link } from 'react-router-dom';
 import 'react-toastify/dist/ReactToastify.css';
 import './ReviewerStyles.css';
-import ReviewerRecommendations from './ReviewerRecommendations';
+import ReviewerRecommendations from "../../components/ReviewerRecommendations";
 
 const ReviewerForm = () => {
   const navigate = useNavigate();
