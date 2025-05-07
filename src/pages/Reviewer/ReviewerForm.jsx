@@ -5,6 +5,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import Select from 'react-select';
 import { toast } from 'react-toastify';
+import { Link } from 'react-router-dom';
 import 'react-toastify/dist/ReactToastify.css';
 import './ReviewerStyles.css';
 
@@ -12,6 +13,7 @@ const ReviewerForm = () => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [user, setUser] = useState(null);
+  const [errors, setErrors] = useState({});
   const [formData, setFormData] = useState({
     name: '',
     institution: '',
@@ -22,8 +24,20 @@ const ReviewerForm = () => {
     acceptedTerms: false,
   });
 
-  // Check auth state on mount
+  // Load saved form data from session storage on mount
   useEffect(() => {
+    const savedData = sessionStorage.getItem('reviewerFormData');
+    if (savedData) {
+      try {
+        const parsedData = JSON.parse(savedData);
+        // Omit cvFile since it can't be serialized
+        const { cvFile, ...rest } = parsedData;
+        setFormData((prev) => ({ ...prev, ...rest }));
+      } catch (err) {
+        console.error('Failed to parse saved form data:', err);
+      }
+    }
+
     const unsubscribe = auth.onAuthStateChanged((currentUser) => {
       setUser(currentUser);
       if (!currentUser) {
@@ -31,9 +45,11 @@ const ReviewerForm = () => {
         navigate('/signin');
       }
     });
+
     return unsubscribe;
   }, [navigate]);
 
+  // Expertise options (same as before)
   const expertiseOptions = [
     { value: 'PHYS', label: 'Physics' },
     { value: 'CHEM', label: 'Chemistry' },
@@ -48,31 +64,48 @@ const ReviewerForm = () => {
     { value: 'HRM', label: 'Human Resources' },
   ];
 
+  // Save form data to sessionStorage
+  const saveFormDataToSession = () => {
+    // Exclude cvFile since it can't be serialized
+    const { cvFile, ...saveData } = formData;
+    sessionStorage.setItem('reviewerFormData', JSON.stringify(saveData));
+  };
+
+  // Validate form fields
+  const validateForm = () => {
+    const newErrors = {};
+    if (!formData.name.trim()) newErrors.name = 'Full name is required';
+    if (!formData.institution.trim()) newErrors.institution = 'Institution is required';
+    if (formData.expertiseTags.length === 0) newErrors.expertise = 'Select at least one expertise area';
+    if (!formData.yearsExperience || isNaN(formData.yearsExperience)) newErrors.experience = 'Valid years of experience required';
+    if (!formData.cvFile) newErrors.cv = 'CV upload is required';
+    if (!formData.acceptedTerms) newErrors.terms = 'You must accept the terms';
+    return newErrors;
+  };
+
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!user) {
-      toast.error('Authentication required. Please log in.');
+
+    const formErrors = validateForm();
+    if (Object.keys(formErrors).length > 0) {
+      setErrors(formErrors);
+      toast.error('Please fix the highlighted errors');
       return;
     }
 
-    setIsSubmitting(true); // Set submitting state to true
+    if (formData.cvFile.size > 5 * 1024 * 1024) {
+      toast.error('CV must be less than 5MB');
+      return;
+    }
+    if (formData.cvFile.type !== 'application/pdf') {
+      toast.error('Only PDF files are accepted');
+      return;
+    }
+
+    setIsSubmitting(true);
 
     try {
-      console.log('Validating form data...');
-      // Validate form
-      if (!formData.name.trim()) throw new Error('Full name is required');
-      if (!formData.institution.trim()) throw new Error('Institution is required');
-      if (formData.expertiseTags.length === 0) throw new Error('Select at least one expertise area');
-      if (!formData.yearsExperience || isNaN(formData.yearsExperience)) throw new Error('Valid years of experience required');
-      if (!formData.cvFile) throw new Error('CV upload is required');
-      if (!formData.acceptedTerms) throw new Error('You must accept the terms');
-
-      // Validate CV file
-      if (formData.cvFile.size > 5 * 1024 * 1024) throw new Error('CV must be <5MB');
-      if (formData.cvFile.type !== 'application/pdf') throw new Error('Only PDF files accepted');
-
-      console.log('Uploading CV to Firebase Storage...');
-      // Upload CV to Storage
       const storageRef = ref(
         storage,
         `reviewer-cvs/${user.uid}/${Date.now()}_${formData.cvFile.name}`
@@ -80,15 +113,11 @@ const ReviewerForm = () => {
       await uploadBytes(storageRef, formData.cvFile);
       const cvUrl = await getDownloadURL(storageRef);
 
-      console.log('Processing publications...');
-      // Process publications
       const publications = formData.publications
         .split(/[\n,]+/)
         .map((link) => link.trim())
         .filter((link) => link);
 
-      console.log('Saving application to Firestore...');
-      // Save to Firestore
       await setDoc(doc(db, 'reviewers', user.uid), {
         name: formData.name.trim(),
         institution: formData.institution.trim(),
@@ -96,56 +125,62 @@ const ReviewerForm = () => {
         yearsExperience: parseInt(formData.yearsExperience),
         cvUrl,
         publications,
-        status: 'in_progress', // Set status to "Application in Progress"
+        status: 'in_progress',
         userId: user.uid,
         email: user.email,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
 
-      console.log('Application submitted successfully!');
       toast.success('Application submitted successfully!');
-      navigate('/reviewer'); // Redirect to ReviewerPage
+      sessionStorage.removeItem('reviewerFormData');
+      navigate('/reviewer');
     } catch (error) {
       console.error('Submission error:', error);
       toast.error(error.message || 'Submission failed. Please try again.');
     } finally {
-      console.log('Resetting submitting state...');
-      setIsSubmitting(false); // Ensure the button resets
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="reviewer-application-container">
-      <h2>Reviewer Application</h2>
+    <div className="reviewer-application-container" role="region" aria-labelledby="form-heading">
+      <h2 id="form-heading">Reviewer Application</h2>
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} noValidate>
         {/* Name Field */}
         <div className="form-group">
-          <label>Full Name *</label>
+          <label htmlFor="name">Full Name *</label>
           <input
             type="text"
+            id="name"
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            required
+            aria-invalid={!!errors.name}
+            aria-describedby={errors.name ? "name-error" : undefined}
           />
+          {errors.name && <span id="name-error" className="error-message">{errors.name}</span>}
         </div>
 
         {/* Institution Field */}
         <div className="form-group">
-          <label>Institution *</label>
+          <label htmlFor="institution">Institution *</label>
           <input
             type="text"
+            id="institution"
             value={formData.institution}
             onChange={(e) => setFormData({ ...formData, institution: e.target.value })}
-            required
+            aria-invalid={!!errors.institution}
+            aria-describedby={errors.institution ? "institution-error" : undefined}
           />
+          {errors.institution && <span id="institution-error" className="error-message">{errors.institution}</span>}
         </div>
 
         {/* Expertise Tags */}
         <div className="form-group">
-          <label>Areas of Expertise *</label>
+          <label htmlFor="expertise">Areas of Expertise *</label>
           <Select
+            id="expertise"
             isMulti
             options={expertiseOptions}
             onChange={(selected) =>
@@ -157,43 +192,50 @@ const ReviewerForm = () => {
             
             className="expertise-select"
             placeholder="Select your expertise areas..."
-            required
+            aria-invalid={!!errors.expertise}
+            aria-describedby={errors.expertise ? "expertise-error" : undefined}
           />
+          {errors.expertise && <span id="expertise-error" className="error-message">{errors.expertise}</span>}
         </div>
 
         {/* Years of Experience */}
         <div className="form-group">
-          <label>Years of Experience *</label>
+          <label htmlFor="experience">Years of Experience *</label>
           <input
             type="number"
+            id="experience"
             min="1"
             value={formData.yearsExperience}
             onChange={(e) => setFormData({ ...formData, yearsExperience: e.target.value })}
-            required
+            aria-invalid={!!errors.experience}
+            aria-describedby={errors.experience ? "experience-error" : undefined}
           />
+          {errors.experience && <span id="experience-error" className="error-message">{errors.experience}</span>}
         </div>
 
         {/* CV Upload */}
         <div className="form-group">
-          <label>Upload CV (PDF, max 5MB) *</label>
+          <label htmlFor="cv">Upload CV (PDF, max 5MB) *</label>
           <input
             type="file"
+            id="cv"
             accept=".pdf"
             onChange={(e) => setFormData({ ...formData, cvFile: e.target.files[0] })}
-            required
+            aria-invalid={!!errors.cv}
+            aria-describedby={errors.cv ? "cv-error" : undefined}
           />
-          {formData.cvFile && (
-            <p className="file-info">Selected: {formData.cvFile.name}</p>
-          )}
+          {formData.cvFile && <p className="file-info">Selected: {formData.cvFile.name}</p>}
+          {errors.cv && <span id="cv-error" className="error-message">{errors.cv}</span>}
         </div>
 
         {/* Publications */}
         <div className="form-group">
-          <label>
+          <label htmlFor="publications">
             Publication Links (Optional)
             <span className="hint">Separate with commas or new lines</span>
           </label>
           <textarea
+            id="publications"
             value={formData.publications}
             onChange={(e) => setFormData({ ...formData, publications: e.target.value })}
             placeholder="https://example.com/pub1, https://example.com/pub2"
@@ -207,22 +249,33 @@ const ReviewerForm = () => {
             id="terms"
             checked={formData.acceptedTerms}
             onChange={(e) => setFormData({ ...formData, acceptedTerms: e.target.checked })}
-            required
+            aria-invalid={!!errors.terms}
+            aria-describedby={errors.terms ? "terms-error" : undefined}
           />
           <label htmlFor="terms">
-            I accept the <a href="/terms">Terms and Conditions</a> *
+            I accept the{' '}
+            <Link
+              to="/terms"
+              onClick={saveFormDataToSession}
+              aria-label="View Terms and Conditions"
+            >
+              Terms and Conditions
+            </Link>{' '}
+            *
           </label>
+          {errors.terms && <span id="terms-error" className="error-message">{errors.terms}</span>}
         </div>
 
         {/* Submit Button */}
         <button
           type="submit"
           disabled={isSubmitting}
-          className={isSubmitting ? 'submitting' : ''}
+          className={`submit-button ${isSubmitting ? 'submitting' : ''}`}
+          aria-busy={isSubmitting}
         >
           {isSubmitting ? (
             <>
-              <span className="spinner"></span>
+              <span className="spinner" role="status" aria-hidden="true"></span>
               Submitting...
             </>
           ) : (

@@ -1,45 +1,117 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { auth, provider, db } from "../config/firebaseConfig";
 import { signInWithPopup } from "firebase/auth";
-import { setDoc, doc } from "firebase/firestore";
+import { setDoc, doc, getDocs, collection } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { logEvent } from "../utils/logEvent";
+import { toast } from "react-toastify";
+import { 
+  ArrowLeftIcon,
+  SparklesIcon,
+  GlobeAltIcon,
+  ShieldCheckIcon
+} from '@heroicons/react/24/outline';
 
 function SignInPage() {
   const navigate = useNavigate();
 
-  const allowedAdmins = [
-    "2550411@students.wits.ac.za",
-    "2465030@students.wits.ac.za",
-    "2562270@students.wits.ac.za",
-    "2542032@students.wits.ac.za",
-    "2556239@students.wits.ac.za",
-    "2555497@students.wits.ac.za",
-  ];
+  // Add enhanced animations via dynamic <style>
+  useEffect(() => {
+    const style = document.createElement("style");
+    style.textContent = `
+      /* Background animation */
+      @keyframes gradientBG {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+      }
+      /* Neon glow animation */
+      @keyframes neon-glow {
+        0%, 100% {
+          box-shadow: 0 0 5px #64CCC5, 0 0 10px #64CCC5, 0 0 20px #64CCC5;
+        }
+        50% {
+          box-shadow: 0 0 10px #B1EDE8, 0 0 20px #B1EDE8, 0 0 30px #B1EDE8;
+        }
+      }
+      /* Card fade-in animation */
+      @keyframes fadeInUp {
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      /* Modal animation */
+      @keyframes fadeInScale {
+        from {
+          opacity: 0;
+          transform: scale(0.95);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+      /* Button radial effect */
+      .neon-button::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 300%;
+        height: 300%;
+        background: radial-gradient(circle, rgba(99,204,200,0.2) 0%, transparent 70%);
+        transform: translate(-50%, -50%) scale(0.5);
+        transition: transform 0.5s ease;
+        border-radius: 50%;
+      }
+      .hero-section {
+        background-size: 400% 400%;
+        animation: gradientBG 15s ease infinite;
+      }
+    `;
+    document.head.appendChild(style);
+    return () => document.head.removeChild(style);
+  }, []);
 
   const handleSignIn = async (role) => {
     try {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
-  
-      if (role === "admin" && !allowedAdmins.includes(user.email)) {
-        // Styled popup for unauthorized admins
-        const popup = document.createElement("div");
-        popup.innerHTML = `
-          <div style="
+
+      if (role === "admin") {
+        const newEmailsSnapshot = await getDocs(collection(db, "newEmails"));
+        const isAuthorizedInNewEmails = newEmailsSnapshot.docs.some(
+          (doc) => doc.data().email.toLowerCase() === user.email.toLowerCase()
+        );
+
+        const usersSnapshot = await getDocs(collection(db, "users"));
+        const isAuthorizedInUsers = usersSnapshot.docs.some(
+          (doc) =>
+            doc.data().email.toLowerCase() === user.email.toLowerCase() &&
+            doc.data().role === "admin"
+        );
+
+        // Check if the email is in either `newEmails` or `users` collection
+        if (!isAuthorizedInNewEmails && !isAuthorizedInUsers) {
+          const modal = document.createElement("section");
+          modal.setAttribute("role", "dialog");
+          modal.setAttribute("aria-modal", "true");
+          modal.className = "modal";
+          modal.style = `
             position: fixed;
-            top: 0; 
-            left: 0;
-            width: 100%; 
-            height: 100%; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            background: rgba(0, 0, 0, 0.5); 
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.5);
             font-family: Inter, sans-serif;
             z-index: 1000;
-          ">
-            <div style="
+            animation: fadeInScale 0.3s ease forwards;
+          `;
+          modal.innerHTML = `
+            <article role="document" style="
               background: #FFFFFF;
               padding: 2rem;
               border-radius: 1rem;
@@ -57,26 +129,24 @@ function SignInPage() {
                 border: none;
                 border-radius: 0.5rem;
                 cursor: pointer;
-              " onclick="this.parentElement.parentElement.remove()">Close</button>
-            </div>
-          </div>
-        `;
-        document.body.appendChild(popup);
-        return;
+                transition: all 0.3s ease;
+              " onclick="this.closest('section').remove()">Close</button>
+            </article>
+          `;
+          document.body.appendChild(modal);
+          return;
+        }
       }
-  
-      // Save the token in localStorage
+
       const token = await user.getIdToken();
       localStorage.setItem("authToken", token);
-  
-      // Save user details in Firestore
+
       await setDoc(doc(db, "users", user.uid), {
         name: user.displayName,
         email: user.email,
         role,
       });
-  
-      // Log the login event
+
       await logEvent({
         userId: user.uid,
         role,
@@ -84,8 +154,7 @@ function SignInPage() {
         action: "Login",
         details: "User logged in",
       });
-  
-      // Redirect to the appropriate page
+
       if (role === "researcher") navigate("/researcher-dashboard");
       else if (role === "reviewer") navigate("/reviewer");
       else if (role === "admin") navigate("/admin");
@@ -94,11 +163,10 @@ function SignInPage() {
         console.log("Login canceled by user");
       } else {
         console.error("Login error:", error);
-        alert("Login failed. Please try again.");
+        toast.error("Login failed. Please try again.");
       }
     }
   };
-  
 
   const styles = {
     container: {
@@ -108,150 +176,267 @@ function SignInPage() {
       backgroundColor: "#FFFCF9",
       fontFamily: "Inter, sans-serif",
     },
-    header: {
-      backgroundColor: "#132238",
+    heroSection: {
+      background: "linear-gradient(135deg, #132238 0%, #364E68 100%)",
+      padding: "clamp(1.5rem, 5vw, 3rem)",
       color: "#FFFFFF",
-      padding: "1.5rem",
       textAlign: "center",
+      position: "relative",
     },
-    main: {
-      flexGrow: 1,
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      backgroundColor: "#F8F9FA",
-      padding: "2rem",
-    },
-    card: {
-      backgroundColor: "#FFFFFF",
-      padding: "2rem",
-      borderRadius: "1rem",
-      boxShadow: "0 4px 6px rgba(18, 34, 56, 0.1)",
-      textAlign: "center",
-      maxWidth: "400px",
-      width: "100%",
+    content: {
+      maxWidth: "90%",
+      margin: "0 auto",
+      padding: "1rem 0",
     },
     heading: {
-      fontSize: "2rem",
+      fontSize: "clamp(2rem, 5vw, 2.5rem)",
       fontWeight: "700",
-      color: "#132238",
+      marginBottom: "0.5rem",
+    },
+    tagline: {
+      fontSize: "clamp(1.2rem, 3vw, 1.5rem)",
+      fontWeight: "600",
+      color: "#B1EDE8",
+      marginBottom: "0.75rem",
+    },
+    description: {
+      fontSize: "clamp(0.9rem, 1.5vw, 1.1rem)",
+      color: "#FFFFFF",
+      maxWidth: "90%",
+      margin: "0 auto 1.5rem",
+      lineHeight: "1.5",
+      textShadow: "0 2px 4px rgba(0,0,0,0.1)",
+    },
+    statsContainer: {
+      display: "flex",
+      justifyContent: "center",
+      gap: "clamp(1.5rem, 5vw, 3rem)",
+      margin: "1.5rem 0",
+      flexWrap: "wrap",
+    },
+    statItem: {
+      textAlign: "center",
+      padding: "0.75rem 1rem",
+      background: "rgba(99, 204, 197, 0.15)",
+      borderRadius: "0.5rem",
+      minWidth: "120px",
+    },
+    statNumber: {
+      fontSize: "clamp(1.25rem, 3vw, 1.75rem)",
+      fontWeight: "700",
+      color: "#64CCC5",
+    },
+    statLabel: {
+      fontSize: "clamp(0.75rem, 1vw, 0.9rem)",
+      color: "#B1EDE8",
+    },
+    featureList: {
+      display: "flex",
+      flexWrap: "wrap",
+      justifyContent: "center",
+      gap: "0.75rem",
       marginBottom: "1.5rem",
     },
-    button: {
-      position: "relative",
-      padding: "0.75rem 1.5rem",
+    featureItem: {
+      display: "flex",
+      alignItems: "center",
+      gap: "0.5rem",
+      padding: "0.5rem 1rem",
       borderRadius: "2rem",
+      background: "rgba(255, 255, 255, 0.1)",
+      fontSize: "clamp(0.8rem, 1.2vw, 0.95rem)",
+      color: "#FFFFFF",
+      flexShrink: 0,
+    },
+    featureIcon: {
+      height: "1rem",
+      width: "1rem",
+      color: "#64CCC5",
+    },
+    subheading: {
+      fontSize: "clamp(1rem, 2vw, 1.25rem)",
+      color: "#B1EDE8",
+      marginBottom: "1.5rem",
+    },
+    card: {
+      background: "rgba(255, 255, 255, 0.9)",
+      backdropFilter: "blur(12px)",
+      border: "1px solid rgba(255, 255, 255, 0.3)",
+      boxShadow: "0 8px 32px 0 rgba(18, 34, 56, 0.2)",
+      borderRadius: "1.5rem",
+      padding: "2.5rem",
+      maxWidth: "400px",
+      width: "100%",
+      margin: "2rem auto",
+      position: "relative",
+      zIndex: 1,
+      opacity: 0,
+      transform: "translateY(20px)",
+      animation: "fadeInUp 0.6s ease forwards",
+      backgroundImage: "radial-gradient(circle at 2px 2px, rgba(99,204,200,0.05) 2px, transparent 0)",
+      backgroundSize: "40px 40px"
+    },
+    button: {
+      backgroundColor: "#132238",
+      color: "#64CCC5",
+      padding: "1rem 2rem",
+      borderRadius: "2rem",
+      border: "none",
       fontSize: "1rem",
       fontWeight: "600",
-      border: "none",
       cursor: "pointer",
       transition: "all 0.3s ease",
       marginBottom: "1rem",
       width: "100%",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: "0.5rem",
+      position: "relative",
+      overflow: "hidden",
     },
-    googleIcon: {
+    backButton: {
       position: "absolute",
-      left: "1rem",
-      width: "20px",
-      height: "20px",
-    },
-    researcherButton: {
-      backgroundColor: "#64CCC5",
-      color: "#132238",
-    },
-    reviewerButton: {
-      backgroundColor: "#B1EDE8",
-      color: "#132238",
-    },
-    adminButton: {
-      backgroundColor: "#A0E7E5",
-      color: "#132238",
-    },
-    landingPageButton: {
-      backgroundColor: "#F4F4F4",
-      color: "#132238",
-      border: "1px solid #D1D5DB",
-      marginTop: "1rem",
+      left: "clamp(1rem, 5vw, 2rem)",
+      top: "clamp(1rem, 3vw, 2rem)",
+      display: "flex",
+      alignItems: "center",
+      gap: "clamp(0.25rem, 1vw, 0.5rem)",
+      color: "#B1EDE8",
+      cursor: "pointer",
+      background: "none",
+      border: "none",
+      fontSize: "clamp(0.875rem, 3vw, 1rem)",
     },
     footer: {
       backgroundColor: "#364E68",
       color: "#B1EDE8",
-      padding: "1.5rem",
+      padding: "2rem",
+      marginTop: "auto",
       textAlign: "center",
     },
+    footerLinks: {
+      display: "flex",
+      justifyContent: "center",
+      gap: "2rem",
+      marginBottom: "1rem",
+    },
     footerLink: {
-      color: "#B1EDE8",
+      color: "#64CCC5",
       textDecoration: "none",
-      margin: "0 1rem",
       fontSize: "0.9rem",
     },
   };
 
   return (
-    <div style={styles.container}>
-      <header style={styles.header}>
-        <h1>Innerk Hub</h1>
-        <p>Collaborate and innovate with ease</p>
-      </header>
-      <main style={styles.main}>
-        <div style={styles.card}>
-          <h2 style={styles.heading}>Sign In</h2>
+    <main role="main" style={styles.container}>
+      {/* Hero Section */}
+      <section className="hero-section" style={styles.heroSection}>
+      <button style={styles.backButton} onClick={() => navigate('/')}>
+        <ArrowLeftIcon style={{ height: 'clamp(1rem, 3vw, 1.25rem)' }} />
+           Back to Home
+        </button>
+        <header style={styles.content}>
+          <h1 style={styles.heading}>Welcome to Innerk Hub</h1>
+          <p style={styles.tagline}>Your Gateway to Cutting-Edge Scientific Collaboration</p>
+          <p style={styles.description}>
+            Join a vibrant ecosystem of researchers and institutions pushing the boundaries of knowledge. 
+            Innerk Hub empowers global scientific progress through secure collaboration, peer-reviewed excellence, 
+            and AI-enhanced research management.
+          </p>
+          
+          {/* Stats Section */}
+          <section aria-label="Platform statistics" style={styles.statsContainer}>
+            {[
+              { number: "Multiple", label: "Daily Collaborations" },
+              { number: "Protected", label: "Submission Integrity" },
+              { number: "Guaranteed", label: "Faster Peer Review" }
+            ].map((stat, index) => (
+              <article key={index} style={styles.statItem}>
+                <div style={styles.statNumber}>{stat.number}</div>
+                <div style={styles.statLabel}>{stat.label}</div>
+              </article>
+            ))}
+          </section>
+
+          {/* Features Section */}
+          <section aria-label="Key features" style={styles.featureList}>
+            <article style={styles.featureItem}>
+              <SparklesIcon style={styles.featureIcon} />
+              <span>Peer-Powered Research Validation</span>
+            </article>
+            <article style={styles.featureItem}>
+              <GlobeAltIcon style={styles.featureIcon} />
+              <span>Global Academic Network</span>
+            </article>
+            <article style={styles.featureItem}>
+              <ShieldCheckIcon style={styles.featureIcon} />
+              <span>Ensures Academic Integrity</span>
+            </article>
+          </section>
+
+          <p style={styles.subheading}>
+            Secure authentication powered by Google Cloud. Choose your role to continue:
+          </p>
+        </header>
+      </section>
+
+      {/* Sign-In Card */}
+      <section 
+        aria-label="Sign in options"
+        style={styles.card} 
+        className="card"
+      >
+        {["researcher", "reviewer", "admin"].map((role) => (
           <button
-            style={{ ...styles.button, ...styles.researcherButton }}
-            onClick={() => handleSignIn("researcher")}
+            key={role}
+            className="neon-button"
+            style={{
+              ...styles.button,
+              transition: "all 0.3s ease",
+            }}
+            onMouseOver={(e) => {
+              e.target.style.animation = "neon-glow 1.5s ease-in-out infinite";
+              e.target.querySelector("img").style.filter = "brightness(1.2)";
+            }}
+            onMouseOut={(e) => {
+              e.target.style.animation = "none";
+              e.target.querySelector("img").style.filter = "brightness(1)";
+            }}
+            onClick={() => handleSignIn(role)}
           >
             <img
               src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-              alt="Google Icon"
-              style={styles.googleIcon}
+              alt=""
+              aria-hidden="true"
+              style={{ 
+                height: "1.5rem",
+                transition: "filter 0.3s ease"
+              }}
             />
-            Sign in as Researcher
+            Continue as {role.charAt(0).toUpperCase() + role.slice(1)}
           </button>
-          <button
-            style={{ ...styles.button, ...styles.reviewerButton }}
-            onClick={() => handleSignIn("reviewer")}
-          >
-            <img
-              src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-              alt="Google Icon"
-              style={styles.googleIcon}
-            />
-            Sign in as Reviewer
-          </button>
-          <button
-            style={{ ...styles.button, ...styles.adminButton }}
-            onClick={() => handleSignIn("admin")}
-          >
-            <img
-              src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-              alt="Google Icon"
-              style={styles.googleIcon}
-            />
-            Sign in as Admin
-          </button>
-          <button
-            style={{ ...styles.button, ...styles.landingPageButton }}
-            onClick={() => navigate("/")}
-          >
-            Go to Landing Page
-          </button>
-        </div>
-      </main>
-      <footer style={styles.footer}>
-        <a href="/privacy-policy" style={styles.footerLink}>
-          Privacy Policy
-        </a>
-        <a href="/terms-of-service" style={styles.footerLink}>
-          Terms of Service
-        </a>
-        <a href="/contact-us" style={styles.footerLink}>
-          Contact Us
-        </a>
-        <p style={{ marginTop: "1rem", fontSize: "0.8rem" }}>
-          &copy; 2025 Innerk Hub
+        ))}
+      </section>
+
+      {/* Footer */}
+      <footer style={styles.footer} role="contentinfo">
+        <nav style={styles.footerLinks} aria-label="Footer navigation">
+          <a href="/privacy-policy" style={styles.footerLink}>
+            Privacy Policy
+          </a>
+          <a href="/terms-of-service" style={styles.footerLink}>
+            Terms of Service
+          </a>
+          <a href="/contact-us" style={styles.footerLink}>
+            Contact Support
+          </a>
+        </nav>
+        <p style={{ fontSize: "0.9rem", marginTop: "1rem" }}>
+          ©2025 Innerk Hub · Advancing Scientific Collaboration
         </p>
       </footer>
-    </div>
+    </main>
   );
 }
 

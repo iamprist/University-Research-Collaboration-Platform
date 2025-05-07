@@ -1,99 +1,178 @@
-// src/pages/ResearcherDashboard.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus } from 'react-bootstrap-icons';
 import { db, auth } from '../../config/firebaseConfig';
-import { collection, getDocs, query, where, doc, getDoc, addDoc} from 'firebase/firestore';
+import { collection, getDocs, query, where, doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { logEvent } from '../../utils/logEvent';
+import './ResearcherDashboard.css';
+import CollaborationRequestsPanel from '../../components/CollaborationRequestsPanel';
 
 const ResearcherDashboard = () => {
   const navigate = useNavigate();
-  const [listings, setListings] = useState([]);
-  const [collaborateListings, setCollaborateListings] = useState([]);
+  const [allListings, setAllListings] = useState([]);
+  const [myListings, setMyListings] = useState([]);
   const [userId, setUserId] = useState(null);
+  const [hasProfile, setHasProfile] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [collabListings, setCollabListings] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [dropdownVisible, setDropdownVisible] = useState(false);
+  const [showNoResults, setShowNoResults] = useState(false);
+  const dropdownTimeout = useRef(null);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [filteredListings, setFilteredListings] = useState([]);
+  const [userName, setUserName] = useState('');
 
   useEffect(() => {
-    const checkAuthToken = async () => {
-      const token = localStorage.getItem('authToken'); // Get the token from localStorage
-      if (!token) {
-        navigate('/signin'); // Redirect to login if no token is found
-        return;
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      navigate('/signin');
+      return;
+    }
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user) setUserId(user.uid);
+      else {
+        localStorage.removeItem('authToken');
+        navigate('/signin');
       }
-
-      // Validate the token by checking the current user
-      const unsubscribe = auth.onAuthStateChanged((user) => {
-        if (user) {
-          setUserId(user.uid);
-        } else {
-          localStorage.removeItem('authToken'); // Clear invalid token
-          navigate('/signin'); // Redirect to login
-        }
-      });
-
-      return () => unsubscribe();
-    };
-
-    checkAuthToken();
+    });
+    return () => unsubscribe();
   }, [navigate]);
 
   useEffect(() => {
-    const fetchListings = async () => {
-      if (!userId) return;
-
+    if (!userId) return;
+    (async () => {
       try {
-        const userQuery = query(collection(db, 'research-listings'), where('userId', '==', userId));
-        const userQuerySnapshot = await getDocs(userQuery);
-        const userFetchedListings = userQuerySnapshot.docs.map((doc) => ({ ...doc.data(), id: doc.id }));
-        setListings(userFetchedListings);
-
-        const otherQuery = query(collection(db, 'research-listings'), where('userId', '!=', userId));
-        const otherQuerySnapshot = await getDocs(otherQuery);
-
-        const otherFetchedListings = await Promise.all(
-          otherQuerySnapshot.docs.map(async (docSnapshot) => {
-            const listingData = docSnapshot.data();
-            const userDocRef = doc(db, 'users', listingData.userId);
-            const userDoc = await getDoc(userDocRef);
-            const researcherName = userDoc.exists() ? userDoc.data().name : 'Unknown Researcher';
-            return { ...listingData, id: docSnapshot.id, researcherName };
-          })
-        );
-
-        setCollaborateListings(otherFetchedListings);
-      } catch (error) {
-        console.error('Error fetching listings:', error);
+        const userDoc = await getDoc(doc(db, 'users', userId));
+        if (userDoc.exists()) {
+          setHasProfile(true);
+          setUserName(userDoc.data().name || 'Researcher');
+        } else {
+          navigate('/researcher-edit-profile');
+        }
+      } catch (err) {
+        setShowErrorModal(true);
       }
-    };
+    })();
+  }, [userId, navigate]);
 
-    fetchListings();
+  useEffect(() => {
+    if (!userId) return;
+    const q = query(
+      collection(db, "collaborations"),
+      where("collaboratorId", "==", userId)
+    );
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
+      const collabs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setCollabListings(collabs);
+      const listings = await Promise.all(
+        collabs.map(async collab => {
+          const listingDoc = await getDoc(doc(db, "research-listings", collab.listingId));
+          return listingDoc.exists() ? { id: listingDoc.id, ...listingDoc.data() } : null;
+        })
+      );
+      setCollabListings(listings.filter(Boolean));
+    });
+    return () => unsubscribe();
   }, [userId]);
 
   useEffect(() => {
-    const handleTabClose = async () => {
-      if (auth.currentUser) {
-        await logEvent({
-          userId: auth.currentUser.uid,
-          role: "Researcher",
-          userName: auth.currentUser.displayName || "N/A",
-          action: "Logout",
-          details: "User closed the browser/tab",
-        });
-      }
-    };
+    if (!userId || !hasProfile) return;
+    (async () => {
+      try {
+        const q = query(collection(db, 'research-listings'));
+        const querySnapshot = await getDocs(q);
+        const data = await Promise.all(
+          querySnapshot.docs.map(async (docSnap) => {
+            const listing = { id: docSnap.id, ...docSnap.data() };
+            try {
+              const researcherDoc = await getDoc(doc(db, 'users', listing.userId));
+              return {
+                ...listing,
+                researcherName: researcherDoc.exists() ? researcherDoc.data().name : 'Unknown Researcher'
+              };
+            } catch {
+              return { ...listing, researcherName: 'Unknown Researcher' };
+            }
+          })
+        );
+        setAllListings(data);
+      } catch {}
+    })();
+  }, [userId, hasProfile]);
 
-    window.addEventListener("beforeunload", handleTabClose);
-    return () => window.removeEventListener("beforeunload", handleTabClose);
-  }, []);
+  useEffect(() => {
+    if (!userId || !hasProfile) return;
+    (async () => {
+      try {
+        const q = query(collection(db, 'research-listings'), where('userId', '==', userId));
+        const querySnapshot = await getDocs(q);
+        const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setMyListings(data);
+      } catch {}
+    })();
+  }, [userId, hasProfile]);
 
-  const handleAddListing = () => {
-    navigate('/dashboard');
+  useEffect(() => {
+    setFilteredListings(myListings);
+  }, [myListings]);
+
+  const handleSearch = () => {
+    if (!searchTerm.trim()) {
+      setSearchResults([]);
+      setDropdownVisible(false);
+      return;
+    }
+    const searchTermLower = searchTerm.toLowerCase();
+    const filtered = allListings.filter(item => {
+      const title = item.title?.toLowerCase() || '';
+      const researcherName = item.researcherName?.toLowerCase() || '';
+      return title.includes(searchTermLower) || researcherName.includes(searchTermLower);
+    });
+    setSearchResults(filtered);
+    setDropdownVisible(true);
+
+    clearTimeout(dropdownTimeout.current);
+    dropdownTimeout.current = setTimeout(() => {
+      setDropdownVisible(false);
+    }, 5000);
+
+    if (filtered.length === 0) {
+      setShowNoResults(true);
+      setTimeout(() => setShowNoResults(false), 3000);
+    } else {
+      setShowNoResults(false);
+    }
   };
+
+  const handleAddListing = () => navigate('/researcher/add-listing');
+  const handleCollaborate = () => navigate('/researcher/collaborate');
+
+  const handleInputFocus = () => {
+    setDropdownVisible(false);
+    clearTimeout(dropdownTimeout.current);
+  };
+
+  const handleInputChange = (e) => {
+    setSearchTerm(e.target.value);
+    setDropdownVisible(false);
+    clearTimeout(dropdownTimeout.current);
+  };
+
+  const handleClear = () => {
+    setSearchTerm('');
+    setSearchResults([]);
+    setDropdownVisible(false);
+  };
+
+  useEffect(() => {
+    return () => {
+      clearTimeout(dropdownTimeout.current);
+    };
+  }, []);
 
   const handleLogout = async () => {
     try {
-      console.log("Attempting to log out...");
-
-      // Log the logout event before signing out
       if (auth.currentUser) {
         await logEvent({
           userId: auth.currentUser.uid,
@@ -102,230 +181,167 @@ const ResearcherDashboard = () => {
           action: "Logout",
           details: "User logged out",
         });
-        console.log("Logout event recorded.");
-      } else {
-        console.warn("No authenticated user found to log the event.");
       }
-
-      // Perform logout using Firebase Auth
       await auth.signOut();
-
-      console.log("Logout successful. Redirecting to /signin...");
-      // Redirect the user to the login page
       navigate("/signin");
-    } catch (error) {
-      console.error("Error logging out:", error);
+    } catch {
       alert("Failed to log out. Please try again.");
     }
   };
 
-
-<button onClick={() => startChat(userId)}>Message</button>
-
-const startChat = async (otherUserId) => {
-  const chatRef = await addDoc(collection(db, 'chats'), {
-    participants: [auth.currentUser.uid, otherUserId],
-    messages: [],
-  });
-  navigate(`/chat/${chatRef.id}`);
-};
-
-  const styles = {
-    header: {
-      backgroundColor: '#132238',
-      color: '#FFFFFF',
-      padding: '2rem',
-      textAlign: 'center',
-    },
-    addButton: {
-      backgroundColor: '#64CCC5',
-      color: '#132238',
-      border: 'none',
-      borderRadius: '50%',
-      width: '80px',
-      height: '80px',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontSize: '1.5rem',
-      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.2)',
-      cursor: 'pointer',
-      transition: 'transform 0.3s ease',
-    },
-    logoutButton: {
-      backgroundColor: '#f44336',
-      color: '#FFFFFF',
-      border: 'none',
-      padding: '0.5rem 1rem',
-      borderRadius: '0.5rem',
-      cursor: 'pointer',
-      marginTop: '1rem',
-      transition: 'background-color 0.3s ease',
-    },
-    card: {
-      backgroundColor: '#1A2E40',
-      borderRadius: '1rem',
-      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.2)',
-      padding: '1.5rem',
-      marginBottom: '1.5rem',
-      textAlign: 'left',
-      maxWidth: '600px',
-      margin: '1rem auto',
-      color: '#FFFFFF',
-    },
-    cardTitle: {
-      fontSize: '1.25rem',
-      fontWeight: '600',
-      color: '#FFFFFF',
-    },
-    cardText: {
-      fontSize: '1rem',
-      color: '#B1EDE8',
-    },
-    viewButton: {
-      backgroundColor: '#64CCC5',
-      color: '#FFFFFF',
-      border: 'none',
-      padding: '0.5rem 1rem',
-      borderRadius: '0.5rem',
-      cursor: 'pointer',
-      transition: 'background-color 0.3s ease',
-    },
-    footer: {
-      backgroundColor: '#132238',
-      color: '#B1EDE8',
-      padding: '1.5rem',
-      textAlign: 'center',
-    },
-    footerLink: {
-      color: '#B1EDE8',
-      textDecoration: 'none',
-      margin: '0 1rem',
-      fontSize: '0.9rem',
-      cursor: 'pointer',
-    },
-  };
-
   return (
-    <main className="d-flex flex-column min-vh-100 justify-content-between" style={{ backgroundColor: '#F9FAFB' }}>
-      <header style={styles.header}>
-        <h1>Welcome, Researcher</h1>
-        <p>Manage your research listings and collaborate effectively.</p>
-        <button
-          onClick={handleLogout}
-          style={styles.logoutButton}
-          onMouseOver={(e) => (e.target.style.backgroundColor = '#d32f2f')}
-          onMouseOut={(e) => (e.target.style.backgroundColor = '#f44336')}
-        >
-          Logout
-        </button>
+    <main>
+      {showErrorModal && (
+        <section className="error-modal">
+          <p>Error loading profile. Please try again.</p>
+          <button onClick={() => setShowErrorModal(false)}>Close</button>
+        </section>
+      )}
+
+      <header className="researcher-header">
+        <section className="header-title">
+          <h1>Welcome, {userName}</h1>
+          <p>Manage your research and collaborate with other researchers</p>
+        </section>
+        <section className="header-actions">
+          <section className="dropdown-menu-container">
+            <button
+              className="menu-toggle-btn"
+              onClick={() => setShowMenu(prev => !prev)}
+            >
+              ☰ Menu
+            </button>
+            {showMenu && (
+              <section className="menu-dropdown">
+                <button onClick={() => navigate('/researcher-profile')}>View Profile</button>
+                <button onClick={handleAddListing}>New Research</button>
+                <button onClick={handleCollaborate}>Collaborate</button>
+                <button onClick={handleLogout}>Logout</button>
+              </section>
+            )}
+          </section>
+        </section>
       </header>
-      <section
-        className="container my-5"
-        style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: '1rem',
-          padding: '2rem',
-          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-        }}
-      >
-        <div className="text-center mb-4">
-          <h5 style={{ color: '#132238' }}>Add New Research Listing</h5>
-          <button
-            style={styles.addButton}
-            onClick={handleAddListing}
-            onMouseOver={(e) => (e.target.style.transform = 'scale(1.1)')}
-            onMouseOut={(e) => (e.target.style.transform = 'scale(1)')}
-          >
-            <Plus size={40} />
-          </button>
-        </div>
-        {/* Your Listings Section */}
-        <h6 className="mt-4 text-center" style={{ color: '#132238' }}>Your Listings:</h6>
-        <section>
-          {listings.length === 0 ? (
-            <p className="text-center text-muted">No listings available.</p>
-          ) : (
-            listings.map((listing) => (
-              <div key={listing.id} style={styles.card}>
-                <h5 style={styles.cardTitle}>{listing.title}</h5>
-                <p style={styles.cardText}>{listing.summary}</p>
-                <p style={styles.cardText}>
-                  <strong>Research Area:</strong> {listing.researchArea}
-                </p>
-                <p style={styles.cardText}>
-                  <strong>Status:</strong> {listing.status}
-                </p>
-                <a
-                  href={listing.publicationLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={styles.viewButton}
-                  onMouseOver={(e) => (e.target.style.backgroundColor = '#5AA9A3')}
-                  onMouseOut={(e) => (e.target.style.backgroundColor = '#64CCC5')}
-                >
-                  View Publication
-                </a>
-              </div>
-            ))
+
+      <section className="dashboard-content">
+        <section className="search-section">
+          <form onSubmit={e => { e.preventDefault(); handleSearch(); }}>
+            <input
+              type="text"
+              placeholder="Search for research by title or researcher name..."
+              value={searchTerm}
+              onChange={handleInputChange}
+              onFocus={handleInputFocus}
+            />
+            <button type="submit">Search</button>
+            <button type="button" onClick={handleClear}>Clear</button>
+          </form>
+          {dropdownVisible && (
+            <section className="search-dropdown">
+              {searchResults.length === 0 ? (
+                <section>
+                  {showNoResults && "No research listings found."}
+                </section>
+              ) : (
+                searchResults.map(item => (
+                  <section
+                    key={item.id}
+                    className="dropdown-item"
+                    tabIndex={0}
+                    role="button"
+                    onClick={() => {
+                      setDropdownVisible(false);
+                      navigate(`/listing/${item.id}`);
+                    }}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        setDropdownVisible(false);
+                        navigate(`/listing/${item.id}`);
+                      }
+                    }}
+                  >
+                    <strong>{item.title}</strong>
+                    <section style={{ fontSize: '0.95em', color: '#B1EDE8' }}>
+                      By: {item.researcherName || 'Unknown Researcher'}
+                    </section>
+                    <section style={{ fontSize: '0.9em', color: '#B1EDE8' }}>{item.summary}</section>
+                  </section>
+                ))
+              )}
+            </section>
           )}
         </section>
-        {/* Collaborate Section */}
-        <h6 className="mt-5 text-center" style={{ color: '#132238' }}>Collaborate:</h6>
+
+        <h3>Your Research</h3>
         <section>
-          {collaborateListings.length === 0 ? (
-            <p className="text-center text-muted">No listings available for collaboration.</p>
+          {filteredListings.length === 0 ? (
+            <p style={{ color: '#B1EDE8', textAlign: 'center' }}>No research listings found.</p>
           ) : (
-            collaborateListings.map((listing) => (
-              <div key={listing.id} style={styles.card}>
-                <h5 style={styles.cardTitle}>{listing.title}</h5>
-                <p style={styles.cardText}>{listing.summary}</p>
-                <p style={styles.cardText}>
-                  <strong>Research Area:</strong> {listing.researchArea}
-                </p>
-                <p style={styles.cardText}>
-                  <strong>Researcher:</strong> {listing.researcherName}
-                </p>
-                <p style={styles.cardText}>
-                  <strong>Status:</strong> {listing.status}
-                </p>
-                <a
-                  href={listing.publicationLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={styles.viewButton}
-                  onMouseOver={(e) => (e.target.style.backgroundColor = '#5AA9A3')}
-                  onMouseOut={(e) => (e.target.style.backgroundColor = '#64CCC5')}
+            filteredListings.map(item => (
+              <article key={item.id}>
+                <h4>{item.title}</h4>
+                <p>{item.summary}</p>
+                <button
+                  onClick={() => navigate(`/listing/${item.id}`)}
                 >
-                  View Publication
-                </a>
-              </div>
+                  View Listing
+                </button>
+                <button
+                  style={{
+                    background: '#B1EDE8',
+                    color: '#132238',
+                    marginLeft: '0.5rem'
+                  }}
+                  onClick={() => navigate(`/chat/${item.id}`)}
+                >
+                  Chat
+                </button>
+              </article>
             ))
           )}
         </section>
       </section>
-      <footer style={styles.footer}>
-        <nav>
-          <button
-            style={{ ...styles.footerLink, background: 'none', border: 'none', cursor: 'pointer' }}
-            onClick={() => alert('Privacy Policy coming soon!')}
-          >
-            Privacy Policy
-          </button>
-          <button
-            style={{ ...styles.footerLink, background: 'none', border: 'none', cursor: 'pointer' }}
-            onClick={() => alert('Terms of Service coming soon!')}
-          >
-            Terms of Service
-          </button>
-          <button
-            style={{ ...styles.footerLink, background: 'none', border: 'none', cursor: 'pointer' }}
-            onClick={() => alert('Contact Us coming soon!')}
-          >
-            Contact Us
-          </button>
-        </nav>
-        <p style={{ marginTop: '1rem', fontSize: '0.8rem' }}>&copy; 2025 Innerk Hub</p>
+
+      <section className="collaboration-requests-section">
+        <CollaborationRequestsPanel />
+      </section>
+
+      <section className="collaborations-section">
+        <h3>Your Collaborations</h3>
+        {collabListings.length > 0 ? (
+          collabListings.map(listing => (
+            <article key={listing.id}>
+              <h4>{listing.title}</h4>
+              <p>{listing.summary}</p>
+              <button
+                onClick={() => navigate(`/listing/${listing.id}`)}
+              >
+                View Project
+              </button>
+              <button
+                style={{
+                  background: '#B1EDE8',
+                  color: '#132238',
+                  marginLeft: '0.5rem'
+                }}
+                onClick={() => navigate(`/chat/${listing.id}`)}
+              >
+                Chat
+              </button>
+            </article>
+          ))
+        ) : (
+          <p style={{ color: '#B1EDE8', textAlign: 'center' }}>
+            No active collaborations yet. Browse projects to collaborate!
+          </p>
+        )}
+      </section>
+
+      <footer className="researcher-footer">
+        <a href="/some-path">Contact</a>
+        <a href="/some-path">Privacy Policy</a>
+        <a href="/some-path">Terms of Service</a>
+        <p>&copy; 2025 Innerk Hub</p>
       </footer>
     </main>
   );

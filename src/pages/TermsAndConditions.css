@@ -1,0 +1,52 @@
+/* TermsAndConditions.css */
+.terms-container {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 2rem;
+    line-height: 1.6;
+  }
+  
+  .back-button {
+    background: none;
+    border: none;
+    color: #2c3e50;
+    cursor: pointer;
+    margin-bottom: 2rem;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+  }
+  
+  .back-button:hover {
+    background-color: #f0f0f0;
+  }
+  
+  .effective-date {
+    color: #666;
+    font-style: italic;
+    margin-bottom: 2rem;
+  }
+  
+  .terms-content h1 {
+    color: #2c3e50;
+    margin-bottom: 1.5rem;
+  }
+  
+  .terms-content h2 {
+    color: #34495e;
+    margin: 2rem 0 1rem;
+    border-bottom: 2px solid #ecf0f1;
+    padding-bottom: 0.5rem;
+  }
+  
+  .terms-content ul {
+    margin-left: 1.5rem;
+  }
+  
+  .terms-content a {
+    color: #3498db;
+    text-decoration: underline;
+  }
+  
+  .terms-content a:hover {
+    color: #2980b9;
+  }
