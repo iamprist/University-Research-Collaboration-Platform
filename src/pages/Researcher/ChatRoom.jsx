@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { doc, getDoc, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../../config/firebaseConfig';
 import { useParams } from 'react-router-dom';
-import './ChatRoom.css';
+import './ResearcherDashboard.css';
 
 export default function ChatRoom() {
   const { chatId } = useParams();
