@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { doc, getDoc, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, setDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { db, auth } from '../../config/firebaseConfig';
 import { useParams } from 'react-router-dom';
-import './ResearcherDashboard.css';
+import './ChatRoom.css';
 
 export default function ChatRoom() {
   const { chatId } = useParams();
@@ -10,6 +10,7 @@ export default function ChatRoom() {
   const [newMessage, setNewMessage] = useState('');
   const [status, setStatus] = useState({ loading: true, error: null });
   const [userData, setUserData] = useState({});
+  const [chatName, setChatName] = useState('Chat Room');
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
@@ -18,34 +19,59 @@ export default function ChatRoom() {
       return;
     }
 
-    const loadMessages = async () => {
-      try {
-        const chatRef = doc(db, 'chats', chatId);
-        const docSnap = await getDoc(chatRef);
+    const chatRef = doc(db, 'chats', chatId);
+    let unsubscribe = null;
 
+    const setupChat = async () => {
+      try {
+        const docSnap = await getDoc(chatRef);
+        
         if (!docSnap.exists()) {
           await setDoc(chatRef, {
             participants: [auth.currentUser?.uid],
             messages: [],
             createdAt: serverTimestamp(),
-            lastUpdated: serverTimestamp()
+            lastUpdated: serverTimestamp(),
+            name: 'New Chat'
           });
-          setMessages([]);
         } else {
-          const messagesData = docSnap.data().messages || [];
-          setMessages(messagesData.map(msg => ({
-            ...msg,
-            timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date()
-          })));
-          
-          // Fetch user data for all unique senders
-          const uniqueSenderIds = [...new Set(messagesData.map(msg => msg.senderId))];
-          await fetchUserData(uniqueSenderIds);
+          // Set chat name from document if it exists
+          if (docSnap.data().name) {
+            setChatName(docSnap.data().name);
+          }
         }
+
+        unsubscribe = onSnapshot(chatRef, async (doc) => {
+          if (doc.exists()) {
+            const messagesData = doc.data().messages || [];
+            setMessages(messagesData.map(msg => ({
+              ...msg,
+              timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date()
+            })));
+
+            const uniqueSenderIds = [...new Set(messagesData.map(msg => msg.senderId))];
+            const newSenderIds = uniqueSenderIds.filter(id => !userData[id]);
+            if (newSenderIds.length > 0) {
+              await fetchUserData(newSenderIds);
+            }
+
+            // Update chat name if it's a 1:1 chat
+            if (doc.data().participants?.length === 2) {
+              const otherUserId = doc.data().participants.find(id => id !== auth.currentUser?.uid);
+              if (otherUserId && userData[otherUserId]) {
+                setChatName(userData[otherUserId]);
+              }
+            }
+
+            setTimeout(() => {
+              messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+            }, 100);
+          }
+        });
 
         setStatus({ loading: false, error: null });
       } catch (err) {
-        console.error('Failed to load chat:', err);
+        console.error('Failed to setup chat:', err);
         setStatus({ loading: false, error: 'Failed to load chat' });
       }
     };
@@ -54,7 +80,7 @@ export default function ChatRoom() {
       try {
         const usersData = {};
         for (const uid of userIds) {
-          if (uid) {
+          if (uid && uid !== auth.currentUser?.uid) {
             const userDoc = await getDoc(doc(db, 'users', uid));
             if (userDoc.exists()) {
               usersData[uid] = userDoc.data().name || 'Unknown User';
@@ -69,8 +95,12 @@ export default function ChatRoom() {
       }
     };
 
-    loadMessages();
-  }, [chatId]);
+    setupChat();
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, [chatId, userData]);
 
   const sendMessage = async (e) => {
     e.preventDefault();
@@ -92,7 +122,6 @@ export default function ChatRoom() {
         timestamp: timestamp
       };
 
-      // Optimistic update
       setMessages(prev => [...prev, { ...newMsg, timestamp: new Date(timestamp) }]);
 
       await updateDoc(chatRef, {
@@ -100,7 +129,6 @@ export default function ChatRoom() {
         lastUpdated: serverTimestamp()
       });
 
-      // Add current user to userData if not already present
       if (!userData[auth.currentUser.uid]) {
         const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
         const userName = userDoc.exists() ? userDoc.data().name : 'You';
@@ -112,74 +140,89 @@ export default function ChatRoom() {
       
       setNewMessage('');
       setStatus({ loading: false, error: null });
-
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
     } catch (err) {
       console.error('Message send failed:', err);
       setStatus({ loading: false, error: 'Failed to send message. Please try again.' });
-      // Rollback optimistic update
       setMessages(prev => prev.slice(0, -1));
     }
   };
 
   if (status.loading && messages.length === 0) {
-    return <section className="status-message">Loading chat...</section>;
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <p>Loading chat...</p>
+      </div>
+    );
   }
 
   if (status.error) {
     return (
-      <section className="status-message error">
-        {status.error}
-        <button onClick={() => window.location.reload()}>Retry</button>
-      </section>
+      <div className="error-container">
+        <div className="error-message">
+          <p>{status.error}</p>
+          <button onClick={() => window.location.reload()}>Retry</button>
+        </div>
+      </div>
     );
   }
 
   return (
-    <main className="chat-room-container">
-      <section className="messages-container" aria-live="polite">
+    <div className="chat-app">
+      <div className="chat-header">
+        <h2>{chatName}</h2>
+        <div className="status-indicator">
+          <span className="status-dot"></span>
+          <span>Online</span>
+        </div>
+      </div>
+      
+      <div className="messages-container">
         {messages.map((msg, i) => (
-          <article
+          <div
             key={i}
-            className={`message ${msg.senderId === auth.currentUser?.uid ? 'sent' : 'received'}`}
+            className={`message-bubble ${msg.senderId === auth.currentUser?.uid ? 'sent' : 'received'}`}
           >
-            <div className="message-header">
+            <div className="message-meta">
               <span className="sender-name">
                 {msg.senderId === auth.currentUser?.uid 
                   ? 'You' 
-                  : userData[msg.senderId] || 'Loading...'}
+                  : userData[msg.senderId] || 'Unknown'}
+              </span>
+              <span className="message-time">
+                {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </span>
             </div>
-            <p className="message-text">{msg.text}</p>
-            <time className="message-time" dateTime={msg.timestamp.toISOString()}>
-              {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </time>
-          </article>
+            <div className="message-content">
+              <p>{msg.text}</p>
+            </div>
+          </div>
         ))}
-        <span ref={messagesEndRef} />
-      </section>
+        <div ref={messagesEndRef} className="scroll-anchor"></div>
+      </div>
 
-      <footer>
-        <form onSubmit={sendMessage} className="message-input-form" aria-label="Send a message">
-          <input
-            type="text"
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="Type your message..."
-            disabled={status.loading}
-            aria-label="Message input"
-          />
-          <button 
-            type="submit" 
-            disabled={status.loading || !newMessage.trim()}
-            className={status.loading ? 'loading' : ''}
-          >
-            {status.loading ? 'Sending...' : 'Send'}
-          </button>
-        </form>
-      </footer>
-    </main>
+      <form onSubmit={sendMessage} className="message-input-container">
+        <input
+          type="text"
+          value={newMessage}
+          onChange={(e) => setNewMessage(e.target.value)}
+          placeholder="Type a message..."
+          disabled={status.loading}
+        />
+        <button 
+          type="submit" 
+          disabled={status.loading || !newMessage.trim()}
+          className={status.loading ? 'loading' : ''}
+        >
+          {status.loading ? (
+            <span className="send-spinner"></span>
+          ) : (
+            <svg viewBox="0 0 24 24" width="24" height="24">
+              <path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
+            </svg>
+          )}
+        </button>
+      </form>
+    </div>
   );
 }
