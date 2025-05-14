@@ -4,6 +4,7 @@ import { db, auth } from '../../config/firebaseConfig';
 import { collection, getDocs, query, where, doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { logEvent } from '../../utils/logEvent';
 import './ResearcherDashboard.css';
+
 import CollaborationRequestsPanel from '../../components/CollaborationRequestsPanel';
 
 const ResearcherDashboard = () => {
@@ -215,6 +216,7 @@ const ResearcherDashboard = () => {
               <section className="menu-dropdown">
                 <button onClick={() => navigate('/researcher-profile')}>View Profile</button>
                 <button onClick={handleAddListing}>New Research</button>
+                <button onClick={() => navigate('/friends')}>Friends</button>
                 <button onClick={handleCollaborate}>Collaborate</button>
                 <button onClick={handleLogout}>Logout</button>
               </section>

@@ -23,6 +23,7 @@ import EditProfile from "./pages/Researcher/EditProfile";
 import AddListing from "./pages/Researcher/AddListing";
 import CollaboratePage from "./pages/Researcher/CollaboratePage";
 import ChatRoom from "./pages/Researcher/ChatRoom";
+import FriendsSystem from './components/FriendsSystem';
 
 import { auth, db } from "./config/firebaseConfig";
 import { useEffect } from "react";
@@ -167,6 +168,7 @@ function App() {
         }
       />
       <Route path="/chat/:chatId" element={<ChatRoom />} />
+        <Route path= "/friends" element= {<FriendsSystem />}/>
 
       {/* Catch-all redirect */}
       <Route path="*" element={<Navigate to="/" replace />} />
