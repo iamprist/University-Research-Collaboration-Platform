@@ -137,3 +137,55 @@
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
   }
+
+  /* Add these styles to your existing CSS */
+.requests-section {
+  background-color: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.request-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  margin-bottom: 10px;
+  background-color: white;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.user-info {
+  flex-grow: 1;
+}
+
+.user-name {
+  font-weight: bold;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.user-email {
+  color: #666;
+  font-size: 0.85em;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.research-area {
+  color: #3498db;
+  font-size: 0.9em;
+}
+
+.no-requests, .no-friends {
+  color: #666;
+  text-align: center;
+  padding: 20px;
+}
+
+.request-actions {
+  display: flex;
+  gap: 8px;
+}
