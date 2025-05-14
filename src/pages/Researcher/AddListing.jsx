@@ -5,6 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../../config/firebaseConfig';
 import { collection, addDoc, doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { logEvent } from '../../utils/logEvent';
+import { sendMessage, messageTypes } from '../../utils/sendMessage';
+import './ResearcherDashboard.css';
 
 async function fetchUserIP() {
   try {
@@ -145,6 +147,7 @@ function AddListing() {
   const [universities, setUniversities] = useState([]);
   const [selectedUniversity, setSelectedUniversity] = useState(null);
   const [selectedCountry, setSelectedCountry] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const countries = ['South Africa', 'United States', 'United Kingdom', 'Canada', 'Kenya', 'Nigeria'];
 
   useEffect(() => {
@@ -166,7 +169,7 @@ function AddListing() {
           await setDoc(docRef, { universities: filtered });
         }
       } catch (error) {
-        // handle error
+        console.error("Error fetching universities:", error);
       }
     };
 
@@ -179,6 +182,8 @@ function AddListing() {
     e.preventDefault();
     const userId = auth.currentUser?.uid;
     if (!userId) return alert("User not logged in");
+
+    setIsSubmitting(true);
 
     const keywordsToSave = keywords.map(k => k.value === 'Other' ? customKeyword : k.label).filter(Boolean);
     const methodologyToSave = methodology === 'Other' ? customMethodology : methodology;
@@ -205,6 +210,14 @@ function AddListing() {
 
       const docRef = await addDoc(collection(db, "research-listings"), newListing);
 
+      // Send success notification to the researcher
+      await sendMessage(userId, {
+        title: 'Project Upload Successful',
+        content: `Your project "${title}" has been successfully uploaded and is now live on the platform.`,
+        type: messageTypes.UPLOAD_CONFIRMATION,
+        relatedId: docRef.id
+      });
+
       await logEvent({
         userId,
         role: "researcher",
@@ -217,30 +230,37 @@ function AddListing() {
 
       navigate("/researcher-dashboard");
     } catch (err) {
+      console.error("Error creating listing:", err);
       alert("Failed to create listing. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <main className="bg-dark min-vh-100 d-flex align-items-center justify-content-center py-4">
-      <section className="container bg-white rounded shadow-lg p-4" style={{maxWidth: 850}}>
-          <header className="researcher-header">
-      <section className="header-title">
-        <h1>New Research</h1>
-        <p>Fill out the form below to create a new research listing.</p>
-      </section>
-      <nav className="header-nav">
-        <a href="/researcher-dashboard" className="header-link">Dashboard</a>
-        <a href="/researcher-profile" className="header-link">Profile</a>
-        <a href="/researcher/add-listing" className="header-link">Add Listing</a>
-      </nav>
-    </header>
-        <form onSubmit={handleSubmit} className="row g-4">
-          <fieldset className="col-12 border-0">
-            <legend className="fw-bold fs-5 mb-3">Research Details</legend>
-            <section className="row g-3">
-              <section className="col-md-6">
-                <label className="form-label fw-semibold">Research Title</label>
+    <main className="researcher-dashboard">
+      <header className="researcher-header">
+        <section className="header-title">
+          <h1>New Research</h1>
+          <p>Fill out the form below to create a new research listing.</p>
+        </section>
+        <section className="header-actions">
+          <button 
+            className="dashboard-btn"
+            onClick={() => navigate('/researcher-dashboard')}
+          >
+            Back to Dashboard
+          </button>
+        </section>
+      </header>
+
+      <section className="dashboard-content">
+        <form onSubmit={handleSubmit} className="add-listing-form">
+          <fieldset className="form-section">
+            <legend className="section-title">Research Details</legend>
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Research Title</label>
                 <input
                   type="text"
                   className="form-control"
@@ -248,18 +268,20 @@ function AddListing() {
                   onChange={e => setTitle(e.target.value)}
                   required
                 />
-              </section>
-              <section className="col-md-6">
-                <label className="form-label fw-semibold">Research Area</label>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Research Area</label>
                 <Select
                   options={researchAreaOptions}
                   value={researchAreaOptions.find(o => o.value === researchArea) || null}
                   onChange={selected => setResearchArea(selected ? selected.value : '')}
                   placeholder="Select research area..."
                   isClearable
+                  className="react-select-container"
+                  classNamePrefix="react-select"
                 />
                 {researchArea === 'Other' && (
-                  <section className="mt-2">
+                  <div className="form-group">
                     <label className="form-label">Please specify:</label>
                     <input
                       type="text"
@@ -268,21 +290,25 @@ function AddListing() {
                       onChange={e => setCustomResearchArea(e.target.value)}
                       required
                     />
-                  </section>
+                  </div>
                 )}
-              </section>
-              <section className="col-12">
-                <label className="form-label fw-semibold">Abstract/Summary</label>
-                <textarea
-                  rows="4"
-                  className="form-control"
-                  value={summary}
-                  onChange={e => setSummary(e.target.value)}
-                  required
-                />
-              </section>
-              <section className="col-md-6">
-                <label className="form-label fw-semibold">Keywords</label>
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Abstract/Summary</label>
+              <textarea
+                rows="4"
+                className="form-control"
+                value={summary}
+                onChange={e => setSummary(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Keywords</label>
                 <Select
                   isMulti
                   options={keywordOptions}
@@ -290,9 +316,11 @@ function AddListing() {
                   onChange={setKeywords}
                   placeholder="Select keywords..."
                   isClearable
+                  className="react-select-container"
+                  classNamePrefix="react-select"
                 />
                 {keywords.some(k => k.value === 'Other') && (
-                  <section className="mt-2">
+                  <div className="form-group">
                     <label className="form-label">Please specify:</label>
                     <input
                       type="text"
@@ -301,20 +329,22 @@ function AddListing() {
                       onChange={e => setCustomKeyword(e.target.value)}
                       required
                     />
-                  </section>
+                  </div>
                 )}
-              </section>
-              <section className="col-md-6">
-                <label className="form-label fw-semibold">Methodology</label>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Methodology</label>
                 <Select
                   options={methodologyOptions}
                   value={methodologyOptions.find(o => o.value === methodology) || null}
                   onChange={selected => setMethodology(selected ? selected.value : '')}
                   placeholder="Select methodology..."
                   isClearable
+                  className="react-select-container"
+                  classNamePrefix="react-select"
                 />
                 {methodology === 'Other' && (
-                  <section className="mt-2">
+                  <div className="form-group">
                     <label className="form-label">Please specify:</label>
                     <input
                       type="text"
@@ -323,18 +353,19 @@ function AddListing() {
                       onChange={e => setCustomMethodology(e.target.value)}
                       required
                     />
-                  </section>
+                  </div>
                 )}
-              </section>
-            </section>
+              </div>
+            </div>
           </fieldset>
-          <fieldset className="col-12 border-0">
-            <legend className="fw-bold fs-5 mb-3">Institution Information</legend>
-            <section className="row g-3">
-              <section className="col-md-4">
-                <label className="form-label fw-semibold">Country</label>
+
+          <fieldset className="form-section">
+            <legend className="section-title">Institution Information</legend>
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Country</label>
                 <select
-                  className="form-select"
+                  className="form-control"
                   value={selectedCountry}
                   onChange={e => setSelectedCountry(e.target.value)}
                 >
@@ -343,28 +374,32 @@ function AddListing() {
                     <option key={idx} value={country}>{country}</option>
                   ))}
                 </select>
-              </section>
-              <section className="col-md-4">
-                <label className="form-label fw-semibold">University</label>
+              </div>
+              <div className="form-group">
+                <label className="form-label">University</label>
                 <Select
                   options={universities}
                   value={selectedUniversity}
                   onChange={setSelectedUniversity}
                   placeholder="Search for your university..."
                   isClearable
+                  className="react-select-container"
+                  classNamePrefix="react-select"
                 />
-              </section>
-              <section className="col-md-4">
-                <label className="form-label fw-semibold">Department</label>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Department</label>
                 <Select
                   options={departmentOptions}
                   value={departmentOptions.find(o => o.value === department) || null}
                   onChange={selected => setDepartment(selected ? selected.value : '')}
                   placeholder="Select department..."
                   isClearable
+                  className="react-select-container"
+                  classNamePrefix="react-select"
                 />
                 {department === 'Other' && (
-                  <section className="mt-2">
+                  <div className="form-group">
                     <label className="form-label">Please specify:</label>
                     <input
                       type="text"
@@ -373,60 +408,63 @@ function AddListing() {
                       onChange={e => setCustomDepartment(e.target.value)}
                       required
                     />
-                  </section>
+                  </div>
                 )}
-              </section>
-            </section>
+              </div>
+            </div>
           </fieldset>
-          <fieldset className="col-12 border-0">
-            <legend className="fw-bold fs-5 mb-3">Project Details</legend>
-            <section className="row g-3">
-              <section className="col-12">
-                <label className="form-label fw-semibold">Collaborator Needs</label>
-                <textarea
-                  rows="8"
-                  className="form-control"
-                  style={{ minHeight: '140px' }}
-                  value={collaboratorNeeds}
-                  onChange={e => setCollaboratorNeeds(e.target.value)}
-                  placeholder="Describe the collaborator needs in detail..."
-                  required
-                />
-              </section>
-              <section className="col-md-4">
-                <label className="form-label fw-semibold">Project Status</label>
+
+          <fieldset className="form-section">
+            <legend className="section-title">Project Details</legend>
+            <div className="form-group">
+              <label className="form-label">Collaborator Needs</label>
+              <textarea
+                rows="8"
+                className="form-control"
+                value={collaboratorNeeds}
+                onChange={e => setCollaboratorNeeds(e.target.value)}
+                placeholder="Describe the collaborator needs in detail..."
+                required
+              />
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Project Status</label>
                 <select
-                  className="form-select"
+                  className="form-control"
                   value={status}
                   onChange={e => setStatus(e.target.value)}
                 >
                   <option value="Active">Active</option>
                   <option value="Completed">Completed</option>
                 </select>
-              </section>
-              <section className="col-md-4">
-                <label className="form-label fw-semibold">End Date</label>
+              </div>
+              <div className="form-group">
+                <label className="form-label">End Date</label>
                 <input
                   type="date"
                   className="form-control"
                   value={endDate}
                   onChange={e => setEndDate(e.target.value)}
                 />
-              </section>
-              <section className="col-md-4">
-                <label className="form-label fw-semibold">Links to Publications</label>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Links to Publications</label>
                 <input
                   type="url"
                   className="form-control"
                   value={publicationLink}
                   onChange={e => setPublicationLink(e.target.value)}
                 />
-              </section>
-              <section className="col-12 mt-2">
-                <label className="form-label fw-semibold d-block">Funding Information</label>
-                <section className="form-check form-check-inline">
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Funding Information</label>
+              <div className="radio-group">
+                <label className="radio-option">
                   <input
-                    className="form-check-input"
                     type="radio"
                     name="funding"
                     value="Funded"
@@ -434,11 +472,10 @@ function AddListing() {
                     onChange={() => setFundingInfo('Funded')}
                     required
                   />
-                  <label className="form-check-label">Funded</label>
-                </section>
-                <section className="form-check form-check-inline">
+                  <span>Funded</span>
+                </label>
+                <label className="radio-option">
                   <input
-                    className="form-check-input"
                     type="radio"
                     name="funding"
                     value="Looking for Funding"
@@ -446,16 +483,21 @@ function AddListing() {
                     onChange={() => setFundingInfo('Looking for Funding')}
                     required
                   />
-                  <label className="form-check-label">Looking for Funding</label>
-                </section>
-              </section>
-            </section>
+                  <span>Looking for Funding</span>
+                </label>
+              </div>
+            </div>
           </fieldset>
-          <section className="col-12 d-flex justify-content-center">
-            <button type="submit" className="btn btn-primary px-4 py-2 fw-bold">
-              Create Listing
+
+          <div className="form-actions">
+            <button 
+              type="submit" 
+              className="submit-btn"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Creating...' : 'Create Listing'}
             </button>
-          </section>
+          </div>
         </form>
       </section>
     </main>

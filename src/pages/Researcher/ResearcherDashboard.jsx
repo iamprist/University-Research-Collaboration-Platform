@@ -1,10 +1,76 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../../config/firebaseConfig';
-import { collection, getDocs, query, where, doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { collection, getDocs, query, where, doc, getDoc, onSnapshot, orderBy, updateDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { logEvent } from '../../utils/logEvent';
 import './ResearcherDashboard.css';
 import CollaborationRequestsPanel from '../../components/CollaborationRequestsPanel';
+import ContactForm from '../../components/ContactForm';
+
+const MessageNotification = ({ messages, unreadCount, onMessageClick }) => {
+  const [showMessages, setShowMessages] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowMessages(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  return (
+    <section className="message-notification-container" ref={dropdownRef}>
+      <button 
+        className="message-notification-bell"
+        onClick={() => setShowMessages(!showMessages)}
+      >
+        🔔 {unreadCount > 0 && <span className="unread-badge">{unreadCount}</span>}
+      </button>
+      
+      {showMessages && (
+        <section className="messages-dropdown">
+          <div className="messages-header">
+            <h4>Notifications</h4>
+            <button onClick={() => setShowMessages(false)}>×</button>
+          </div>
+          {messages.length === 0 ? (
+            <p className="no-messages">No new messages</p>
+          ) : (
+            messages.map(message => (
+              <article 
+                key={message.id} 
+                className={`message-item ${message.read ? '' : 'unread'}`}
+                onClick={() => {
+                  onMessageClick(message);
+                  setShowMessages(false);
+                }}
+              >
+                <h4>{message.title}</h4>
+                <p>{message.content}</p>
+                <small>{message.timestamp.toLocaleString()}</small>
+                {message.type === 'collaboration-request' && (
+                  <span className="message-tag collaboration">Collaboration</span>
+                )}
+                {message.type === 'review-request' && (
+                  <span className="message-tag review">Review</span>
+                )}
+                {message.type === 'upload-confirmation' && (
+                  <span className="message-tag upload">Upload</span>
+                )}
+              </article>
+            ))
+          )}
+        </section>
+      )}
+    </section>
+  );
+};
 
 const ResearcherDashboard = () => {
   const navigate = useNavigate();
@@ -22,6 +88,9 @@ const ResearcherDashboard = () => {
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [filteredListings, setFilteredListings] = useState([]);
   const [userName, setUserName] = useState('');
+  const [messages, setMessages] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showContactForm, setShowContactForm] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('authToken');
@@ -41,7 +110,8 @@ const ResearcherDashboard = () => {
 
   useEffect(() => {
     if (!userId) return;
-    (async () => {
+    
+    const fetchUserProfile = async () => {
       try {
         const userDoc = await getDoc(doc(db, 'users', userId));
         if (userDoc.exists()) {
@@ -53,18 +123,36 @@ const ResearcherDashboard = () => {
       } catch (err) {
         setShowErrorModal(true);
       }
-    })();
+    };
+    
+    fetchUserProfile();
   }, [userId, navigate]);
 
   useEffect(() => {
     if (!userId) return;
-    const q = query(
+    
+    // Listen for messages
+    const messagesRef = collection(db, 'users', userId, 'messages');
+    const messagesQuery = query(messagesRef, orderBy('timestamp', 'desc'));
+    
+    const unsubscribeMessages = onSnapshot(messagesQuery, (snapshot) => {
+      const messagesData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        timestamp: doc.data().timestamp?.toDate() || new Date()
+      }));
+      setMessages(messagesData);
+      setUnreadCount(messagesData.filter(msg => !msg.read).length);
+    });
+
+    // Listen for collaborations
+    const collabQuery = query(
       collection(db, "collaborations"),
       where("collaboratorId", "==", userId)
     );
-    const unsubscribe = onSnapshot(q, async (snapshot) => {
+    
+    const unsubscribeCollabs = onSnapshot(collabQuery, async (snapshot) => {
       const collabs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setCollabListings(collabs);
       const listings = await Promise.all(
         collabs.map(async collab => {
           const listingDoc = await getDoc(doc(db, "research-listings", collab.listingId));
@@ -73,12 +161,17 @@ const ResearcherDashboard = () => {
       );
       setCollabListings(listings.filter(Boolean));
     });
-    return () => unsubscribe();
+
+    return () => {
+      unsubscribeMessages();
+      unsubscribeCollabs();
+    };
   }, [userId]);
 
   useEffect(() => {
     if (!userId || !hasProfile) return;
-    (async () => {
+    
+    const fetchListings = async () => {
       try {
         const q = query(collection(db, 'research-listings'));
         const querySnapshot = await getDocs(q);
@@ -97,20 +190,29 @@ const ResearcherDashboard = () => {
           })
         );
         setAllListings(data);
-      } catch {}
-    })();
+      } catch (error) {
+        console.error("Error fetching listings:", error);
+      }
+    };
+    
+    fetchListings();
   }, [userId, hasProfile]);
 
   useEffect(() => {
     if (!userId || !hasProfile) return;
-    (async () => {
+    
+    const fetchMyListings = async () => {
       try {
         const q = query(collection(db, 'research-listings'), where('userId', '==', userId));
         const querySnapshot = await getDocs(q);
         const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setMyListings(data);
-      } catch {}
-    })();
+      } catch (error) {
+        console.error("Error fetching user listings:", error);
+      }
+    };
+    
+    fetchMyListings();
   }, [userId, hasProfile]);
 
   useEffect(() => {
@@ -123,12 +225,14 @@ const ResearcherDashboard = () => {
       setDropdownVisible(false);
       return;
     }
+    
     const searchTermLower = searchTerm.toLowerCase();
     const filtered = allListings.filter(item => {
       const title = item.title?.toLowerCase() || '';
       const researcherName = item.researcherName?.toLowerCase() || '';
       return title.includes(searchTermLower) || researcherName.includes(searchTermLower);
     });
+    
     setSearchResults(filtered);
     setDropdownVisible(true);
 
@@ -137,11 +241,34 @@ const ResearcherDashboard = () => {
       setDropdownVisible(false);
     }, 5000);
 
-    if (filtered.length === 0) {
-      setShowNoResults(true);
-      setTimeout(() => setShowNoResults(false), 3000);
-    } else {
-      setShowNoResults(false);
+    setShowNoResults(filtered.length === 0);
+  };
+
+  const markMessageAsRead = async (messageId) => {
+    try {
+      await updateDoc(doc(db, 'users', userId, 'messages', messageId), {
+        read: true
+      });
+    } catch (error) {
+      console.error("Error marking message as read:", error);
+    }
+  };
+
+  const handleMessageClick = (message) => {
+    markMessageAsRead(message.id);
+    
+    switch(message.type) {
+      case 'collaboration-request':
+        navigate('/collaboration-requests');
+        break;
+      case 'review-request':
+        navigate(`/review-requests/${message.relatedId}`);
+        break;
+      case 'upload-confirmation':
+        navigate(`/listing/${message.relatedId}`);
+        break;
+      default:
+        // Default action if needed
     }
   };
 
@@ -165,12 +292,6 @@ const ResearcherDashboard = () => {
     setDropdownVisible(false);
   };
 
-  useEffect(() => {
-    return () => {
-      clearTimeout(dropdownTimeout.current);
-    };
-  }, []);
-
   const handleLogout = async () => {
     try {
       if (auth.currentUser) {
@@ -183,14 +304,22 @@ const ResearcherDashboard = () => {
         });
       }
       await auth.signOut();
+      localStorage.removeItem('authToken');
       navigate("/signin");
-    } catch {
+    } catch (error) {
+      console.error("Logout error:", error);
       alert("Failed to log out. Please try again.");
     }
   };
 
+  useEffect(() => {
+    return () => {
+      clearTimeout(dropdownTimeout.current);
+    };
+  }, []);
+
   return (
-    <main>
+    <main className="researcher-dashboard">
       {showErrorModal && (
         <section className="error-modal">
           <p>Error loading profile. Please try again.</p>
@@ -204,6 +333,12 @@ const ResearcherDashboard = () => {
           <p>Manage your research and collaborate with other researchers</p>
         </section>
         <section className="header-actions">
+          <MessageNotification 
+            messages={messages}
+            unreadCount={unreadCount}
+            onMessageClick={handleMessageClick}
+          />
+          
           <section className="dropdown-menu-container">
             <button
               className="menu-toggle-btn"
@@ -216,6 +351,7 @@ const ResearcherDashboard = () => {
                 <button onClick={() => navigate('/researcher-profile')}>View Profile</button>
                 <button onClick={handleAddListing}>New Research</button>
                 <button onClick={handleCollaborate}>Collaborate</button>
+                <button className="chat-with-us-btn" onClick={() => setShowContactForm(true)} > Chat with Us </button>
                 <button onClick={handleLogout}>Logout</button>
               </section>
             )}
@@ -273,29 +409,27 @@ const ResearcherDashboard = () => {
         </section>
 
         <h3>Your Research</h3>
-        <section>
+        <section className="listings-grid">
           {filteredListings.length === 0 ? (
-            <p style={{ color: '#B1EDE8', textAlign: 'center' }}>No research listings found.</p>
+            <p className="no-listings">No research listings found.</p>
           ) : (
             filteredListings.map(item => (
-              <article key={item.id}>
+              <article key={item.id} className="listing-card">
                 <h4>{item.title}</h4>
                 <p>{item.summary}</p>
-                <button
-                  onClick={() => navigate(`/listing/${item.id}`)}
-                >
-                  View Listing
-                </button>
-                <button
-                  style={{
-                    background: '#B1EDE8',
-                    color: '#132238',
-                    marginLeft: '0.5rem'
-                  }}
-                  onClick={() => navigate(`/chat/${item.id}`)}
-                >
-                  Chat
-                </button>
+                <div className="listing-actions">
+                  <button
+                    onClick={() => navigate(`/listing/${item.id}`)}
+                  >
+                    View Listing
+                  </button>
+                  <button
+                    className="chat-btn"
+                    onClick={() => navigate(`/chat/${item.id}`)}
+                  >
+                    Chat
+                  </button>
+                </div>
               </article>
             ))
           )}
@@ -303,45 +437,50 @@ const ResearcherDashboard = () => {
       </section>
 
       <section className="collaboration-requests-section">
-        <CollaborationRequestsPanel />
+        <CollaborationRequestsPanel userId={userId} />
       </section>
 
       <section className="collaborations-section">
         <h3>Your Collaborations</h3>
         {collabListings.length > 0 ? (
-          collabListings.map(listing => (
-            <article key={listing.id}>
-              <h4>{listing.title}</h4>
-              <p>{listing.summary}</p>
-              <button
-                onClick={() => navigate(`/listing/${listing.id}`)}
-              >
-                View Project
-              </button>
-              <button
-                style={{
-                  background: '#B1EDE8',
-                  color: '#132238',
-                  marginLeft: '0.5rem'
-                }}
-                onClick={() => navigate(`/chat/${listing.id}`)}
-              >
-                Chat
-              </button>
-            </article>
-          ))
+          <section className="listings-grid">
+            {collabListings.map(listing => (
+              <article key={listing.id} className="listing-card">
+                <h4>{listing.title}</h4>
+                <p>{listing.summary}</p>
+                <div className="listing-actions">
+                  <button
+                    onClick={() => navigate(`/listing/${listing.id}`)}
+                  >
+                    View Project
+                  </button>
+                  <button
+                    className="chat-btn"
+                    onClick={() => navigate(`/chat/${listing.id}`)}
+                  >
+                    Chat
+                  </button>
+                </div>
+              </article>
+            ))}
+          </section>
         ) : (
-          <p style={{ color: '#B1EDE8', textAlign: 'center' }}>
+          <p className="no-listings">
             No active collaborations yet. Browse projects to collaborate!
           </p>
         )}
       </section>
+      {showContactForm && (
+      <div className="contact-form-modal">
+      <ContactForm onClose={() => setShowContactForm(false)} />
+      </div>
+      )}
 
       <footer className="researcher-footer">
-        <a href="/some-path">Contact</a>
-        <a href="/some-path">Privacy Policy</a>
-        <a href="/some-path">Terms of Service</a>
-        <p>&copy; 2025 Innerk Hub</p>
+        <a href="/contact">Contact</a>
+        <a href="/privacy-policy">Privacy Policy</a>
+        <a href="/terms">Terms of Service</a>
+        <p>&copy; {new Date().getFullYear()} Innerk Hub</p>
       </footer>
     </main>
   );

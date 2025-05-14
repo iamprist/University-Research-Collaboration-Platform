@@ -14,6 +14,7 @@ import {
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './ResearcherDashboard.css'; // <-- Make sure your CSS is imported
+import { sendMessage, messageTypes } from '../../utils/sendMessage';
 
 const CollaboratePage = () => {
   const navigate = useNavigate();
@@ -92,17 +93,17 @@ const CollaboratePage = () => {
   }, []);
 
   const handleCollaborateRequest = async (listingId, researcherId) => {
-    try {
-      setRequestStates(prev => ({
-        ...prev,
-        [listingId]: { ...prev[listingId], requesting: true }
-      }));
+   try {
+    setRequestStates(prev => ({
+      ...prev,
+      [listingId]: { ...prev[listingId], requesting: true }
+    }));
 
-      const currentUser = auth.currentUser;
-      if (!currentUser) {
-        toast.error("You need to be logged in to collaborate");
-        return;
-      }
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      toast.error("You need to be logged in to collaborate");
+      return;
+    }
 
       const collabQuery = query(
         collection(db, "collaborations"),
@@ -139,6 +140,18 @@ const CollaboratePage = () => {
         message
       });
 
+      //send notification to the researcher
+      const listingDoc = await getDoc(doc(db, "research-listings", listingId));
+      const listingTitle = listingDoc.exists() ? listingDoc.data().title : "Research Project"; 
+
+      await sendMessage(researcherId, {
+      title: 'New Collaboration Request',
+      content: `${currentUser.displayName || "A researcher"} wants to collaborate on "${listingTitle}"`,
+      type: messageTypes.COLLABORATION_REQUEST,
+      relatedId: listingId
+    });
+
+
       toast.success("Collaboration request sent successfully!");
       setRequestStates(prev => ({
         ...prev,
@@ -160,15 +173,19 @@ const CollaboratePage = () => {
 
   return (
     <main>
-      <header className="researcher-header">
+     <header className="researcher-header">
   <section className="header-title">
     <h1>Collaborate with Other Researchers</h1>
+    <p>Find projects to join and collaborate on</p>
   </section>
-  <nav className="header-nav">
-    <a href="/researcher-dashboard" className="header-link">Dashboard</a>
-    <a href="/researcher-profile" className="header-link">Profile</a>
-    <a href="/researcher/add-listing" className="header-link">Add Listing</a>
-  </nav>
+  <section className="header-actions">
+    <button 
+      className="dashboard-btn"
+      onClick={() => navigate('/researcher-dashboard')}
+    >
+      Back to Dashboard
+    </button>
+  </section>
 </header>
 
       <section className="collaborate-main">
