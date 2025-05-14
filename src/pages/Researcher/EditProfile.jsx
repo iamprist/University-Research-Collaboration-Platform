@@ -1,39 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { db, auth } from '../../config/firebaseConfig';
+import { db, auth, storage } from '../../config/firebaseConfig';
 import { getDoc, doc, setDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
-import './ResearcherDashboard.css'; // Make sure to import the shared CSS
+import './ResearcherDashboard.css';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 const researchAreas = [
-  'Physics',
-  'Chemistry',
-  'Biology',
-  'Computer Science',
-  'Mathematics',
-  'Statistics',
-  'Engineering',
-  'Medicine',
-  'Nursing',
-  'Pharmacy',
-  'Law',
-  'Business',
-  'Economics',
-  'Political Science',
-  'Psychology',
-  'Sociology',
-  'Anthropology',
-  'Education',
-  'Environmental Science',
-  'History',
-  'Artificial Intelligence',
-  'Data Science',
-  'Agriculture',
-  'Architecture',
-  'Geography',
-  'Philosophy',
-  'Linguistics',
-  'Communication',
-  'Other'
+  'Physics', 'Chemistry', 'Biology', 'Computer Science', 'Mathematics',
+  'Statistics', 'Engineering', 'Medicine', 'Nursing', 'Pharmacy', 'Law',
+  'Business', 'Economics', 'Political Science', 'Psychology', 'Sociology',
+  'Anthropology', 'Education', 'Environmental Science', 'History',
+  'Artificial Intelligence', 'Data Science', 'Agriculture', 'Architecture',
+  'Geography', 'Philosophy', 'Linguistics', 'Communication', 'Other'
 ];
 
 const EditProfile = () => {
@@ -44,7 +22,7 @@ const EditProfile = () => {
     email: '',
     researchArea: '',
     biography: '',
-    profilePicture: null
+    profilePicture: null // This will be a File object if uploading, or a string (URL)
   });
   const [userId, setUserId] = useState(null);
 
@@ -79,7 +57,16 @@ const EditProfile = () => {
         const userDocRef = doc(db, 'users', userId);
         const userDoc = await getDoc(userDocRef);
         if (userDoc.exists()) {
-          setProfile(userDoc.data());
+          // Ensure all fields are defined (replace undefined with empty string/null)
+          const data = userDoc.data();
+          setProfile({
+            title: data.title || '',
+            name: data.name || '',
+            email: data.email || '',
+            researchArea: data.researchArea || '',
+            biography: data.biography || '',
+            profilePicture: data.profilePicture || null
+          });
         }
       } catch (error) {
         console.error('Error fetching profile:', error);
@@ -100,11 +87,35 @@ const EditProfile = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!userId) {
+      console.error('User ID is not set.');
+      return;
+    }
+
     try {
-      await setDoc(doc(db, 'users', userId), profile);
+      let profileData = { ...profile };
+
+      // Handle profile picture upload if a new file is selected
+      if (profile.profilePicture instanceof File) {
+        const storageRef = ref(storage, `profilePictures/${userId}`);
+        await uploadBytes(storageRef, profile.profilePicture);
+        const downloadURL = await getDownloadURL(storageRef);
+        profileData.profilePicture = downloadURL;
+      } else if (typeof profile.profilePicture === 'undefined') {
+        profileData.profilePicture = null;
+      }
+
+      // Remove any undefined values (Firestore does not accept undefined)
+      Object.keys(profileData).forEach((key) => {
+        if (typeof profileData[key] === 'undefined') {
+          profileData[key] = null;
+        }
+      });
+
+      await setDoc(doc(db, 'users', userId), profileData);
       navigate('/researcher-profile');
     } catch (error) {
-      console.error('Error updating profile:', error);
+      console.error('Error updating your profile:', error);
     }
   };
 
@@ -124,14 +135,14 @@ const EditProfile = () => {
 
       <section style={{ maxWidth: '700px', margin: '2rem auto', padding: '0 1.5rem' }}>
         <form onSubmit={handleSubmit}>
-          <article style={{ 
-            background: '#1A2E40', 
+          <article style={{
+            background: '#1A2E40',
             borderRadius: '1rem',
             boxShadow: '0 4px 6px rgba(0,0,0,0.12)',
             padding: '2rem',
             color: '#FFFFFF'
           }}>
-            {/* 
+            {/* Profile Picture Upload */}
             <section style={{ marginBottom: '1.5rem' }}>
               <label style={{ display: 'block', marginBottom: '0.5rem', color: '#64CCC5', fontWeight: '600' }}>
                 Profile Picture
@@ -141,7 +152,7 @@ const EditProfile = () => {
                 name="profilePicture"
                 accept="image/*"
                 onChange={handleChange}
-                style={{ 
+                style={{
                   width: '100%',
                   padding: '0.7rem',
                   backgroundColor: '#132238',
@@ -150,8 +161,10 @@ const EditProfile = () => {
                   color: '#FFFFFF'
                 }}
               />
+              {typeof profile.profilePicture === 'string' && (
+                <img src={profile.profilePicture} alt="Profile" style={{ marginTop: '1rem', maxWidth: '150px', borderRadius: '0.5rem' }} />
+              )}
             </section>
-            */}
 
             <section style={{ marginBottom: '1.5rem' }}>
               <label style={{ display: 'block', marginBottom: '0.5rem', color: '#64CCC5', fontWeight: '600' }}>
@@ -162,7 +175,7 @@ const EditProfile = () => {
                 value={profile.title || ''}
                 onChange={handleChange}
                 required
-                style={{ 
+                style={{
                   width: '100%',
                   padding: '0.7rem',
                   backgroundColor: '#132238',
@@ -194,7 +207,7 @@ const EditProfile = () => {
                 value={profile.name || ''}
                 onChange={handleChange}
                 required
-                style={{ 
+                style={{
                   width: '100%',
                   padding: '0.7rem',
                   backgroundColor: '#132238',
@@ -215,7 +228,7 @@ const EditProfile = () => {
                 value={profile.email || ''}
                 onChange={handleChange}
                 required
-                style={{ 
+                style={{
                   width: '100%',
                   padding: '0.7rem',
                   backgroundColor: '#132238',
@@ -261,7 +274,7 @@ const EditProfile = () => {
                 value={profile.biography || ''}
                 onChange={handleChange}
                 rows="6"
-                style={{ 
+                style={{
                   width: '100%',
                   padding: '0.7rem',
                   backgroundColor: '#132238',
@@ -274,10 +287,10 @@ const EditProfile = () => {
             </section>
 
             <section style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => navigate(-1)}
-                style={{ 
+                style={{
                   backgroundColor: '#B1EDE8',
                   color: '#132238',
                   border: 'none',
@@ -289,9 +302,9 @@ const EditProfile = () => {
               >
                 Cancel
               </button>
-              <button 
+              <button
                 type="submit"
-                style={{ 
+                style={{
                   backgroundColor: '#64CCC5',
                   color: '#132238',
                   border: 'none',
@@ -307,7 +320,6 @@ const EditProfile = () => {
           </article>
         </form>
       </section>
-
       <footer className="researcher-footer">
         <a href="/contact">Contact</a>
         <a href="/privacy-policy">Privacy Policy</a>
