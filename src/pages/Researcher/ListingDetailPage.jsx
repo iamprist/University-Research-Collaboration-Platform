@@ -2,7 +2,7 @@ import { useParams } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../config/firebaseConfig';
 import { useEffect, useState } from 'react';
-import './ListingDetailPage.css'; // We'll create this CSS file
+import './ListingDetailPage.css'; 
 
 const ListingDetailPage = () => {
   const { id } = useParams();

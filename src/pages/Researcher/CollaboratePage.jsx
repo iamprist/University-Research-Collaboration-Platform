@@ -28,6 +28,12 @@ const CollaboratePage = () => {
         setLoading(true);
         const user = auth.currentUser;
         if (!user) return;
+    
+        // Get user's friends list
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        const friends = userDoc.exists() ? userDoc.data().friends || [] : [];
+    
+        // Get listings user is already collaborating on
         const collabSnapshot = await getDocs(
           query(
             collection(db, 'collaborations'),
@@ -35,23 +41,30 @@ const CollaboratePage = () => {
           )
         );
         const collaboratedListingIds = collabSnapshot.docs.map(doc => doc.data().listingId);
-
+    
+        // Get all listings except user's own
         const otherQuery = query(
           collection(db, 'research-listings'),
           where('userId', '!=', user.uid)
         );
         const otherSnapshot = await getDocs(otherQuery);
-
+    
+        // Process listings with researcher names and request status
         const listingsWithNames = await Promise.all(
           otherSnapshot.docs.map(async (docSnapshot) => {
             const listingData = docSnapshot.data();
             const listingId = docSnapshot.id;
+            
+            // Skip if already collaborating
             if (collaboratedListingIds.includes(listingId)) return null;
+            
+            // Get researcher info
             const researcherDoc = await getDoc(doc(db, 'users', listingData.userId));
             const researcherName = researcherDoc.exists()
               ? researcherDoc.data().name
               : 'Unknown Researcher';
-
+    
+            // Check for pending requests
             const requestQuery = query(
               collection(db, 'collaboration-requests'),
               where('listingId', '==', listingId),
@@ -60,22 +73,32 @@ const CollaboratePage = () => {
             );
             const existingRequest = await getDocs(requestQuery);
             const hasPendingRequest = !existingRequest.empty;
-
+    
             return {
               id: listingId,
               ...listingData,
               researcherName,
               researcherId: listingData.userId,
-              hasPendingRequest
+              hasPendingRequest,
+              isFriend: friends.includes(listingData.userId) // Add friend flag
             };
           })
         );
-
+    
+        // Filter out nulls and sort with friends first
         const filteredListings = listingsWithNames.filter(Boolean);
-        setCollaborateListings(filteredListings);
-
+        const sortedListings = filteredListings.sort((a, b) => {
+          if (a.isFriend && !b.isFriend) return -1; // a comes first
+          if (!a.isFriend && b.isFriend) return 1;  // b comes first
+          return 0; // no change in order
+        });
+    
+        // Update state with sorted listings
+        setCollaborateListings(sortedListings);
+    
+        // Initialize request states
         const initialStates = {};
-        filteredListings.forEach(listing => {
+        sortedListings.forEach(listing => {
           initialStates[listing.id] = {
             message: '',
             requesting: false,
@@ -91,7 +114,6 @@ const CollaboratePage = () => {
     };
     fetchCollaborateListings();
   }, []);
-
   const handleCollaborateRequest = async (listingId, researcherId) => {
    try {
     setRequestStates(prev => ({

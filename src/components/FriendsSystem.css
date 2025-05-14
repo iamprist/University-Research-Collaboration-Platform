@@ -1,0 +1,191 @@
+/* FriendsSystem.css */
+.friends-system {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    color: #333;
+  }
+  
+  .friends-system h2 {
+    color: #2c3e50;
+    margin-bottom: 20px;
+  }
+  
+  .search-section {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 30px;
+  }
+  
+  .search-section input {
+    flex-grow: 1;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+  }
+  
+  .search-section button {
+    padding: 10px 20px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .search-section button:disabled {
+    background-color: #95a5a6;
+  }
+  
+  .requests-section, .search-results, .friends-list {
+    margin-bottom: 30px;
+  }
+  
+  .requests-section h3, .search-results h3, .friends-list h3 {
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+  }
+  
+  .request-card, .user-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    margin-bottom: 10px;
+    background-color: #f9f9f9;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  
+  .user-info {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .user-name {
+    font-weight: bold;
+    margin-bottom: 5px;
+  }
+  
+  .research-area {
+    color: #7f8c8d;
+    font-size: 0.9em;
+  }
+  
+  .request-actions {
+    display: flex;
+    gap: 10px;
+  }
+  
+  .accept-btn {
+    background-color: #2ecc71;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .decline-btn {
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .add-friend-btn {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .friend-status {
+    color: #2ecc71;
+    font-weight: bold;
+  }
+  
+  .user-card.loading {
+    justify-content: center;
+    color: #7f8c8d;
+  }
+
+  .request-sent-label {
+    color: #3498db;
+    font-weight: bold;
+    padding: 8px 15px;
+    border-radius: 4px;
+    background-color: #f0f8ff;
+  }
+  
+  .add-friend-btn:disabled {
+    background-color: #95a5a6;
+    cursor: not-allowed;
+  }
+  
+  .user-card {
+    transition: all 0.3s ease;
+  }
+  
+  .user-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  }
+
+  /* Add these styles to your existing CSS */
+.requests-section {
+  background-color: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.request-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  margin-bottom: 10px;
+  background-color: white;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.user-info {
+  flex-grow: 1;
+}
+
+.user-name {
+  font-weight: bold;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.user-email {
+  color: #666;
+  font-size: 0.85em;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.research-area {
+  color: #3498db;
+  font-size: 0.9em;
+}
+
+.no-requests, .no-friends {
+  color: #666;
+  text-align: center;
+  padding: 20px;
+}
+
+.request-actions {
+  display: flex;
+  gap: 8px;
+}
