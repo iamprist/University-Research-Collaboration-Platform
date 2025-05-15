@@ -4,7 +4,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import './ResearcherDashboard.css';
 
-export const ResearcherProfile = () => {
+const ResearcherProfile = () => {
   const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [userId, setUserId] = useState(null);
@@ -135,3 +135,5 @@ export const ResearcherProfile = () => {
     </main>
   );
 };
+
+export default ResearcherProfile;
