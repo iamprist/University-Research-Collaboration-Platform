@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from "../../config/firebaseConfig";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 export default function ViewLogs() {
   const [logs, setLogs] = useState([]);
@@ -114,6 +116,46 @@ export default function ViewLogs() {
       fontSize: "1rem",
       fontWeight: "bold",
     },
+    exportButton: {
+      backgroundColor: "red",
+      color: "white",
+      padding: "0.75rem 1rem",
+      border: "none",
+      borderRadius: "0.5rem",
+      cursor: "pointer",
+      fontSize: "1rem",
+      float: "right",
+      marginBottom: "1rem",
+      marginRight: "1rem",
+    }
+    
+  };
+
+  const exportLogsAsPDF = () => {
+    const doc = new jsPDF();
+    const tableColumn = ["Timestamp", "User Role", "User Name", "Action", "Target", "Details", "IP Address"];
+    const tableRows = [];
+
+    logs.forEach((log) => {
+      const logData = [
+        log.timestamp?.toDate ? log.timestamp.toDate().toLocaleString() : "N/A",
+        log.role || "N/A",
+        log.userName || "N/A",
+        log.action || "N/A",
+        log.target || "N/A",
+        log.details || "N/A",
+        log.ip || "N/A",
+      ];
+      tableRows.push(logData);
+    });
+
+    doc.text("Logs Report", 14, 15);
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 20,
+    });
+    doc.save("logs_report.pdf");
   };
 
   const pagesPerGroup = 10;
@@ -134,6 +176,9 @@ export default function ViewLogs() {
 
   return (
     <section style={styles.container}>
+      <button style={styles.exportButton} onClick={exportLogsAsPDF}>
+        Export Logs
+      </button>
       <input
         type="text"
         placeholder="Search logs..."
@@ -141,6 +186,7 @@ export default function ViewLogs() {
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
       />
+      
 
       <section style={styles.tableContainer}>
         <table style={styles.table}>

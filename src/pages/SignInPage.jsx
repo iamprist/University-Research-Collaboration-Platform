@@ -1,16 +1,11 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useCallback, useMemo } from "react";
 import { auth, provider, db } from "../config/firebaseConfig";
 import { signInWithPopup } from "firebase/auth";
 import { setDoc, doc, getDocs, collection } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { logEvent } from "../utils/logEvent";
 import { toast } from "react-toastify";
-import { 
-  ArrowLeftIcon,
-  SparklesIcon,
-  GlobeAltIcon,
-  ShieldCheckIcon
-} from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, SparklesIcon, GlobeAltIcon, ShieldCheckIcon } from "@heroicons/react/24/outline";
 
 function SignInPage() {
   const navigate = useNavigate();
@@ -19,13 +14,11 @@ function SignInPage() {
   useEffect(() => {
     const style = document.createElement("style");
     style.textContent = `
-      /* Background animation */
       @keyframes gradientBG {
         0% { background-position: 0% 50%; }
         50% { background-position: 100% 50%; }
         100% { background-position: 0% 50%; }
       }
-      /* Neon glow animation */
       @keyframes neon-glow {
         0%, 100% {
           box-shadow: 0 0 5px #64CCC5, 0 0 10px #64CCC5, 0 0 20px #64CCC5;
@@ -34,14 +27,12 @@ function SignInPage() {
           box-shadow: 0 0 10px #B1EDE8, 0 0 20px #B1EDE8, 0 0 30px #B1EDE8;
         }
       }
-      /* Card fade-in animation */
       @keyframes fadeInUp {
         to {
           opacity: 1;
           transform: translateY(0);
         }
       }
-      /* Modal animation */
       @keyframes fadeInScale {
         from {
           opacity: 0;
@@ -52,7 +43,6 @@ function SignInPage() {
           transform: scale(1);
         }
       }
-      /* Button radial effect */
       .neon-button::after {
         content: '';
         position: absolute;
@@ -74,68 +64,21 @@ function SignInPage() {
     return () => document.head.removeChild(style);
   }, []);
 
-  const handleSignIn = async (role) => {
+  const handleSignIn = useCallback(async (role) => {
+    const navigateToRoleDashboard = (role) => {
+      if (role === "researcher") navigate("/researcher-dashboard");
+      else if (role === "reviewer") navigate("/reviewer");
+      else if (role === "admin") navigate("/admin");
+    };
+
     try {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
 
-      if (role === "admin") {
-        const newEmailsSnapshot = await getDocs(collection(db, "newEmails"));
-        const isAuthorizedInNewEmails = newEmailsSnapshot.docs.some(
-          (doc) => doc.data().email.toLowerCase() === user.email.toLowerCase()
-        );
-
-        const usersSnapshot = await getDocs(collection(db, "users"));
-        const isAuthorizedInUsers = usersSnapshot.docs.some(
-          (doc) =>
-            doc.data().email.toLowerCase() === user.email.toLowerCase() &&
-            doc.data().role === "admin"
-        );
-
-        // Check if the email is in either `newEmails` or `users` collection
-        if (!isAuthorizedInNewEmails && !isAuthorizedInUsers) {
-          const modal = document.createElement("section");
-          modal.setAttribute("role", "dialog");
-          modal.setAttribute("aria-modal", "true");
-          modal.className = "modal";
-          modal.style = `
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: rgba(0, 0, 0, 0.5);
-            font-family: Inter, sans-serif;
-            z-index: 1000;
-            animation: fadeInScale 0.3s ease forwards;
-          `;
-          modal.innerHTML = `
-            <article role="document" style="
-              background: #FFFFFF;
-              padding: 2rem;
-              border-radius: 1rem;
-              text-align: center;
-              box-shadow: 0 4px 6px rgba(18, 34, 56, 0.1);
-            ">
-              <h2 style="font-size: 1.5rem; color: #132238; margin-bottom: 1rem;">Access Denied</h2>
-              <p style="font-size: 1rem; color: #364E68; margin-bottom: 1.5rem;">
-                You are not authorized to access the admin dashboard.
-              </p>
-              <button style="
-                background-color: #FF0000;
-                color: #FFFFFF;
-                padding: 0.75rem 1.5rem;
-                border: none;
-                border-radius: 0.5rem;
-                cursor: pointer;
-                transition: all 0.3s ease;
-              " onclick="this.closest('section').remove()">Close</button>
-            </article>
-          `;
-          document.body.appendChild(modal);
-          return;
-        }
+      const isAuthorized = await checkAuthorization(user.email, role);
+      if (!isAuthorized) {
+        showAccessDeniedModal();
+        return;
       }
 
       const token = await user.getIdToken();
@@ -155,18 +98,91 @@ function SignInPage() {
         details: "User logged in",
       });
 
-      if (role === "researcher") navigate("/researcher-dashboard");
-      else if (role === "reviewer") navigate("/reviewer");
-      else if (role === "admin") navigate("/admin");
+      navigateToRoleDashboard(role);
     } catch (error) {
-      if (error.code === "auth/popup-closed-by-user") {
-        console.log("Login canceled by user");
-      } else {
-        console.error("Login error:", error);
-        toast.error("Login failed. Please try again.");
-      }
+      handleSignInError(error);
+    }
+  }, [navigate]);
+
+  const checkAuthorization = async (email, role) => {
+    const newEmailsSnapshot = await getDocs(collection(db, "newEmails"));
+    const isAuthorizedInNewEmails = newEmailsSnapshot.docs.some(
+      (doc) => doc.data().email.toLowerCase() === email.toLowerCase()
+    );
+
+    const usersSnapshot = await getDocs(collection(db, "users"));
+    const isAuthorizedInUsers = usersSnapshot.docs.some(
+      (doc) =>
+        doc.data().email.toLowerCase() === email.toLowerCase() &&
+        doc.data().role === role
+    );
+
+    return isAuthorizedInNewEmails || isAuthorizedInUsers;
+  };
+
+  const showAccessDeniedModal = () => {
+    const modal = document.createElement("section");
+    modal.setAttribute("role", "dialog");
+    modal.setAttribute("aria-modal", "true");
+    modal.className = "modal";
+    modal.style = `
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.5);
+      font-family: Inter, sans-serif;
+      z-index: 1000;
+      animation: fadeInScale 0.3s ease forwards;
+    `;
+    modal.innerHTML = `
+      <article role="document" style="
+        background: #FFFFFF;
+        padding: 2rem;
+        border-radius: 1rem;
+        text-align: center;
+        box-shadow: 0 4px 6px rgba(18, 34, 56, 0.1);
+      ">
+        <h2 style="font-size: 1.5rem; color: #132238; margin-bottom: 1rem;">Access Denied</h2>
+        <p style="font-size: 1rem; color: #364E68; margin-bottom: 1.5rem;">
+          You are not authorized to access the admin dashboard.
+        </p>
+        <button style="
+          background-color: #FF0000;
+          color: #FFFFFF;
+          padding: 0.75rem 1.5rem;
+          border: none;
+          border-radius: 0.5rem;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        " onclick="this.closest('section').remove()">Close</button>
+      </article>
+    `;
+    document.body.appendChild(modal);
+  };
+
+  const handleSignInError = (error) => {
+    if (error.code === "auth/popup-closed-by-user") {
+      console.log("Login canceled by user");
+    } else {
+      console.error("Login error:", error);
+      toast.error("Login failed. Please try again.");
     }
   };
+
+  const stats = useMemo(() => [
+    { number: "Multiple", label: "Daily Collaborations" },
+    { number: "Protected", label: "Submission Integrity" },
+    { number: "Guaranteed", label: "Faster Peer Review" },
+  ], []);
+
+  const features = useMemo(() => [
+    { icon: SparklesIcon, text: "Peer-Powered Research Validation" },
+    { icon: GlobeAltIcon, text: "Global Academic Network" },
+    { icon: ShieldCheckIcon, text: "Ensures Academic Integrity" },
+  ], []);
 
   const styles = {
     container: {
@@ -274,7 +290,7 @@ function SignInPage() {
       transform: "translateY(20px)",
       animation: "fadeInUp 0.6s ease forwards",
       backgroundImage: "radial-gradient(circle at 2px 2px, rgba(99,204,200,0.05) 2px, transparent 0)",
-      backgroundSize: "40px 40px"
+      backgroundSize: "40px 40px",
     },
     button: {
       backgroundColor: "#132238",
@@ -330,11 +346,10 @@ function SignInPage() {
 
   return (
     <main role="main" style={styles.container}>
-      {/* Hero Section */}
       <section className="hero-section" style={styles.heroSection}>
-      <button style={styles.backButton} onClick={() => navigate('/')}>
-        <ArrowLeftIcon style={{ height: 'clamp(1rem, 3vw, 1.25rem)' }} />
-           Back to Home
+        <button style={styles.backButton} onClick={() => navigate("/")}>
+          <ArrowLeftIcon style={{ height: "clamp(1rem, 3vw, 1.25rem)" }} />
+          Back to Home
         </button>
         <header style={styles.content}>
           <h1 style={styles.heading}>Welcome to Innerk Hub</h1>
@@ -344,93 +359,50 @@ function SignInPage() {
             Innerk Hub empowers global scientific progress through secure collaboration, peer-reviewed excellence, 
             and AI-enhanced research management.
           </p>
-          
-          {/* Stats Section */}
           <section aria-label="Platform statistics" style={styles.statsContainer}>
-            {[
-              { number: "Multiple", label: "Daily Collaborations" },
-              { number: "Protected", label: "Submission Integrity" },
-              { number: "Guaranteed", label: "Faster Peer Review" }
-            ].map((stat, index) => (
+            {stats.map((stat, index) => (
               <article key={index} style={styles.statItem}>
                 <div style={styles.statNumber}>{stat.number}</div>
                 <div style={styles.statLabel}>{stat.label}</div>
               </article>
             ))}
           </section>
-
-          {/* Features Section */}
           <section aria-label="Key features" style={styles.featureList}>
-            <article style={styles.featureItem}>
-              <SparklesIcon style={styles.featureIcon} />
-              <span>Peer-Powered Research Validation</span>
-            </article>
-            <article style={styles.featureItem}>
-              <GlobeAltIcon style={styles.featureIcon} />
-              <span>Global Academic Network</span>
-            </article>
-            <article style={styles.featureItem}>
-              <ShieldCheckIcon style={styles.featureIcon} />
-              <span>Ensures Academic Integrity</span>
-            </article>
+            {features.map(({ icon: Icon, text }, index) => (
+              <article key={index} style={styles.featureItem}>
+                <Icon style={styles.featureIcon} />
+                <span>{text}</span>
+              </article>
+            ))}
           </section>
-
           <p style={styles.subheading}>
             Secure authentication powered by Google Cloud. Choose your role to continue:
           </p>
         </header>
       </section>
-
-      {/* Sign-In Card */}
-      <section 
-        aria-label="Sign in options"
-        style={styles.card} 
-        className="card"
-      >
+      <section aria-label="Sign in options" style={styles.card} className="card">
         {["researcher", "reviewer", "admin"].map((role) => (
           <button
             key={role}
             className="neon-button"
-            style={{
-              ...styles.button,
-              transition: "all 0.3s ease",
-            }}
-            onMouseOver={(e) => {
-              e.target.style.animation = "neon-glow 1.5s ease-in-out infinite";
-              e.target.querySelector("img").style.filter = "brightness(1.2)";
-            }}
-            onMouseOut={(e) => {
-              e.target.style.animation = "none";
-              e.target.querySelector("img").style.filter = "brightness(1)";
-            }}
+            style={styles.button}
             onClick={() => handleSignIn(role)}
           >
             <img
               src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
               alt=""
               aria-hidden="true"
-              style={{ 
-                height: "1.5rem",
-                transition: "filter 0.3s ease"
-              }}
+              style={{ height: "1.5rem" }}
             />
             Continue as {role.charAt(0).toUpperCase() + role.slice(1)}
           </button>
         ))}
       </section>
-
-      {/* Footer */}
       <footer style={styles.footer} role="contentinfo">
         <nav style={styles.footerLinks} aria-label="Footer navigation">
-          <a href="/privacy-policy" style={styles.footerLink}>
-            Privacy Policy
-          </a>
-          <a href="/terms-of-service" style={styles.footerLink}>
-            Terms of Service
-          </a>
-          <a href="/contact-us" style={styles.footerLink}>
-            Contact Support
-          </a>
+          <a href="/privacy-policy" style={styles.footerLink}>Privacy Policy</a>
+          <a href="/terms-of-service" style={styles.footerLink}>Terms of Service</a>
+          <a href="/contact-us" style={styles.footerLink}>Contact Support</a>
         </nav>
         <p style={{ fontSize: "0.9rem", marginTop: "1rem" }}>
           ©2025 Innerk Hub · Advancing Scientific Collaboration
