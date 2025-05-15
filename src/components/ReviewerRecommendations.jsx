@@ -193,9 +193,7 @@ export default function ResearchProjectDisplay() {
                 <p><strong>Collaboration Needs:</strong> {r.collaborationNeeds}</p>
                 <p><strong>Lead Researcher:</strong> {r.postedByName}</p>
                 <p><strong>Email:</strong> {r.postedByEmail}</p>
-                <a href={r.relatedPublicationLink} className="btn btn-success" target="_blank" rel="noopener noreferrer">
-                  View Publication
-                </a>
+
               </div>
             )}
           </div>
