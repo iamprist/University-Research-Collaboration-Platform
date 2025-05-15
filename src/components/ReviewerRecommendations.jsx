@@ -2,12 +2,44 @@ import React, { useEffect, useState } from "react";
 import { getFirestore, collection, doc, getDoc, getDocs } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
+
 const tagAliases = {
+  PHYS: "Physics",
+  CHEM: "Chemistry",
+  BIO: "Biology",
   CS: "Computer Science",
   AI: "Artificial Intelligence",
-  ML: "Machine Learning",
-  // add more aliases as needed
+  MED: "Medicine",
+  LAW: "Law",
+  BUS: "Business Administration",
+  FIN: "Finance",
+  MKT: "Marketing",
+  HRM: "Human Resources",
+  EDU: "Education",
+  PSY: "Psychology",
+  ENG: "Engineering",
+  ENV: "Environmental Science",
+  SOC: "Sociology",
+  POL: "Political Science",
+  ECO: "Economics",
+  PHIL: "Philosophy",
+  HIST: "History",
+  GEO: "Geography",
+  ART: "Art",
+  MATH: "Mathematics",
+  STAT: "Statistics",
+  ANTH: "Anthropology",
+  LING: "Linguistics",
+  COM: "Communication",
+  NUR: "Nursing",
+  PHAR: "Pharmacy",
+  AGRI: "Agriculture",
+  VET: "Veterinary Science",
+  ARCH: "Architecture",
+  Other: "Other (please specify)",
 };
+
+
 
 // Normalize tags: map alias to canonical form
 function normalizeTag(tag) {
