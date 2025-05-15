@@ -23,11 +23,12 @@ function normalizeTags(tags) {
   return tags.map(normalizeTag);
 }
 
-export default function ReviewerRecommendations() {
+export default function ResearchProjectDisplay() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [expertiseTags, setExpertiseTags] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
+  const [expandedProject, setExpandedProject] = useState(null); // Track expanded project
 
   const auth = getAuth();
   const db = getFirestore();
@@ -70,8 +71,9 @@ export default function ReviewerRecommendations() {
         const researchSnapshot = await getDocs(researchListingsCol);
         const matches = [];
 
-        researchSnapshot.forEach((docSnap) => {
+        for (const docSnap of researchSnapshot.docs) {
           const data = docSnap.data();
+          const userId = data.userId; // Get userId from the research listing
 
           // Normalize research tags
           const keywords = normalizeTags(data.keywords || []);
@@ -83,6 +85,19 @@ export default function ReviewerRecommendations() {
             (researchArea && normalizedExpertiseTags.includes(researchArea));
 
           if (hasOverlap) {
+            // Fetch user details (name, email) from the users collection
+            const userDocRef = doc(db, "users", userId);
+            const userDocSnap = await getDoc(userDocRef);
+            let postedByName = "Unknown";
+            let postedByEmail = "N/A";
+
+            if (userDocSnap.exists()) {
+              const userData = userDocSnap.data();
+              postedByName = userData.name || "Unknown";
+              postedByEmail = userData.email || "N/A";
+            }
+
+            // Combine the research listing with user info
             matches.push({
               id: docSnap.id,
               title: data.title || "Untitled",
@@ -91,9 +106,15 @@ export default function ReviewerRecommendations() {
               keywords: data.keywords || [],
               institution: data.institution || "",
               department: data.department || "",
+              postedByName,
+              postedByEmail,
+              methodology: data.methodology || "Not Specified",
+              collaborationNeeds: data.collaborationNeeds || "Not Specified",
+              estimatedCompletion: data.estimatedCompletion || "N/A",
+              relatedPublicationLink: data.publicationLink || "#"
             });
           }
-        });
+        }
 
         setRecommendations(matches);
         setLoading(false);
@@ -106,6 +127,14 @@ export default function ReviewerRecommendations() {
 
     fetchRecommendations();
   }, [auth, db]);
+
+  const handleExpand = (projectId) => {
+    if (expandedProject === projectId) {
+      setExpandedProject(null); // Collapse if already expanded
+    } else {
+      setExpandedProject(projectId); // Expand the project
+    }
+  };
 
   if (loading) return <div>Loading recommendations...</div>;
   if (error) return <div className="alert alert-danger">{error}</div>;
@@ -127,22 +156,51 @@ export default function ReviewerRecommendations() {
     );
 
   return (
-    <div>
-      <h3>Recommended Research Based on Your Expertise</h3>
-      <ul className="list-group">
-        {recommendations.map((r) => (
-          <li key={r.id} className="list-group-item mb-3">
-            <h5>{r.title}</h5>
-            <p><b>Summary:</b> {r.summary}</p>
-            <p>
-              <b>Research Area:</b> {r.researchArea} <br />
-              <b>Keywords:</b> {r.keywords.join(", ")} <br />
-              <b>Institution:</b> {r.institution} <br />
-              <b>Department:</b> {r.department}
-            </p>
-          </li>
-        ))}
-      </ul>
+    <div className="container">
+      <h3 className="mb-4">Recommended Research Based on Your Expertise</h3>
+      {recommendations.map((r) => (
+        <div key={r.id} className="card mb-4">
+          <div className="card-body">
+            <h5 className="card-title">{r.title}</h5>
+            <p className="card-text"><strong>Lead Researcher:</strong> {r.postedByName}</p>
+            <p className="card-text"><strong>Email:</strong> {r.postedByEmail}</p>
+            <h6 className="mt-3">Project Summary</h6>
+            <p className="card-text">{r.summary}</p>
+            <h6>Research Area</h6>
+            <p className="card-text">{r.researchArea}</p>
+            <h6>Department</h6>
+            <p className="card-text">{r.department}</p>
+            <h6>Methodology</h6>
+            <p className="card-text">{r.methodology}</p>
+            <h6>Collaboration Needs</h6>
+            <p className="card-text">{r.collaborationNeeds}</p>
+            <h6>Estimated Completion</h6>
+            <p className="card-text">{r.estimatedCompletion}</p>
+
+            <button 
+              className="btn btn-primary" 
+              onClick={() => handleExpand(r.id)}>
+              {expandedProject === r.id ? "Hide Details" : "View Publication"}
+            </button>
+
+            {expandedProject === r.id && (
+              <div className="mt-4">
+                <h5>Full Project Details</h5>
+                <p><strong>Project Status:</strong> Active</p>
+                <p><strong>Estimated Completion:</strong> {r.estimatedCompletion}</p>
+                <p><strong>Research Area:</strong> {r.researchArea}</p>
+                <p><strong>Methodology:</strong> {r.methodology}</p>
+                <p><strong>Collaboration Needs:</strong> {r.collaborationNeeds}</p>
+                <p><strong>Lead Researcher:</strong> {r.postedByName}</p>
+                <p><strong>Email:</strong> {r.postedByEmail}</p>
+                <a href={r.relatedPublicationLink} className="btn btn-success" target="_blank" rel="noopener noreferrer">
+                  View Publication
+                </a>
+              </div>
+            )}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
