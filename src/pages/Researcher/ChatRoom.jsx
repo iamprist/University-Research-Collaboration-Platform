@@ -17,11 +17,10 @@ export default function ChatRoom() {
   const [previewUrl, setPreviewUrl] = useState(null);
   const [showMediaViewer, setShowMediaViewer] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState(null);
-  const [activeTab, setActiveTab] = useState('all'); // 'all', 'images', 'docs'
+  const [activeTab, setActiveTab] = useState('all');
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  // Filter messages by type
   const filteredMessages = messages.filter(msg => {
     if (activeTab === 'all') return true;
     if (activeTab === 'images') return msg.fileType?.startsWith('image/');
@@ -29,8 +28,7 @@ export default function ChatRoom() {
     return true;
   });
 
-  // Extract all media files for the media viewer
- 
+
 
   useEffect(() => {
     if (!chatId) {
@@ -125,10 +123,8 @@ export default function ChatRoom() {
 
     setAttachment(file);
     
-    // Check file type
     if (file.type.startsWith('image/')) {
       setAttachmentType('image');
-      // Create preview for images
       const reader = new FileReader();
       reader.onload = (event) => {
         setPreviewUrl(event.target.result);
@@ -242,29 +238,33 @@ export default function ChatRoom() {
 
     if (attachmentType === 'image') {
       return (
-        <div className="attachment-preview image-preview">
-          <img src={previewUrl} alt="Preview" />
-          <button onClick={removeAttachment} className="remove-attachment">
-            ×
-          </button>
+        <div className="attachment-preview">
+          <div className="preview-container">
+            <img src={previewUrl} alt="Preview" className="image-preview" />
+            <button onClick={removeAttachment} className="remove-attachment">
+              ×
+            </button>
+          </div>
         </div>
       );
     } else {
       return (
-        <div className="attachment-preview document-preview">
-          <div className="document-icon">
-            <svg viewBox="0 0 24 24" width="24" height="24">
-              <path fill="currentColor" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"></path>
-              <path fill="currentColor" d="M14 3v5h5"></path>
-            </svg>
+        <div className="attachment-preview">
+          <div className="document-preview">
+            <div className="document-icon">
+              <svg viewBox="0 0 24 24">
+                <path fill="currentColor" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"></path>
+                <path fill="currentColor" d="M14 3v5h5"></path>
+              </svg>
+            </div>
+            <div className="document-info">
+              <p className="document-name" title={attachment.name}>{attachment.name}</p>
+              <p className="document-size">{(attachment.size / 1024).toFixed(1)} KB</p>
+            </div>
+            <button onClick={removeAttachment} className="remove-attachment">
+              ×
+            </button>
           </div>
-          <div className="document-info">
-            <p className="document-name">{attachment.name}</p>
-            <p className="document-size">{(attachment.size / 1024).toFixed(1)} KB</p>
-          </div>
-          <button onClick={removeAttachment} className="remove-attachment">
-            ×
-          </button>
         </div>
       );
     }
@@ -284,13 +284,13 @@ export default function ChatRoom() {
           <div className="document-content">
             <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" className="document-link">
               <div className="document-icon">
-                <svg viewBox="0 0 24 24" width="24" height="24">
+                <svg viewBox="0 0 24 24">
                   <path fill="currentColor" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"></path>
                   <path fill="currentColor" d="M14 3v5h5"></path>
                 </svg>
               </div>
               <div className="document-info">
-                <p className="document-name">{msg.fileName}</p>
+                <p className="document-name" title={msg.fileName}>{msg.fileName}</p>
                 <p className="document-size">{(msg.fileSize / 1024).toFixed(1)} KB</p>
               </div>
             </a>
@@ -413,22 +413,6 @@ export default function ChatRoom() {
       <form onSubmit={sendMessage} className="message-input-container">
         {renderAttachmentPreview()}
         <div className="input-row">
-          <button 
-            type="button" 
-            className="attach-button"
-            onClick={() => fileInputRef.current.click()}
-          >
-            <svg viewBox="0 0 24 24" width="24" height="24">
-              <path fill="currentColor" d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5a2.5 2.5 0 0 1 5 0v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5a2.5 2.5 0 0 0 5 0V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z"></path>
-            </svg>
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileChange}
-              style={{ display: 'none' }}
-              accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
-            />
-          </button>
           <input
             type="text"
             value={newMessage}
@@ -436,19 +420,37 @@ export default function ChatRoom() {
             placeholder="Type a message..."
             disabled={status.loading}
           />
-          <button 
-            type="submit" 
-            disabled={status.loading || (!newMessage.trim() && !attachment)}
-            className={status.loading ? 'loading' : ''}
-          >
-            {status.loading ? (
-              <span className="send-spinner"></span>
-            ) : (
-              <svg viewBox="0 0 24 24" width="24" height="24">
-                <path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
-              </svg>
-            )}
-          </button>
+         <div className="action-buttons">
+  <button 
+    type="button" 
+    className="attach-button"
+    onClick={() => fileInputRef.current.click()}
+  >
+    <svg viewBox="0 0 24 24" width="20" height="20">
+      <path fill="currentColor" d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5a2.5 2.5 0 0 1 5 0v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5a2.5 2.5 0 0 0 5 0V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z"></path>
+    </svg>
+    <input
+      type="file"
+      ref={fileInputRef}
+      onChange={handleFileChange}
+      style={{ display: 'none' }}
+      accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
+    />
+  </button>
+  <button 
+    type="submit" 
+    disabled={status.loading || (!newMessage.trim() && !attachment)}
+    className={status.loading ? 'loading' : ''}
+  >
+    {status.loading ? (
+      <span className="send-spinner"></span>
+    ) : (
+      <svg viewBox="0 0 24 24" width="24" height="24">
+        <path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
+      </svg>
+    )}
+  </button>
+</div>
         </div>
       </form>
     </div>
