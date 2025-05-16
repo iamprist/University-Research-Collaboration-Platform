@@ -15,6 +15,7 @@ import {
 import { toast } from 'react-toastify';
 import './FriendsSystem.css';
 
+
 const FriendsSystem = () => {
   const [friends, setFriends] = useState([]);
   const [pendingReceived, setPendingReceived] = useState([]);
@@ -34,7 +35,7 @@ const FriendsSystem = () => {
       where('users', 'array-contains', currentUser.uid)
     );
 
-    const unsubscribe = onSnapshot(q, async (snapshot) => {
+    const unsubscribe = onSnapshot(q, (snapshot) => {
       const received = [];
       const sent = [];
       const accepted = [];
@@ -127,7 +128,7 @@ const FriendsSystem = () => {
 
   return (
     <div className="friends-system">
-      <h2>Friends System</h2>
+      <h2>Friends</h2>
 
       <div className="search-section">
         <input
@@ -141,25 +142,6 @@ const FriendsSystem = () => {
           {loading ? 'Searching...' : 'Search'}
         </button>
       </div>
-
-      <div className="requests-section">
-        <h3>Friend Requests</h3>
-        {pendingReceived.length > 0 ? (
-          <div className="requests-list">
-            {pendingReceived.map(({ docId, userId }) => (
-              <FriendCard
-                key={userId}
-                userId={userId}
-                requestDocId={docId}
-                onRespond={respondToRequest}
-              />
-            ))}
-          </div>
-        ) : (
-          <p className="no-requests">No pending friend requests</p>
-        )}
-      </div>
-
       {searchResults.length > 0 && (
         <div className="search-results">
           <h3>Search Results</h3>
@@ -191,6 +173,23 @@ const FriendsSystem = () => {
           })}
         </div>
       )}
+      <div className="requests-section">
+        <h3>Friend Requests</h3>
+        {pendingReceived.length > 0 ? (
+          <div className="requests-list">
+            {pendingReceived.map(({ docId, userId }) => (
+              <FriendCard
+                key={userId}
+                userId={userId}
+                requestDocId={docId}
+                onRespond={respondToRequest}
+              />
+            ))}
+          </div>
+        ) : (
+          <p className="no-requests">No pending friend requests</p>
+        )}
+      </div>
 
       <div className="friends-list">
         <h3>Your Friends ({friends.length})</h3>
