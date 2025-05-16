@@ -1,4 +1,4 @@
-//ReviewerPage.jsx
+// src/pages/Reviewer/ReviewerPage.jsx
 import React, { useEffect, useState } from 'react';
 import { doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db, auth } from '../../config/firebaseConfig';
@@ -6,7 +6,8 @@ import { useAuth } from './authContext';
 import { useNavigate } from 'react-router-dom';
 import { logEvent } from '../../utils/logEvent';
 import { signOut } from 'firebase/auth';
-import ReviewerRecommendations from '../../components/ReviewerRecommendations'; // Import the component
+import TextSummariser from '../../components/TextSummariser'; // Import TextSummariser
+import ReviewerRecommendations from '../../components/ReviewerRecommendations'; // Import ReviewerRecommendations
 
 export default function ReviewerPage() {
   const [status, setStatus] = useState('');
@@ -205,6 +206,9 @@ export default function ReviewerPage() {
                   </button>
                 </section>
 
+                {/* Include TextSummariser component here */}
+                <TextSummariser />
+                
                 {/* Render ReviewerRecommendations for approved reviewers */}
                 <ReviewerRecommendations />
               </>
