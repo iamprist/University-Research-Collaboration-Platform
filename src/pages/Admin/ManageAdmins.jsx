@@ -56,8 +56,8 @@ export default function ManageAdmins() {
         return;
       }
 
-      // Add the new admin email to the "newEmails" collection in Firestore
-      await addDoc(collection(db, "newEmails"), {
+      // Add the new admin email to the "newAdmin" collection in Firestore
+      await addDoc(collection(db, "newAdmin"), {
         email: newAdminEmail,
         role: "admin",
         createdAt: new Date(),

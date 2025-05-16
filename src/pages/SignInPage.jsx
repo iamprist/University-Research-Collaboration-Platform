@@ -12,10 +12,171 @@ import {
   ShieldCheckIcon
 } from '@heroicons/react/24/outline';
 
+// --- styles ---
+const styles = {
+  container: {
+    minHeight: "100vh",
+    display: "flex",
+    flexDirection: "column",
+    backgroundColor: "#FFFCF9",
+    fontFamily: "Inter, sans-serif",
+  },
+  heroSection: {
+    background: "linear-gradient(135deg, #132238 0%, #364E68 100%)",
+    padding: "clamp(1.5rem, 5vw, 3rem)",
+    color: "#FFFFFF",
+    textAlign: "center",
+    position: "relative",
+  },
+  content: {
+    maxWidth: "90%",
+    margin: "0 auto",
+    padding: "1rem 0",
+  },
+  heading: {
+    fontSize: "clamp(2rem, 5vw, 2.5rem)",
+    fontWeight: "700",
+    marginBottom: "0.5rem",
+  },
+  tagline: {
+    fontSize: "clamp(1.2rem, 3vw, 1.5rem)",
+    fontWeight: "600",
+    color: "#B1EDE8",
+    marginBottom: "0.75rem",
+  },
+  description: {
+    fontSize: "clamp(0.9rem, 1.5vw, 1.1rem)",
+    color: "#FFFFFF",
+    maxWidth: "90%",
+    margin: "0 auto 1.5rem",
+    lineHeight: "1.5",
+    textShadow: "0 2px 4px rgba(0,0,0,0.1)",
+  },
+  statsContainer: {
+    display: "flex",
+    justifyContent: "center",
+    gap: "clamp(1.5rem, 5vw, 3rem)",
+    margin: "1.5rem 0",
+    flexWrap: "wrap",
+  },
+  statItem: {
+    textAlign: "center",
+    padding: "0.75rem 1rem",
+    background: "rgba(99, 204, 197, 0.15)",
+    borderRadius: "0.5rem",
+    minWidth: "120px",
+  },
+  statNumber: {
+    fontSize: "clamp(1.25rem, 3vw, 1.75rem)",
+    fontWeight: "700",
+    color: "#64CCC5",
+  },
+  statLabel: {
+    fontSize: "clamp(0.75rem, 1vw, 0.9rem)",
+    color: "#B1EDE8",
+  },
+  featureList: {
+    display: "flex",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: "0.75rem",
+    marginBottom: "1.5rem",
+  },
+  featureItem: {
+    display: "flex",
+    alignItems: "center",
+    gap: "0.5rem",
+    padding: "0.5rem 1rem",
+    borderRadius: "2rem",
+    background: "rgba(255, 255, 255, 0.1)",
+    fontSize: "clamp(0.8rem, 1.2vw, 0.95rem)",
+    color: "#FFFFFF",
+    flexShrink: 0,
+  },
+  featureIcon: {
+    height: "1rem",
+    width: "1rem",
+    color: "#64CCC5",
+  },
+  subheading: {
+    fontSize: "clamp(1rem, 2vw, 1.25rem)",
+    color: "#B1EDE8",
+    marginBottom: "1.5rem",
+  },
+  card: {
+    background: "rgba(255, 255, 255, 0.9)",
+    backdropFilter: "blur(12px)",
+    border: "1px solid rgba(255, 255, 255, 0.3)",
+    boxShadow: "0 8px 32px 0 rgba(18, 34, 56, 0.2)",
+    borderRadius: "1.5rem",
+    padding: "2.5rem",
+    maxWidth: "400px",
+    width: "100%",
+    margin: "2rem auto",
+    position: "relative",
+    zIndex: 1,
+    opacity: 0,
+    transform: "translateY(20px)",
+    animation: "fadeInUp 0.6s ease forwards",
+    backgroundImage: "radial-gradient(circle at 2px 2px, rgba(99,204,200,0.05) 2px, transparent 0)",
+    backgroundSize: "40px 40px"
+  },
+  button: {
+    backgroundColor: "#132238",
+    color: "#64CCC5",
+    padding: "1rem 2rem",
+    borderRadius: "2rem",
+    border: "none",
+    fontSize: "1rem",
+    fontWeight: "600",
+    cursor: "pointer",
+    transition: "all 0.3s ease",
+    marginBottom: "1rem",
+    width: "100%",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "0.5rem",
+    position: "relative",
+    overflow: "hidden",
+  },
+  backButton: {
+    position: "absolute",
+    left: "clamp(1rem, 5vw, 2rem)",
+    top: "clamp(1rem, 3vw, 2rem)",
+    display: "flex",
+    alignItems: "center",
+    gap: "clamp(0.25rem, 1vw, 0.5rem)",
+    color: "#B1EDE8",
+    cursor: "pointer",
+    background: "none",
+    border: "none",
+    fontSize: "clamp(0.875rem, 3vw, 1rem)",
+  },
+  footer: {
+    backgroundColor: "#364E68",
+    color: "#B1EDE8",
+    padding: "2rem",
+    marginTop: "auto",
+    textAlign: "center",
+  },
+  footerLinks: {
+    display: "flex",
+    justifyContent: "center",
+    gap: "2rem",
+    marginBottom: "1rem",
+  },
+  footerLink: {
+    color: "#64CCC5",
+    textDecoration: "none",
+    fontSize: "0.9rem",
+  },
+};
+
+// --- Functionality and component logic below ---
 function SignInPage() {
   const navigate = useNavigate();
 
-  // Add enhanced animations via dynamic <style>
   useEffect(() => {
     const style = document.createElement("style");
     style.textContent = `
@@ -80,8 +241,8 @@ function SignInPage() {
       const user = result.user;
       
       if (role === "admin") {
-        const newEmailsSnapshot = await getDocs(collection(db, "newEmails"));
-        const isAuthorizedInNewEmails = newEmailsSnapshot.docs.some(
+        const newAdminSnapshot = await getDocs(collection(db, "newAdmin"));
+        const isAuthorizedInnewAdmin = newAdminSnapshot.docs.some(
           (doc) => doc.data().email.toLowerCase() === user.email.toLowerCase()
         );
         const usersSnapshot = await getDocs(collection(db, "users"));
@@ -91,7 +252,7 @@ function SignInPage() {
             doc.data().role === "admin"
         );
         
-        if (!isAuthorizedInNewEmails && !isAuthorizedInUsers) {
+        if (!isAuthorizedInnewAdmin && !isAuthorizedInUsers) {
           const modal = document.createElement("section");
           modal.setAttribute("role", "dialog");
           modal.setAttribute("aria-modal", "true");
@@ -166,173 +327,13 @@ function SignInPage() {
     }
   };
 
-  const styles = {
-    container: {
-      minHeight: "100vh",
-      display: "flex",
-      flexDirection: "column",
-      backgroundColor: "#FFFCF9",
-      fontFamily: "Inter, sans-serif",
-    },
-    heroSection: {
-      background: "linear-gradient(135deg, #132238 0%, #364E68 100%)",
-      padding: "clamp(1.5rem, 5vw, 3rem)",
-      color: "#FFFFFF",
-      textAlign: "center",
-      position: "relative",
-    },
-    content: {
-      maxWidth: "90%",
-      margin: "0 auto",
-      padding: "1rem 0",
-    },
-    heading: {
-      fontSize: "clamp(2rem, 5vw, 2.5rem)",
-      fontWeight: "700",
-      marginBottom: "0.5rem",
-    },
-    tagline: {
-      fontSize: "clamp(1.2rem, 3vw, 1.5rem)",
-      fontWeight: "600",
-      color: "#B1EDE8",
-      marginBottom: "0.75rem",
-    },
-    description: {
-      fontSize: "clamp(0.9rem, 1.5vw, 1.1rem)",
-      color: "#FFFFFF",
-      maxWidth: "90%",
-      margin: "0 auto 1.5rem",
-      lineHeight: "1.5",
-      textShadow: "0 2px 4px rgba(0,0,0,0.1)",
-    },
-    statsContainer: {
-      display: "flex",
-      justifyContent: "center",
-      gap: "clamp(1.5rem, 5vw, 3rem)",
-      margin: "1.5rem 0",
-      flexWrap: "wrap",
-    },
-    statItem: {
-      textAlign: "center",
-      padding: "0.75rem 1rem",
-      background: "rgba(99, 204, 197, 0.15)",
-      borderRadius: "0.5rem",
-      minWidth: "120px",
-    },
-    statNumber: {
-      fontSize: "clamp(1.25rem, 3vw, 1.75rem)",
-      fontWeight: "700",
-      color: "#64CCC5",
-    },
-    statLabel: {
-      fontSize: "clamp(0.75rem, 1vw, 0.9rem)",
-      color: "#B1EDE8",
-    },
-    featureList: {
-      display: "flex",
-      flexWrap: "wrap",
-      justifyContent: "center",
-      gap: "0.75rem",
-      marginBottom: "1.5rem",
-    },
-    featureItem: {
-      display: "flex",
-      alignItems: "center",
-      gap: "0.5rem",
-      padding: "0.5rem 1rem",
-      borderRadius: "2rem",
-      background: "rgba(255, 255, 255, 0.1)",
-      fontSize: "clamp(0.8rem, 1.2vw, 0.95rem)",
-      color: "#FFFFFF",
-      flexShrink: 0,
-    },
-    featureIcon: {
-      height: "1rem",
-      width: "1rem",
-      color: "#64CCC5",
-    },
-    subheading: {
-      fontSize: "clamp(1rem, 2vw, 1.25rem)",
-      color: "#B1EDE8",
-      marginBottom: "1.5rem",
-    },
-    card: {
-      background: "rgba(255, 255, 255, 0.9)",
-      backdropFilter: "blur(12px)",
-      border: "1px solid rgba(255, 255, 255, 0.3)",
-      boxShadow: "0 8px 32px 0 rgba(18, 34, 56, 0.2)",
-      borderRadius: "1.5rem",
-      padding: "2.5rem",
-      maxWidth: "400px",
-      width: "100%",
-      margin: "2rem auto",
-      position: "relative",
-      zIndex: 1,
-      opacity: 0,
-      transform: "translateY(20px)",
-      animation: "fadeInUp 0.6s ease forwards",
-      backgroundImage: "radial-gradient(circle at 2px 2px, rgba(99,204,200,0.05) 2px, transparent 0)",
-      backgroundSize: "40px 40px"
-    },
-    button: {
-      backgroundColor: "#132238",
-      color: "#64CCC5",
-      padding: "1rem 2rem",
-      borderRadius: "2rem",
-      border: "none",
-      fontSize: "1rem",
-      fontWeight: "600",
-      cursor: "pointer",
-      transition: "all 0.3s ease",
-      marginBottom: "1rem",
-      width: "100%",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: "0.5rem",
-      position: "relative",
-      overflow: "hidden",
-    },
-    backButton: {
-      position: "absolute",
-      left: "clamp(1rem, 5vw, 2rem)",
-      top: "clamp(1rem, 3vw, 2rem)",
-      display: "flex",
-      alignItems: "center",
-      gap: "clamp(0.25rem, 1vw, 0.5rem)",
-      color: "#B1EDE8",
-      cursor: "pointer",
-      background: "none",
-      border: "none",
-      fontSize: "clamp(0.875rem, 3vw, 1rem)",
-    },
-    footer: {
-      backgroundColor: "#364E68",
-      color: "#B1EDE8",
-      padding: "2rem",
-      marginTop: "auto",
-      textAlign: "center",
-    },
-    footerLinks: {
-      display: "flex",
-      justifyContent: "center",
-      gap: "2rem",
-      marginBottom: "1rem",
-    },
-    footerLink: {
-      color: "#64CCC5",
-      textDecoration: "none",
-      fontSize: "0.9rem",
-    },
-  };
-
   return (
     <main role="main" style={styles.container}>
       {/* Hero Section */}
       <section className="hero-section" style={styles.heroSection}>
-      <button style={styles.backButton} onClick={() => navigate('/')}>
-        <ArrowLeftIcon style={{ height: 'clamp(1rem, 3vw, 1.25rem)' }} />
-           Back to Home
+        <button style={styles.backButton} onClick={() => navigate('/')}>
+          <ArrowLeftIcon style={{ height: 'clamp(1rem, 3vw, 1.25rem)' }} />
+          Back to Home
         </button>
         <header style={styles.content}>
           <h1 style={styles.heading}>Welcome to Innerk Hub</h1>
@@ -342,7 +343,6 @@ function SignInPage() {
             Innerk Hub empowers global scientific progress through secure collaboration, peer-reviewed excellence, 
             and AI-enhanced research management.
           </p>
-          
           {/* Stats Section */}
           <section aria-label="Platform statistics" style={styles.statsContainer}>
             {[
