@@ -1,17 +1,18 @@
 import { useState, useEffect } from 'react';
 import { db, auth } from '../config/firebaseConfig';
-import { 
-  doc, 
-  getDoc, 
-  updateDoc, 
-  arrayRemove, 
-  arrayUnion,
+import {
   collection,
+  query,
+  where,
+  getDoc,
   getDocs,
-  onSnapshot
+  addDoc,
+  updateDoc,
+  doc,
+  onSnapshot,
+  serverTimestamp,
 } from 'firebase/firestore';
 import { toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 import './FriendsSystem.css';
 
 const FriendsSystem = () => {
@@ -21,75 +22,64 @@ const FriendsSystem = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [receivedRequestsData, setReceivedRequestsData] = useState([]);
   const [sendingRequest, setSendingRequest] = useState(null);
 
-  // Real-time listener for user data
-  useEffect(() => {
-    const user = auth.currentUser;
-    if (!user) return;
+  const currentUser = auth.currentUser;
 
-    const unsubscribe = onSnapshot(doc(db, 'users', user.uid), (doc) => {
-      if (doc.exists()) {
-        const data = doc.data();
-        setFriends(data.friends || []);
-        setPendingReceived(data.pendingReceivedRequests || []);
-        setPendingSent(data.pendingSentRequests || []);
-      }
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const q = query(
+      collection(db, 'friends'),
+      where('users', 'array-contains', currentUser.uid)
+    );
+
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
+      const received = [];
+      const sent = [];
+      const accepted = [];
+
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        const otherUserId = data.users.find((u) => u !== currentUser.uid);
+
+        if (data.status === 'accepted') {
+          accepted.push(otherUserId);
+        } else if (data.status === 'pending') {
+          if (data.sender === currentUser.uid) {
+            sent.push(otherUserId);
+          } else {
+            received.push({ docId: docSnap.id, userId: otherUserId });
+          }
+        }
+      });
+
+      setFriends(accepted);
+      setPendingSent(sent);
+      setPendingReceived(received);
     });
 
     return () => unsubscribe();
-  }, []);
-
-  // Fetch details of users who sent friend requests
-  useEffect(() => {
-    const fetchRequestDetails = async () => {
-      if (pendingReceived.length === 0) {
-        setReceivedRequestsData([]);
-        return;
-      }
-      
-      try {
-        const requestersData = await Promise.all(
-          pendingReceived.map(async (userId) => {
-            const userDoc = await getDoc(doc(db, 'users', userId));
-            return userDoc.exists() ? { 
-              id: userId, 
-              name: userDoc.data().name,
-              researchArea: userDoc.data().researchArea,
-              
-            } : null;
-          })
-        );
-        
-        setReceivedRequestsData(requestersData.filter(Boolean));
-      } catch (error) {
-        console.error("Error fetching request details:", error);
-        toast.error("Failed to load request details");
-      }
-    };
-
-    fetchRequestDetails();
-  }, [pendingReceived]);
+  }, [currentUser]);
 
   const handleSearch = async () => {
     if (!searchTerm.trim()) {
       setSearchResults([]);
       return;
     }
-    
+
     setLoading(true);
     try {
       const usersSnapshot = await getDocs(collection(db, 'users'));
       const results = usersSnapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() }))
-        .filter(user => 
+        .filter(user =>
           user.name?.toLowerCase().includes(searchTerm.toLowerCase()) &&
-          user.id !== auth.currentUser?.uid &&
+          user.id !== currentUser?.uid &&
           !friends.includes(user.id) &&
           !pendingSent.includes(user.id)
         );
-      
+
       setSearchResults(results);
     } catch (error) {
       toast.error('Search failed');
@@ -101,15 +91,12 @@ const FriendsSystem = () => {
   const sendFriendRequest = async (userId) => {
     try {
       setSendingRequest(userId);
-      const currentUser = auth.currentUser;
-      if (!currentUser) return;
 
-      await updateDoc(doc(db, 'users', currentUser.uid), {
-        pendingSentRequests: arrayUnion(userId)
-      });
-
-      await updateDoc(doc(db, 'users', userId), {
-        pendingReceivedRequests: arrayUnion(currentUser.uid)
+      await addDoc(collection(db, 'friends'), {
+        users: [currentUser.uid, userId],
+        status: 'pending',
+        sender: currentUser.uid,
+        createdAt: serverTimestamp()
       });
 
       toast.success('Friend request sent!');
@@ -120,43 +107,28 @@ const FriendsSystem = () => {
     }
   };
 
-  const respondToRequest = async (userId, accept) => {
+  const respondToRequest = async (docId, userId, accept) => {
     try {
-      const currentUser = auth.currentUser;
-      if (!currentUser) return;
-
       if (accept) {
-        // Add to each other's friends list
-        await updateDoc(doc(db, 'users', currentUser.uid), {
-          friends: arrayUnion(userId),
-          pendingReceivedRequests: arrayRemove(userId)
+        await updateDoc(doc(db, 'friends', docId), {
+          status: 'accepted'
         });
-        await updateDoc(doc(db, 'users', userId), {
-          friends: arrayUnion(currentUser.uid),
-          pendingSentRequests: arrayRemove(currentUser.uid)
-        });
-        
-        toast.success('Friend added successfully!');
+        toast.success('Friend request accepted!');
       } else {
-        // Just remove the pending request
-        await updateDoc(doc(db, 'users', currentUser.uid), {
-          pendingReceivedRequests: arrayRemove(userId)
+        await updateDoc(doc(db, 'friends', docId), {
+          status: 'declined'
         });
-        await updateDoc(doc(db, 'users', userId), {
-          pendingSentRequests: arrayRemove(currentUser.uid)
-        });
-        
         toast.info('Request declined');
       }
     } catch (error) {
-      toast.error('Failed to process request');
+      toast.error('Failed to respond to request');
     }
   };
 
   return (
     <div className="friends-system">
       <h2>Friends System</h2>
-      
+
       <div className="search-section">
         <input
           type="text"
@@ -170,35 +142,17 @@ const FriendsSystem = () => {
         </button>
       </div>
 
-      {/* Received Requests Section */}
       <div className="requests-section">
         <h3>Friend Requests</h3>
-        {receivedRequestsData.length > 0 ? (
+        {pendingReceived.length > 0 ? (
           <div className="requests-list">
-            {receivedRequestsData.map(user => (
-              <div key={user.id} className="request-card">
-                <div className="user-info">
-                  <span className="user-name">{user.name}</span>
-                  
-                  {user.researchArea && (
-                    <span className="research-area">{user.researchArea}</span>
-                  )}
-                </div>
-                <div className="request-actions">
-                  <button 
-                    className="accept-btn"
-                    onClick={() => respondToRequest(user.id, true)}
-                  >
-                    Accept
-                  </button>
-                  <button 
-                    className="decline-btn"
-                    onClick={() => respondToRequest(user.id, false)}
-                  >
-                    Decline
-                  </button>
-                </div>
-              </div>
+            {pendingReceived.map(({ docId, userId }) => (
+              <FriendCard
+                key={userId}
+                userId={userId}
+                requestDocId={docId}
+                onRespond={respondToRequest}
+              />
             ))}
           </div>
         ) : (
@@ -206,19 +160,17 @@ const FriendsSystem = () => {
         )}
       </div>
 
-      {/* Search Results */}
       {searchResults.length > 0 && (
         <div className="search-results">
           <h3>Search Results</h3>
           {searchResults.map(user => {
             const isPending = pendingSent.includes(user.id);
             const isSending = sendingRequest === user.id;
-            
+
             return (
               <div key={user.id} className="user-card">
                 <div className="user-info">
                   <span className="user-name">{user.name}</span>
-                 
                   {user.researchArea && (
                     <span className="research-area">{user.researchArea}</span>
                   )}
@@ -226,7 +178,7 @@ const FriendsSystem = () => {
                 {isPending ? (
                   <span className="request-sent-label">Request Sent</span>
                 ) : (
-                  <button 
+                  <button
                     className="add-friend-btn"
                     onClick={() => sendFriendRequest(user.id)}
                     disabled={isSending}
@@ -240,7 +192,6 @@ const FriendsSystem = () => {
         </div>
       )}
 
-      {/* Friends List */}
       <div className="friends-list">
         <h3>Your Friends ({friends.length})</h3>
         {friends.length > 0 ? (
@@ -255,15 +206,13 @@ const FriendsSystem = () => {
   );
 };
 
-const FriendCard = ({ userId }) => {
+const FriendCard = ({ userId, requestDocId, onRespond }) => {
   const [userData, setUserData] = useState(null);
 
   useEffect(() => {
     const fetchUser = async () => {
       const userDoc = await getDoc(doc(db, 'users', userId));
-      if (userDoc.exists()) {
-        setUserData(userDoc.data());
-      }
+      if (userDoc.exists()) setUserData(userDoc.data());
     };
     fetchUser();
   }, [userId]);
@@ -271,15 +220,25 @@ const FriendCard = ({ userId }) => {
   if (!userData) return <div className="user-card loading">Loading...</div>;
 
   return (
-    <div className="user-card friend">
+    <div className="user-card">
       <div className="user-info">
         <span className="user-name">{userData.name}</span>
-      
         {userData.researchArea && (
           <span className="research-area">{userData.researchArea}</span>
         )}
       </div>
-      <span className="friend-status">Friends</span>
+      {onRespond ? (
+        <div className="request-actions">
+          <button className="accept-btn" onClick={() => onRespond(requestDocId, userId, true)}>
+            Accept
+          </button>
+          <button className="decline-btn" onClick={() => onRespond(requestDocId, userId, false)}>
+            Decline
+          </button>
+        </div>
+      ) : (
+        <span className="friend-status">Friends</span>
+      )}
     </div>
   );
 };
