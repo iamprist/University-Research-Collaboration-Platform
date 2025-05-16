@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { doc, getDoc, updateDoc, setDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
-import { db, auth } from '../../config/firebaseConfig';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, auth, storage } from '../../config/firebaseConfig';
 import { useParams } from 'react-router-dom';
 import './ChatRoom.css';
 
@@ -11,7 +12,25 @@ export default function ChatRoom() {
   const [status, setStatus] = useState({ loading: true, error: null });
   const [userData, setUserData] = useState({});
   const [chatName, setChatName] = useState('Chat Room');
+  const [attachment, setAttachment] = useState(null);
+  const [attachmentType, setAttachmentType] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [showMediaViewer, setShowMediaViewer] = useState(false);
+  const [selectedMedia, setSelectedMedia] = useState(null);
+  const [activeTab, setActiveTab] = useState('all'); // 'all', 'images', 'docs'
   const messagesEndRef = useRef(null);
+  const fileInputRef = useRef(null);
+
+  // Filter messages by type
+  const filteredMessages = messages.filter(msg => {
+    if (activeTab === 'all') return true;
+    if (activeTab === 'images') return msg.fileType?.startsWith('image/');
+    if (activeTab === 'docs') return msg.fileType && !msg.fileType.startsWith('image/');
+    return true;
+  });
+
+  // Extract all media files for the media viewer
+ 
 
   useEffect(() => {
     if (!chatId) {
@@ -35,7 +54,6 @@ export default function ChatRoom() {
             name: 'New Chat'
           });
         } else {
-          // Set chat name from document if it exists
           if (docSnap.data().name) {
             setChatName(docSnap.data().name);
           }
@@ -55,7 +73,6 @@ export default function ChatRoom() {
               await fetchUserData(newSenderIds);
             }
 
-            // Update chat name if it's a 1:1 chat
             if (doc.data().participants?.length === 2) {
               const otherUserId = doc.data().participants.find(id => id !== auth.currentUser?.uid);
               if (otherUserId && userData[otherUserId]) {
@@ -102,9 +119,59 @@ export default function ChatRoom() {
     };
   }, [chatId, userData]);
 
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setAttachment(file);
+    
+    // Check file type
+    if (file.type.startsWith('image/')) {
+      setAttachmentType('image');
+      // Create preview for images
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setPreviewUrl(event.target.result);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setAttachmentType('document');
+      setPreviewUrl(null);
+    }
+  };
+
+  const removeAttachment = () => {
+    setAttachment(null);
+    setPreviewUrl(null);
+    setAttachmentType(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const uploadFile = async () => {
+    if (!attachment) return null;
+
+    try {
+      const storageRef = ref(storage, `chat_attachments/${chatId}/${Date.now()}_${attachment.name}`);
+      const snapshot = await uploadBytes(storageRef, attachment);
+      const downloadUrl = await getDownloadURL(snapshot.ref);
+      
+      return {
+        url: downloadUrl,
+        name: attachment.name,
+        type: attachment.type,
+        size: attachment.size
+      };
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      throw error;
+    }
+  };
+
   const sendMessage = async (e) => {
     e.preventDefault();
-    if (!newMessage.trim() || !auth.currentUser) return;
+    if ((!newMessage.trim() && !attachment) || !auth.currentUser) return;
 
     try {
       setStatus({ loading: true, error: null });
@@ -116,10 +183,22 @@ export default function ChatRoom() {
         : [];
 
       const timestamp = new Date().toISOString();
+      let fileData = null;
+
+      if (attachment) {
+        fileData = await uploadFile();
+      }
+
       const newMsg = {
         text: newMessage,
         senderId: auth.currentUser.uid,
-        timestamp: timestamp
+        timestamp: timestamp,
+        ...(fileData && {
+          fileUrl: fileData.url,
+          fileName: fileData.name,
+          fileType: fileData.type,
+          fileSize: fileData.size
+        })
       };
 
       setMessages(prev => [...prev, { ...newMsg, timestamp: new Date(timestamp) }]);
@@ -139,12 +218,88 @@ export default function ChatRoom() {
       }
       
       setNewMessage('');
+      removeAttachment();
       setStatus({ loading: false, error: null });
     } catch (err) {
       console.error('Message send failed:', err);
       setStatus({ loading: false, error: 'Failed to send message. Please try again.' });
       setMessages(prev => prev.slice(0, -1));
     }
+  };
+
+  const openMediaViewer = (media) => {
+    setSelectedMedia(media);
+    setShowMediaViewer(true);
+  };
+
+  const closeMediaViewer = () => {
+    setShowMediaViewer(false);
+    setSelectedMedia(null);
+  };
+
+  const renderAttachmentPreview = () => {
+    if (!attachment) return null;
+
+    if (attachmentType === 'image') {
+      return (
+        <div className="attachment-preview image-preview">
+          <img src={previewUrl} alt="Preview" />
+          <button onClick={removeAttachment} className="remove-attachment">
+            ×
+          </button>
+        </div>
+      );
+    } else {
+      return (
+        <div className="attachment-preview document-preview">
+          <div className="document-icon">
+            <svg viewBox="0 0 24 24" width="24" height="24">
+              <path fill="currentColor" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"></path>
+              <path fill="currentColor" d="M14 3v5h5"></path>
+            </svg>
+          </div>
+          <div className="document-info">
+            <p className="document-name">{attachment.name}</p>
+            <p className="document-size">{(attachment.size / 1024).toFixed(1)} KB</p>
+          </div>
+          <button onClick={removeAttachment} className="remove-attachment">
+            ×
+          </button>
+        </div>
+      );
+    }
+  };
+
+  const renderMessageContent = (msg) => {
+    if (msg.fileUrl) {
+      if (msg.fileType.startsWith('image/')) {
+        return (
+          <div className="media-content" onClick={() => openMediaViewer(msg)}>
+            <img src={msg.fileUrl} alt="Shared content" />
+            {msg.text && <p className="media-caption">{msg.text}</p>}
+          </div>
+        );
+      } else {
+        return (
+          <div className="document-content">
+            <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" className="document-link">
+              <div className="document-icon">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                  <path fill="currentColor" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"></path>
+                  <path fill="currentColor" d="M14 3v5h5"></path>
+                </svg>
+              </div>
+              <div className="document-info">
+                <p className="document-name">{msg.fileName}</p>
+                <p className="document-size">{(msg.fileSize / 1024).toFixed(1)} KB</p>
+              </div>
+            </a>
+            {msg.text && <p className="document-caption">{msg.text}</p>}
+          </div>
+        );
+      }
+    }
+    return <p>{msg.text}</p>;
   };
 
   if (status.loading && messages.length === 0) {
@@ -177,8 +332,29 @@ export default function ChatRoom() {
         </div>
       </div>
       
+      <div className="media-tabs">
+        <button 
+          className={activeTab === 'all' ? 'active' : ''}
+          onClick={() => setActiveTab('all')}
+        >
+          All Messages
+        </button>
+        <button 
+          className={activeTab === 'images' ? 'active' : ''}
+          onClick={() => setActiveTab('images')}
+        >
+          Photos & Videos
+        </button>
+        <button 
+          className={activeTab === 'docs' ? 'active' : ''}
+          onClick={() => setActiveTab('docs')}
+        >
+          Documents
+        </button>
+      </div>
+      
       <div className="messages-container">
-        {messages.map((msg, i) => (
+        {filteredMessages.map((msg, i) => (
           <div
             key={i}
             className={`message-bubble ${msg.senderId === auth.currentUser?.uid ? 'sent' : 'received'}`}
@@ -194,34 +370,86 @@ export default function ChatRoom() {
               </span>
             </div>
             <div className="message-content">
-              <p>{msg.text}</p>
+              {renderMessageContent(msg)}
             </div>
           </div>
         ))}
         <div ref={messagesEndRef} className="scroll-anchor"></div>
       </div>
 
+      {showMediaViewer && (
+        <div className="media-viewer-overlay">
+          <div className="media-viewer-content">
+            <button className="close-viewer" onClick={closeMediaViewer}>
+              ×
+            </button>
+            {selectedMedia.fileType.startsWith('image/') ? (
+              <img src={selectedMedia.fileUrl} alt="Full size" />
+            ) : (
+              <div className="document-viewer">
+                <iframe 
+                  src={`https://docs.google.com/viewer?url=${encodeURIComponent(selectedMedia.fileUrl)}&embedded=true`} 
+                  title={selectedMedia.fileName}
+                ></iframe>
+                <a 
+                  href={selectedMedia.fileUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="download-button"
+                >
+                  Download File
+                </a>
+              </div>
+            )}
+            {selectedMedia.text && (
+              <div className="media-caption-viewer">
+                <p>{selectedMedia.text}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <form onSubmit={sendMessage} className="message-input-container">
-        <input
-          type="text"
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          placeholder="Type a message..."
-          disabled={status.loading}
-        />
-        <button 
-          type="submit" 
-          disabled={status.loading || !newMessage.trim()}
-          className={status.loading ? 'loading' : ''}
-        >
-          {status.loading ? (
-            <span className="send-spinner"></span>
-          ) : (
+        {renderAttachmentPreview()}
+        <div className="input-row">
+          <button 
+            type="button" 
+            className="attach-button"
+            onClick={() => fileInputRef.current.click()}
+          >
             <svg viewBox="0 0 24 24" width="24" height="24">
-              <path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
+              <path fill="currentColor" d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5a2.5 2.5 0 0 1 5 0v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5a2.5 2.5 0 0 0 5 0V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z"></path>
             </svg>
-          )}
-        </button>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              style={{ display: 'none' }}
+              accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
+            />
+          </button>
+          <input
+            type="text"
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            placeholder="Type a message..."
+            disabled={status.loading}
+          />
+          <button 
+            type="submit" 
+            disabled={status.loading || (!newMessage.trim() && !attachment)}
+            className={status.loading ? 'loading' : ''}
+          >
+            {status.loading ? (
+              <span className="send-spinner"></span>
+            ) : (
+              <svg viewBox="0 0 24 24" width="24" height="24">
+                <path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
+              </svg>
+            )}
+          </button>
+        </div>
       </form>
     </div>
   );
