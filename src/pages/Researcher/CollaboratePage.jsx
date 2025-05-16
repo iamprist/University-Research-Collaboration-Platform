@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../../config/firebaseConfig';
-import {
-  collection,
-  getDocs,
-  query,
-  where,
-  doc,
-  getDoc,
-  addDoc,
-  serverTimestamp
+import { 
+  collection, 
+  getDocs, 
+  query, 
+  where, 
+  doc, 
+  getDoc, 
+  addDoc, 
+  serverTimestamp 
 } from 'firebase/firestore';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -30,9 +30,18 @@ const CollaboratePage = () => {
         const user = auth.currentUser;
         if (!user) return;
 
-        // Get user's friends list
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        const friends = userDoc.exists() ? userDoc.data().friends || [] : [];
+        // Fetch friends with status 'accepted' where current user is in users array
+        const friendsQuery = query(
+          collection(db, 'friends'),
+          where('users', 'array-contains', user.uid),
+          where('status', '==', 'accepted')
+        );
+        const friendsSnapshot = await getDocs(friendsQuery);
+        // Get friend IDs (the other user in each friendship)
+        const friends = friendsSnapshot.docs.map(docSnap => {
+          const users = docSnap.data().users;
+          return users.find(uid => uid !== user.uid);
+        });
 
         // Get listings user is already collaborating on
         const collabSnapshot = await getDocs(
@@ -50,19 +59,22 @@ const CollaboratePage = () => {
         );
         const otherSnapshot = await getDocs(otherQuery);
 
+        // Process listings with researcher names and request status
         const listingsWithNames = await Promise.all(
           otherSnapshot.docs.map(async (docSnapshot) => {
             const listingData = docSnapshot.data();
             const listingId = docSnapshot.id;
 
-            // Skip if already collaborating
+            // Skip listings user is collaborating on
             if (collaboratedListingIds.includes(listingId)) return null;
 
+            // Get researcher info
             const researcherDoc = await getDoc(doc(db, 'users', listingData.userId));
             const researcherName = researcherDoc.exists()
               ? researcherDoc.data().name
               : 'Unknown Researcher';
 
+            // Check for pending requests
             const requestQuery = query(
               collection(db, 'collaboration-requests'),
               where('listingId', '==', listingId),
@@ -72,26 +84,31 @@ const CollaboratePage = () => {
             const existingRequest = await getDocs(requestQuery);
             const hasPendingRequest = !existingRequest.empty;
 
+            // Check if the listing owner is a friend
+            const isFriend = friends.map(String).includes(String(listingData.userId));
+
             return {
               id: listingId,
               ...listingData,
               researcherName,
               researcherId: listingData.userId,
               hasPendingRequest,
-              isFriend: friends.includes(listingData.userId)
+              isFriend
             };
           })
         );
 
         const filteredListings = listingsWithNames.filter(Boolean);
+
+        // Sort with friends first
         const sortedListings = filteredListings.sort((a, b) => {
-          if (a.isFriend && !b.isFriend) return -1;
-          if (!a.isFriend && b.isFriend) return 1;
-          return 0;
+          if (a.isFriend === b.isFriend) return 0;
+          return a.isFriend ? -1 : 1;
         });
 
         setCollaborateListings(sortedListings);
 
+        // Initialize request states
         const initialStates = {};
         sortedListings.forEach(listing => {
           initialStates[listing.id] = {
@@ -101,13 +118,13 @@ const CollaboratePage = () => {
           };
         });
         setRequestStates(initialStates);
+
       } catch (error) {
         toast.error('Failed to load listings');
       } finally {
         setLoading(false);
       }
     };
-
     fetchCollaborateListings();
   }, []);
 
@@ -159,8 +176,9 @@ const CollaboratePage = () => {
         message
       });
 
+      // Send notification to the researcher
       const listingDoc = await getDoc(doc(db, "research-listings", listingId));
-      const listingTitle = listingDoc.exists() ? listingDoc.data().title : "Research Project";
+      const listingTitle = listingDoc.exists() ? listingDoc.data().title : "Research Project"; 
 
       await sendMessage(researcherId, {
         title: 'New Collaboration Request',
@@ -188,6 +206,7 @@ const CollaboratePage = () => {
     }
   };
 
+  // Apply filtering for friends only if enabled
   const displayedListings = showFriendsOnly
     ? collaborateListings.filter(listing => listing.isFriend)
     : collaborateListings;
@@ -200,7 +219,7 @@ const CollaboratePage = () => {
           <p>Find projects to join and collaborate on</p>
         </section>
         <section className="header-actions">
-          <button
+          <button 
             className="dashboard-btn"
             onClick={() => navigate('/researcher-dashboard')}
           >
@@ -210,34 +229,27 @@ const CollaboratePage = () => {
       </header>
 
       <section className="collaborate-main">
+        <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+          <label style={{ color: '#132238', cursor: 'pointer' }}>
+            <input 
+              type="checkbox" 
+              checked={showFriendsOnly} 
+              onChange={() => setShowFriendsOnly(!showFriendsOnly)} 
+              style={{ marginRight: '0.5rem' }}
+            />
+            Show Friends Only
+          </label>
+        </div>
+
         {loading ? (
           <div style={{ textAlign: 'center', color: '#132238' }}>
             <p>Loading available projects...</p>
           </div>
         ) : (
           <section>
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
-              <label style={{ color: '#132238', fontWeight: 500 }}>
-                <input
-                  type="checkbox"
-                  checked={showFriendsOnly}
-                  onChange={() => setShowFriendsOnly(prev => !prev)}
-                  style={{ marginRight: '8px' }}
-                />
-                Show only friends' projects
-              </label>
-            </div>
-
-            <h3 style={{ color: '#132238', marginBottom: '1.5rem', textAlign: 'center' }}>
-              Available Projects
-            </h3>
-
+            <h3 style={{ color: '#132238', marginBottom: '1.5rem', textAlign: 'center' }}>Available Projects</h3>
             {displayedListings.length === 0 ? (
-              <p style={{ textAlign: 'center', color: '#132238' }}>
-                {showFriendsOnly
-                  ? "No friend projects available."
-                  : "No projects available for collaboration at this time."}
-              </p>
+              <p style={{ textAlign: 'center', color: '#132238' }}>No projects available for collaboration at this time.</p>
             ) : (
               displayedListings.map((listing) => {
                 const state = requestStates[listing.id] || {};
@@ -246,23 +258,7 @@ const CollaboratePage = () => {
 
                 return (
                   <article key={listing.id} className="collaborate-card">
-                    <h4>
-                      {listing.title}
-                      {listing.isFriend && (
-                        <span
-                          style={{
-                            marginLeft: '10px',
-                            backgroundColor: '#e0f7fa',
-                            color: '#00796b',
-                            padding: '2px 8px',
-                            fontSize: '0.75rem',
-                            borderRadius: '12px'
-                          }}
-                        >
-                          Friend
-                        </span>
-                      )}
-                    </h4>
+                    <h4>{listing.title}</h4>
                     <div className="byline">By: {listing.researcherName}</div>
                     <div className="summary">{listing.summary}</div>
                     {!hasPending && (
@@ -290,9 +286,7 @@ const CollaboratePage = () => {
                       </button>
                       <button
                         className={hasPending ? "collab-btn disabled-btn" : "collab-btn"}
-                        onClick={() =>
-                          !hasPending && handleCollaborateRequest(listing.id, listing.researcherId)
-                        }
+                        onClick={() => !hasPending && handleCollaborateRequest(listing.id, listing.researcherId)}
                         disabled={hasPending || isRequesting}
                       >
                         {hasPending
