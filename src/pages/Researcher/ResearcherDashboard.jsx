@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../../config/firebaseConfig';
-import { collection, getDocs, query, where, doc, getDoc, onSnapshot, orderBy, updateDoc } from 'firebase/firestore';
-import { logEvent } from '../../utils/logEvent';
+import { collection, getDocs, query, where, doc, getDoc, onSnapshot, orderBy, updateDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import './ResearcherDashboard.css';
-
+import axios from "axios";
 import CollaborationRequestsPanel from '../../components/CollaborationRequestsPanel';
 import ContactForm from '../../components/ContactForm';
 
@@ -74,7 +73,6 @@ const MessageNotification = ({ messages, unreadCount, onMessageClick }) => {
 };
 
 const ResearcherDashboard = () => {
-  const navigate = useNavigate();
   const [allListings, setAllListings] = useState([]);
   const [myListings, setMyListings] = useState([]);
   const [userId, setUserId] = useState(null);
@@ -92,6 +90,23 @@ const ResearcherDashboard = () => {
   const [messages, setMessages] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showContactForm, setShowContactForm] = useState(false);
+  const [ipAddress, setIpAddress] = useState(""); // State to store the IP address
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Fetch the user's IP address
+    const fetchIpAddress = async () => {
+      try {
+        const response = await axios.get("https://api.ipify.org?format=json");
+        setIpAddress(response.data.ip);
+      } catch (error) {
+        console.error("Error fetching IP address:", error);
+      }
+    };
+
+    fetchIpAddress();
+  }, []);
+  
 
   useEffect(() => {
     const token = localStorage.getItem('authToken');
@@ -293,23 +308,49 @@ const ResearcherDashboard = () => {
     setDropdownVisible(false);
   };
 
+  const logEvent = async ({ userId, role, userName, action, details, ip, target }) => {
+    try {
+      await addDoc(collection(db, "logs"), {
+        userId,
+        role,
+        userName,
+        action,
+        details,
+        ip, // Add IP address
+        target, // Add target field
+        timestamp: serverTimestamp(),
+      });
+      console.log("Event logged:", { userId, role, userName, action, details, ip, target });
+    } catch (error) {
+      console.error("Error logging event:", error);
+    }
+  };
   const handleLogout = async () => {
     try {
-      if (auth.currentUser) {
+      const user = auth.currentUser;
+      if (user) {
+        console.log("Logging out user:", user.uid);
+
+        const target = "Researcher Dashboard";
+
         await logEvent({
-          userId: auth.currentUser.uid,
+          userId: user.uid,
           role: "Researcher",
-          userName: auth.currentUser.displayName || "N/A",
+          userName: user.displayName || "N/A",
           action: "Logout",
           details: "User logged out",
+          ip: ipAddress,
+          target, 
         });
+
+        await auth.signOut();
+        console.log("User logged out successfully.");
+        navigate("/signin");
+      } else {
+        console.warn("No user is currently logged in.");
       }
-      await auth.signOut();
-      localStorage.removeItem('authToken');
-      navigate("/signin");
     } catch (error) {
-      console.error("Logout error:", error);
-      alert("Failed to log out. Please try again.");
+      console.error("Error during logout:", error);
     }
   };
 

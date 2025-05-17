@@ -1,35 +1,58 @@
 // src/pages/Reviewer/ReviewerPage.jsx
 import React, { useEffect, useState } from 'react';
-import { doc, getDoc, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, deleteDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../../config/firebaseConfig';
 import { useAuth } from './authContext';
 import { useNavigate } from 'react-router-dom';
-import { logEvent } from '../../utils/logEvent';
-import { signOut } from 'firebase/auth';
 import TextSummariser from '../../components/TextSummariser'; // Import TextSummariser
 import ReviewerRecommendations from '../../components/ReviewerRecommendations'; // Import ReviewerRecommendations
+import axios from 'axios'; // Import axios for fetching IP
 
 export default function ReviewerPage() {
   const [status, setStatus] = useState('');
   const [reason, setReason] = useState('');
   const [loading, setLoading] = useState(true);
   const { currentUser } = useAuth();
+  const [ipAddress, setIpAddress] = useState(""); // State to store the IP address
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Fetch the user's IP address
+    const fetchIpAddress = async () => {
+      try {
+        const response = await axios.get("https://api.ipify.org?format=json");
+        setIpAddress(response.data.ip);
+      } catch (error) {
+        console.error("Error fetching IP address:", error);
+      }
+    };
+
+    fetchIpAddress();
+  }, []);
+
+  const logEvent = async ({ userId, role, userName, action, details, ip, target }) => {
+  try {
+    await addDoc(collection(db, "logs"), {
+      userId,
+      role,
+      userName,
+      action,
+      details,
+      ip, // Add IP address
+      target, // Add target field
+      timestamp: serverTimestamp(),
+    });
+    console.log("Event logged:", { userId, role, userName, action, details, ip, target });
+  } catch (error) {
+    console.error("Error logging event:", error);
+  }
+  };
 
   useEffect(() => {
     const saveToken = async () => {
       if (currentUser) {
         const token = await currentUser.getIdToken();
         localStorage.setItem('authToken', token);
-
-        // Log the login event
-        await logEvent({
-          userId: currentUser.uid,
-          role: "Reviewer",
-          userName: currentUser.displayName || "N/A",
-          action: "Login",
-          details: "User logged in",
-        });
       }
     };
 
@@ -113,33 +136,32 @@ export default function ReviewerPage() {
 
   const handleLogout = async () => {
     try {
-      console.log("Attempting to log out...");
+      const user = auth.currentUser;
+      if (user) {
+        console.log("Logging out user:", user.uid);
 
-      // Log the logout event before signing out
-      if (currentUser?.uid) {
-        const userName = currentUser.displayName || "N/A"; // Resolve userName
+        const target = "Reviewer Dashboard"; // Example target
+
         await logEvent({
-          userId: currentUser.uid,
+          userId: user.uid,
           role: "Reviewer",
-          userName: userName,
+          userName: user.displayName || "N/A",
           action: "Logout",
           details: "User logged out",
+          ip: ipAddress, // Use the fetched IP address
+          target, // Pass target
         });
-        console.log("Logout event recorded.");
-      } else {
-        console.warn("No userId found to log the event.");
-      }
 
-      // Perform logout
-      await signOut(auth);
-      localStorage.removeItem("authToken");
-      console.log("User signed out successfully.");
-      navigate("/signin");
+        await auth.signOut();
+        console.log("User logged out successfully.");
+        navigate("/signin");
+      } else {
+        console.warn("No user is currently logged in.");
+      }
     } catch (error) {
-      console.error("Logout error:", error);
-      alert("Failed to log out. Please try again.");
+      console.error("Error during logout:", error);
     }
-  };
+  }
 
   const statusStyles = {
     approved: {

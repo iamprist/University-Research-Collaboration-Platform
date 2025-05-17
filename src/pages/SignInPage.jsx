@@ -1,9 +1,8 @@
-import React, { useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { auth, provider, db } from "../config/firebaseConfig";
 import { signInWithPopup } from "firebase/auth";
-import { setDoc, doc, getDocs, collection } from "firebase/firestore";
+import { setDoc, doc, getDocs, collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
-import { logEvent } from "../utils/logEvent";
 import { toast } from "react-toastify";
 import { 
   ArrowLeftIcon,
@@ -11,6 +10,10 @@ import {
   GlobeAltIcon,
   ShieldCheckIcon
 } from '@heroicons/react/24/outline';
+import axios from "axios";
+
+
+
 
 // --- styles ---
 const styles = {
@@ -175,6 +178,20 @@ const styles = {
 
 // --- Functionality and component logic below ---
 function SignInPage() {
+  const [ipAddress, setIpAddress] = useState("");
+  useEffect(() => {
+    // Fetch the user's IP address
+    const fetchIpAddress = async () => {
+      try {
+        const response = await axios.get("https://api.ipify.org?format=json");
+        setIpAddress(response.data.ip);
+      } catch (error) {
+        console.error("Error fetching IP address:", error);
+      }
+    };
+
+    fetchIpAddress();
+  }, []);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -234,13 +251,29 @@ function SignInPage() {
     document.head.appendChild(style);
     return () => document.head.removeChild(style);
   }, []);
-
+  const logEvent = async ({ userId, role, userName, action, details, ip, target }) => {
+    try {
+      await addDoc(collection(db, "logs"), {
+        userId,
+        role,
+        userName,
+        action,
+        details,
+        ip, // Add IP address
+        target, // Add target field
+        timestamp: serverTimestamp(),
+      });
+      console.log("Event logged:", { userId, role, userName, action, details, ip, target });
+    } catch (error) {
+      console.error("Error logging event:", error);
+    }
+  };
   const handleSignIn = async (role) => {
     try {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
       
-      if (role === "admin") {
+      if (role === "Admin") {
         const newAdminSnapshot = await getDocs(collection(db, "newAdmin"));
         const isAuthorizedInnewAdmin = newAdminSnapshot.docs.some(
           (doc) => doc.data().email.toLowerCase() === user.email.toLowerCase()
@@ -249,7 +282,7 @@ function SignInPage() {
         const isAuthorizedInUsers = usersSnapshot.docs.some(
           (doc) =>
             doc.data().email.toLowerCase() === user.email.toLowerCase() &&
-            doc.data().role === "admin"
+            doc.data().role === "Admin"
         );
         
         if (!isAuthorizedInnewAdmin && !isAuthorizedInUsers) {
@@ -279,7 +312,7 @@ function SignInPage() {
             ">
               <h2 style="font-size: 1.5rem; color: #132238; margin-bottom: 1rem;">Access Denied</h2>
               <p style="font-size: 1rem; color: #364E68; margin-bottom: 1.5rem;">
-                You are not authorized to access the admin dashboard.
+                You are not authorized to access the Admin dashboard.
               </p>
               <button style="
                 background-color: #FF0000;
@@ -305,18 +338,20 @@ function SignInPage() {
         email: user.email,
         role,
       });
-      
+      const target = "Sign In Page";
       await logEvent({
         userId: user.uid,
-        role,
-        userName: user.displayName || "N/A",
-        action: "Login",
-        details: "User logged in",
+          role,
+          userName: user.displayName || "N/A",
+          action: "Login",
+          details: "User logged in",
+          ip: ipAddress, 
+          target,
       });
       
-      if (role === "researcher") navigate("/researcher-dashboard");
-      else if (role === "reviewer") navigate("/reviewer");
-      else if (role === "admin") navigate("/admin");
+      if (role === "Researcher") navigate("/researcher-dashboard");
+      else if (role === "Reviewer") navigate("/reviewer");
+      else if (role === "Admin") navigate("/admin");
     } catch (error) {
       if (error.code === "auth/popup-closed-by-user") {
         console.log("Login canceled by user");
@@ -385,7 +420,7 @@ function SignInPage() {
         style={styles.card} 
         className="card"
       >
-        {["researcher", "reviewer", "admin"].map((role) => (
+        {["Researcher", "Reviewer", "Admin"].map((role) => (
           <button
             key={role}
             className="neon-button"
