@@ -3,7 +3,7 @@
 <html lang="en">
 
 <head>
-    <title>Code coverage report for config/firebaseConfig.js</title>
+    <title>Code coverage report for utils/sendMessage.js</title>
     <meta charset="utf-8" />
     <link rel="stylesheet" href="../prettify.css" />
     <link rel="stylesheet" href="../base.css" />
@@ -19,13 +19,13 @@
 <body>
 <div class='wrapper'>
     <div class='pad1'>
-        <h1><a href="../index.html">All files</a> / <a href="index.html">config</a> firebaseConfig.js</h1>
+        <h1><a href="../index.html">All files</a> / <a href="index.html">utils</a> sendMessage.js</h1>
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">28.57% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>6/6</span>
+                <span class='fraction'>2/7</span>
             </div>
         
             
@@ -37,16 +37,16 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/0</span>
+                <span class='fraction'>0/1</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">28.57% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>6/6</span>
+                <span class='fraction'>2/7</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line high'></div>
+    <div class='status-line low'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -85,10 +85,20 @@
 <a name='L20'></a><a href='#L20'>20</a>
 <a name='L21'></a><a href='#L21'>21</a>
 <a name='L22'></a><a href='#L22'>22</a>
-<a name='L23'></a><a href='#L23'>23</a>
-<a name='L24'></a><a href='#L24'>24</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L23'></a><a href='#L23'>23</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -97,42 +107,29 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span></td><td class="text"><pre class="prettyprint lang-js">import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
-import { getStorage } from "firebase/storage";
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { db } from '../config/firebaseConfig';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 &nbsp;
-// Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyBX6kaF67ufXpxEBo4NMI4Sd6vWe0beu9k",
-  authDomain: "syntellect-9ca3e.firebaseapp.com",
-  projectId: "syntellect-9ca3e",
-  storageBucket: "syntellect-9ca3e.firebasestorage.app", // Corrected storage bucket URL
-  messagingSenderId: "774591466199",
-  appId: "1:774591466199:web:180d687c3a40bad5f3fe92",
-  measurementId: "G-LKXNZ2LPKT",
+export const sendMessage = <span class="fstat-no" title="function not covered" >as</span>ync (recipientId, messageData) =&gt; {
+<span class="cstat-no" title="statement not covered" >  try {</span>
+<span class="cstat-no" title="statement not covered" >    await addDoc(collection(db, 'users', recipientId, 'messages'), {</span>
+      ...messageData,
+      read: false,
+      timestamp: serverTimestamp()
+    });
+<span class="cstat-no" title="statement not covered" >    return true;</span>
+  } catch (error) {
+<span class="cstat-no" title="statement not covered" >    console.error("Error sending message:", error);</span>
+<span class="cstat-no" title="statement not covered" >    return false;</span>
+  }
 };
 &nbsp;
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-&nbsp;
-// Initialize Firebase services
-export const auth = getAuth(app);
-export const provider = new GoogleAuthProvider();
-export const db = getFirestore(app);
-export const storage = getStorage(app); // Use app after it is defined</pre></td></tr></table></pre>
+export const messageTypes = {
+  COLLABORATION_REQUEST: 'collaboration-request',
+  REVIEW_REQUEST: 'review-request',
+  UPLOAD_CONFIRMATION: 'upload-confirmation',
+  SYSTEM_NOTIFICATION: 'system-notification'
+};</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->

@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">75% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>4/4</span>
+                <span class='fraction'>3/4</span>
             </div>
         
             
@@ -37,16 +37,16 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">50% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>2/2</span>
+                <span class='fraction'>1/2</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">75% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>4/4</span>
+                <span class='fraction'>3/4</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line high'></div>
+    <div class='status-line medium'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -124,7 +124,24 @@
 <a name='L59'></a><a href='#L59'>59</a>
 <a name='L60'></a><a href='#L60'>60</a>
 <a name='L61'></a><a href='#L61'>61</a>
-<a name='L62'></a><a href='#L62'>62</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L62'></a><a href='#L62'>62</a>
+<a name='L63'></a><a href='#L63'>63</a>
+<a name='L64'></a><a href='#L64'>64</a>
+<a name='L65'></a><a href='#L65'>65</a>
+<a name='L66'></a><a href='#L66'>66</a>
+<a name='L67'></a><a href='#L67'>67</a>
+<a name='L68'></a><a href='#L68'>68</a>
+<a name='L69'></a><a href='#L69'>69</a>
+<a name='L70'></a><a href='#L70'>70</a>
+<a name='L71'></a><a href='#L71'>71</a>
+<a name='L72'></a><a href='#L72'>72</a>
+<a name='L73'></a><a href='#L73'>73</a>
+<a name='L74'></a><a href='#L74'>74</a>
+<a name='L75'></a><a href='#L75'>75</a>
+<a name='L76'></a><a href='#L76'>76</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -134,7 +151,18 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -189,57 +217,71 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import './TermsAndConditions.css';
+import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
+import { Link } from 'react-router-dom';
+&nbsp;
 &nbsp;
 const TermsAndConditions = () =&gt; {
   const navigate = useNavigate();
 &nbsp;
   return (
     &lt;section className="terms-container"&gt;
-      &lt;button onClick={() =&gt; navigate(-1)} className="back-button"&gt;
-        &amp;larr; Back to Application
+      &lt;button className="back-button"&gt;
+            &lt;ArrowBackIosIcon onClick={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >navigate(-1)}</span> className="back-icon" /&gt;
       &lt;/button&gt;
       
-      &lt;h1&gt;Terms and Conditions for InnerKhub Research Platform&lt;/h1&gt;
-      &lt;p className="effective-date"&gt;Last Updated: [Insert Date]&lt;/p&gt;
+      
+      &lt;h1&gt;Terms and Conditions for Innerk Hub Research Platform&lt;/h1&gt;
+      &lt;p className="effective-date"&gt;Last Updated: 14 May 2025&lt;/p&gt;
 &nbsp;
       &lt;section className="terms-content"&gt;
         &lt;section&gt;
           &lt;h2&gt;1. Acceptance of Terms&lt;/h2&gt;
-          &lt;p&gt;By using InnerKhub, you agree to be bound by these Terms and Conditions...&lt;/p&gt;
+          &lt;p&gt;By accessing or using Innerk Hub, you agree to abide by these Terms and Conditions. If you do not agree, you may not use the platform.&lt;/p&gt;
         &lt;/section&gt;
 &nbsp;
         &lt;section&gt;
           &lt;h2&gt;2. Reviewer Responsibilities&lt;/h2&gt;
           &lt;ul&gt;
-            &lt;li&gt;Provide accurate and current information in your application&lt;/li&gt;
-            &lt;li&gt;Maintain confidentiality of reviewed materials&lt;/li&gt;
-            &lt;li&gt;Declare conflicts of interest promptly&lt;/li&gt;
+            &lt;li&gt;Provide accurate and up-to-date information in your application.&lt;/li&gt;
+            &lt;li&gt;Maintain the confidentiality of reviewed materials.&lt;/li&gt;
+            &lt;li&gt;Promptly declare any conflicts of interest.&lt;/li&gt;
+            &lt;li&gt;Engage ethically and professionally in all research-related activities.&lt;/li&gt;
           &lt;/ul&gt;
         &lt;/section&gt;
 &nbsp;
         &lt;section&gt;
           &lt;h2&gt;3. Intellectual Property&lt;/h2&gt;
-          &lt;p&gt;You retain rights to your submitted work but grant InnerKhub...&lt;/p&gt;
+          &lt;p&gt;You retain ownership of any original work or content you submit.&lt;/p&gt;
+          &lt;p&gt;By submitting content, you grant Innerk Hub a &lt;strong&gt;non-exclusive, royalty-free license&lt;/strong&gt; to use, display, and distribute it for research and platform-related purposes.&lt;/p&gt;
         &lt;/section&gt;
 &nbsp;
         &lt;section&gt;
-          &lt;h2&gt;4. Privacy&lt;/h2&gt;
-          &lt;p&gt;Your data will be handled according to our Privacy Policy...&lt;/p&gt;
+          &lt;h2&gt;4. Privacy &amp; Data Protection&lt;/h2&gt;
+          &lt;p&gt;Your personal data will be processed in accordance with our &lt;Link to="/privacy-policy"&gt;Privacy Policy&lt;/Link&gt;.&lt;/p&gt;
+          &lt;p&gt;We comply with relevant data protection laws, including &lt;strong&gt;POPIA (Protection of Personal Information Act)&lt;/strong&gt; in South Africa.&lt;/p&gt;
         &lt;/section&gt;
 &nbsp;
         &lt;section&gt;
-          &lt;h2&gt;5. Termination&lt;/h2&gt;
-          &lt;p&gt;We reserve the right to terminate reviewer status for violations...&lt;/p&gt;
+          &lt;h2&gt;5. Termination of Access &amp; Reviewer Status&lt;/h2&gt;
+          &lt;p&gt;Innerk Hub reserves the right to suspend or terminate reviewer access if violations of these Terms occur.&lt;/p&gt;
+          &lt;p&gt;Grounds for termination include but are not limited to misrepresentation, misconduct, or breach of confidentiality.&lt;/p&gt;
         &lt;/section&gt;
 &nbsp;
         &lt;section&gt;
-          &lt;h2&gt;6. Disclaimer&lt;/h2&gt;
-          &lt;p&gt;InnerKhub provides the platform "as is" without warranties...&lt;/p&gt;
+          &lt;h2&gt;6. Liability &amp; Disclaimer&lt;/h2&gt;
+          &lt;p&gt;Innerk Hub provides services &lt;strong&gt;“as is”&lt;/strong&gt;, without warranties regarding accuracy, reliability, or suitability for a particular purpose.&lt;/p&gt;
+          &lt;p&gt;We are &lt;strong&gt;not liable&lt;/strong&gt; for any loss, damages, or disputes resulting from platform use.&lt;/p&gt;
         &lt;/section&gt;
 &nbsp;
         &lt;section&gt;
           &lt;h2&gt;7. Governing Law&lt;/h2&gt;
-          &lt;p&gt;These terms are governed by the laws of [Your Jurisdiction]...&lt;/p&gt;
+          &lt;p&gt;These Terms and Conditions are governed by the laws of &lt;strong&gt;South Africa&lt;/strong&gt; and relevant international agreements, where applicable.&lt;/p&gt;
+        &lt;/section&gt;
+&nbsp;
+        &lt;section&gt;
+          &lt;h2&gt;8. Amendments &amp; Updates&lt;/h2&gt;
+          &lt;p&gt;Innerk Hub may update these Terms periodically, and users will be notified of significant changes before they take effect.&lt;/p&gt;
         &lt;/section&gt;
       &lt;/section&gt;
     &lt;/section&gt;
@@ -253,7 +295,7 @@ export default TermsAndConditions;</pre></td></tr></table></pre>
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-05-05T11:52:05.723Z
+                at 2025-05-17T19:47:28.444Z
             </div>
         <script src="../prettify.js"></script>
         <script>
