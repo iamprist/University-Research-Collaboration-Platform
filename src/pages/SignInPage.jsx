@@ -7,6 +7,7 @@ import { toast } from "react-toastify";
 import { Link } from 'react-router-dom';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import './TermsAndConditions.css';
+
 import "../pages/Researcher/ResearcherDashboard.css"; // Import your CSS file
 
 // Add this above function SignInPage
@@ -274,7 +275,7 @@ function SignInPage() {
         style={styles.card} 
         className="card"
       >
-        {["Researcher", "Reviewer", "Admin"].map((role) => (
+        {["researcher", "reviewer", "admin"].map((role) => (
           <button
             key={role}
             className="neon-button"
