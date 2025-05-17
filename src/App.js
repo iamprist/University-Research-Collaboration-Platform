@@ -12,7 +12,6 @@ import ViewLogs from "./pages/Admin/ViewLogs";
 import ReviewerPage from "./pages/Reviewer/ReviewerPage";
 import ReviewerForm from "./pages/Reviewer/ReviewerForm";
 import TermsAndConditions from "./pages/TermsAndConditions";
-import AdminRegister from "./pages/Admin/AdminRegister";
 
 // Researcher
 import ListingDetailPage from "./pages/Researcher/ListingDetailPage";
@@ -94,8 +93,7 @@ function App() {
           </ProtectedRoute>
         }
       />
-      <Route path="/admin-register" element={<AdminRegister />} />
-      <Route
+     <Route
         path="/logs"
         element={
           <ProtectedRoute>

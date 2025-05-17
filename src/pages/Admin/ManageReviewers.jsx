@@ -26,7 +26,7 @@ export default function ManageReviewers() {
       setLoading(true);
       const q = query(
         collection(db, "reviewers"),
-        where("status", "!=", "rejected")
+        where("status", "==", "in_progress")
       );
       const snap = await getDocs(q);
       const reviewerList = snap.docs.map((doc) => ({

@@ -24,11 +24,28 @@ export default function Dashboard() {
           ...doc.data(),
         }));
 
-        const uniqueUsers = new Set(logs.map((log) => log.userId)).size;
+        const reviewersCollection = collection(db, "reviewers");
+        const reviewersSnapshot = await getDocs(reviewersCollection);
+        const reviewers = reviewersSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+
+        const usersCollection = collection(db, "users");
+        const usersSnapshot = await getDocs(usersCollection);
+        const users = usersSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+
+        const listingsCollection = collection(db, "research-listings");
+        const listingsSnapshot = await getDocs(listingsCollection);
+        
+        const uniqueUsers = new Set(users.map((user) => user.email)).size;
         const logins = logs.filter((log) => log.action === "Login").length;
         const logouts = logs.filter((log) => log.action === "Logout").length;
-        const listings = logs.filter((log) => log.action === "Posted Listing").length;
-        const reviewerApps = logs.filter((log) => log.action === "Apply to Be Reviewer").length;
+        const listings = listingsSnapshot.size;
+        const reviewerApps = reviewers.filter((reviewer) => reviewer.status === "in_progress").length;
 
         setTotalUsers(uniqueUsers);
         setTotalLogins(logins);
