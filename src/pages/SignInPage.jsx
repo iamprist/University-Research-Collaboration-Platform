@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, {useEffect } from "react";
 import { auth, provider, db } from "../config/firebaseConfig";
 import { signInWithPopup } from "firebase/auth";
 import { setDoc, doc, getDocs, collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { Link } from 'react-router-dom';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import './TermsAndConditions.css';
 

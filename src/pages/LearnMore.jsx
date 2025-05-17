@@ -1,9 +1,7 @@
-import React from 'react';
+
 import './TermsAndConditions.css'; 
 import { useNavigate } from "react-router-dom";
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
-import { Link } from "react-router-dom";
-
 
 
 const LearnMore = () => {
