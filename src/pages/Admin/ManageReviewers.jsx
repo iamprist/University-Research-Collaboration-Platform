@@ -21,6 +21,11 @@ export default function ManageReviewers() {
   const [revokedPage, setRevokedPage] = useState(1);
   const itemsPerPage = 10;
 
+  // Search state
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentSearchTerm, setCurrentSearchTerm] = useState("");
+  const [revokedSearchTerm, setRevokedSearchTerm] = useState("");
+
   const fetchReviewers = async () => {
     try {
       setLoading(true);
@@ -113,10 +118,8 @@ export default function ManageReviewers() {
 
   const handleDeleteReviewer = async (id) => {
     try {
-      console.log(`Deleting reviewer with ID: ${id}`); // Debugging
-      await deleteDoc(doc(db, "reviewers", id)); // Delete the reviewer from Firestore
-      setRevokedReviewers((prev) => prev.filter((reviewer) => reviewer.id !== id)); // Remove from the UI
-      console.log(`Reviewer with ID ${id} deleted successfully.`);
+      await deleteDoc(doc(db, "reviewers", id));
+      setRevokedReviewers((prev) => prev.filter((reviewer) => reviewer.id !== id));
     } catch (error) {
       console.error("Error deleting reviewer:", error);
     }
@@ -133,108 +136,175 @@ export default function ManageReviewers() {
     return items.slice(startIndex, startIndex + itemsPerPage);
   };
 
-  const sectionStyle = {
-    minHeight: "100vh",
-    background: "#1a2e40",
-    color: "white",
-    padding: "2rem 0",
-  };
+  // Filtered lists for search
+  const filteredReviewers = reviewers.filter((reviewer) =>
+    (reviewer.name || "")
+      .toLowerCase()
+      .includes(searchTerm.trim().toLowerCase())
+  );
+  const filteredCurrentReviewers = currentReviewers.filter((reviewer) =>
+    (reviewer.name || "")
+      .toLowerCase()
+      .includes(currentSearchTerm.trim().toLowerCase())
+  );
+  const filteredRevokedReviewers = revokedReviewers.filter((reviewer) =>
+    (reviewer.name || "")
+      .toLowerCase()
+      .includes(revokedSearchTerm.trim().toLowerCase())
+  );
 
-  const articleStyle = {
-    maxWidth: "960px",
-    margin: "2rem auto",
-    padding: "1.5rem",
-    backgroundColor: "#1a2e40", // Match the sidebar background color
-    borderRadius: "0.5rem",
-    boxShadow: "0 2px 10px rgba(0, 0, 0, 0.3)", // Subtle shadow for depth
+  // Consistent styles with ManageAdmins and ManageResearchers
+  const styles = {
+    container: {
+      minHeight: "100vh",
+      background: "#1a2e40",
+      color: "white",
+      padding: "2rem 0",
+    },
+    article: {
+      maxWidth: "960px",
+      margin: "2rem auto",
+      padding: "1.5rem",
+      backgroundColor: "#1a2e40",
+      borderRadius: "0.5rem",
+      boxShadow: "0 2px 10px rgba(0, 0, 0, 0.3)",
+    },
+    heading: {
+      fontSize: "2rem",
+      fontWeight: "bold",
+      textAlign: "center",
+      marginBottom: "1.5rem",
+    },
+    description: {
+      textAlign: "center",
+      color: "#cbd5e0",
+      marginBottom: "1.5rem",
+    },
+    searchInput: {
+      width: "100%",
+      maxWidth: "350px",
+      margin: "0 auto 1.2rem auto",
+      display: "block",
+      padding: "0.5rem 1rem",
+      borderRadius: "0.4rem",
+      border: "1px solid #4a5568",
+      background: "#243447",
+      color: "#fff",
+      fontSize: "1rem",
+      outline: "none",
+    },
+    card: {
+      backgroundColor: "#243447",
+      padding: "1rem",
+      borderRadius: "0.5rem",
+      marginBottom: "1rem",
+      color: "#FFFFFF",
+      boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+    },
+    cardName: {
+      color: "#64CCC5",
+      marginBottom: "0.5rem",
+      fontWeight: "bold",
+      fontSize: "1.1rem",
+    },
+    cardEmail: {
+      color: "#A0AEC0",
+      fontSize: "0.95rem",
+      margin: 0,
+    },
+    button: {
+      padding: "0.5rem 1rem",
+      border: "none",
+      borderRadius: "0.5rem",
+      cursor: "pointer",
+      fontWeight: "bold",
+      fontSize: "1rem",
+      marginRight: "0.5rem",
+      marginTop: "0.5rem",
+    },
+    approveButton: {
+      backgroundColor: "#64CCC5",
+      color: "#132238",
+    },
+    rejectButton: {
+      backgroundColor: "#FF6B6B",
+      color: "#fff",
+    },
+    revokeButton: {
+      backgroundColor: "#FF6B6B",
+      color: "#fff",
+    },
+    deleteButton: {
+      backgroundColor: "#E53E3E",
+      color: "#fff",
+    },
+    pagination: {
+      display: "flex",
+      justifyContent: "center",
+      marginTop: "1rem",
+      gap: "0.5rem",
+    },
+    paginationBtn: (active) => ({
+      padding: "0.5rem 1rem",
+      margin: "0 0.25rem",
+      borderRadius: "0.25rem",
+      backgroundColor: active ? "#4299e1" : "#4a5568",
+      color: active ? "#fff" : "#cbd5e0",
+      border: "none",
+      cursor: "pointer",
+    }),
   };
-
-  const titleStyle = {
-    fontSize: "2rem",
-    fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: "1.5rem",
-  };
-
-  const paragraphStyle = {
-    textAlign: "center",
-    marginBottom: "1.5rem",
-    color: "#cbd5e0",
-  };
-
-  const cardStyle = {
-    backgroundColor: "#243447", // Slightly lighter shade for cards
-    padding: "1rem",
-    borderRadius: "0.5rem",
-    marginBottom: "1rem",
-    color: "#FFFFFF",
-    boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
-  };
-
-  const buttonStyle = {
-    padding: "0.5rem 1rem",
-    border: "none",
-    borderRadius: "0.5rem",
-    cursor: "pointer",
-    marginRight: "0.5rem",
-  };
-
-  const paginationStyle = {
-    display: "flex",
-    justifyContent: "center",
-    marginTop: "1rem",
-  };
-
-  const paginationButtonStyle = (active) => ({
-    padding: "0.5rem 1rem",
-    margin: "0 0.25rem",
-    borderRadius: "0.25rem",
-    backgroundColor: active ? "#4299e1" : "#4a5568",
-    color: active ? "#fff" : "#cbd5e0",
-    border: "none",
-    cursor: "pointer",
-  });
 
   return (
-    <section style={sectionStyle}>
+    <section style={styles.container}>
       {/* Pending Applications */}
-      <article style={articleStyle}>
-        <h2 style={titleStyle}>Reviewer Applications</h2>
-        <p style={paragraphStyle}>
+      <article style={styles.article}>
+        <h2 style={styles.heading}>Reviewer Applications</h2>
+        <p style={styles.description}>
           Below is the list of all pending reviewer applications:
         </p>
+        <input
+          type="text"
+          placeholder="Search by reviewer name..."
+          style={styles.searchInput}
+          value={searchTerm}
+          onChange={e => {
+            setSearchTerm(e.target.value);
+            setPendingPage(1);
+          }}
+        />
         {loading ? (
           <p style={{ textAlign: "center", color: "#a0aec0" }}>Loading applications...</p>
-        ) : reviewers.length === 0 ? (
+        ) : filteredReviewers.length === 0 ? (
           <p style={{ textAlign: "center", color: "#a0aec0" }}>No pending applications.</p>
         ) : (
-          paginate(reviewers, pendingPage).map((reviewer) => (
-            <article key={reviewer.id} style={cardStyle}>
-              <h3 style={{ color: "#64CCC5", marginBottom: "0.5rem" }}>{reviewer.name || "N/A"}</h3>
-              <p><strong>Email:</strong> {reviewer.email || "N/A"}</p>
-              <p><strong>Institution:</strong> {reviewer.institution || "N/A"}</p>
-              <p><strong>Expertise:</strong> {Array.isArray(reviewer.expertiseTags) ? reviewer.expertiseTags.join(", ") : "N/A"}</p>
+          paginate(filteredReviewers, pendingPage).map((reviewer) => (
+            <div key={reviewer.id} style={styles.card}>
+              <div style={styles.cardName}>{reviewer.name || "N/A"}</div>
+              <div style={styles.cardEmail}>{reviewer.email || "N/A"}</div>
+              <div style={styles.cardEmail}><strong>Institution:</strong> {reviewer.institution || "N/A"}</div>
+              <div style={styles.cardEmail}><strong>Expertise:</strong> {Array.isArray(reviewer.expertiseTags) ? reviewer.expertiseTags.join(", ") : "N/A"}</div>
               <button
                 onClick={() => handleApprove(reviewer.id)}
-                style={{ ...buttonStyle, backgroundColor: "#64CCC5", color: "#132238" }}
+                style={{ ...styles.button, ...styles.approveButton }}
               >
                 Approve
               </button>
               <button
                 onClick={() => handleReject(reviewer.id)}
-                style={{ ...buttonStyle, backgroundColor: "#FF6B6B", color: "#ffffff" }}
+                style={{ ...styles.button, ...styles.rejectButton }}
               >
                 Reject
               </button>
-            </article>
+            </div>
           ))
         )}
-        <div style={paginationStyle}>
-          {Array.from({ length: Math.ceil(reviewers.length / itemsPerPage) }, (_, i) => (
+        <div style={styles.pagination}>
+          {Array.from({ length: Math.ceil(filteredReviewers.length / itemsPerPage) }, (_, i) => (
             <button
               key={i}
               onClick={() => setPendingPage(i + 1)}
-              style={paginationButtonStyle(pendingPage === i + 1)}
+              style={styles.paginationBtn(pendingPage === i + 1)}
             >
               {i + 1}
             </button>
@@ -243,30 +313,40 @@ export default function ManageReviewers() {
       </article>
 
       {/* Current Reviewers */}
-      <article style={articleStyle}>
-        <h2 style={titleStyle}>Current Reviewers</h2>
-        {currentReviewers.length === 0 ? (
+      <article style={styles.article}>
+        <h2 style={styles.heading}>Current Reviewers</h2>
+        <input
+          type="text"
+          placeholder="Search by reviewer name..."
+          style={styles.searchInput}
+          value={currentSearchTerm}
+          onChange={e => {
+            setCurrentSearchTerm(e.target.value);
+            setCurrentPage(1);
+          }}
+        />
+        {filteredCurrentReviewers.length === 0 ? (
           <p style={{ textAlign: "center", color: "#a0aec0" }}>No current reviewers.</p>
         ) : (
-          paginate(currentReviewers, currentPage).map((reviewer) => (
-            <article key={reviewer.id} style={cardStyle}>
-              <h3 style={{ color: "#64CCC5", marginBottom: "0.5rem" }}>{reviewer.name || "N/A"}</h3>
-              <p><strong>Email:</strong> {reviewer.email || "N/A"}</p>
+          paginate(filteredCurrentReviewers, currentPage).map((reviewer) => (
+            <div key={reviewer.id} style={styles.card}>
+              <div style={styles.cardName}>{reviewer.name || "N/A"}</div>
+              <div style={styles.cardEmail}> {reviewer.email || "N/A"}</div>
               <button
                 onClick={() => handleRevoke(reviewer.id)}
-                style={{ ...buttonStyle, backgroundColor: "#FF6B6B", color: "#ffffff", marginTop: "0.5rem" }}
+                style={{ ...styles.button, ...styles.revokeButton }}
               >
                 Revoke
               </button>
-            </article>
+            </div>
           ))
         )}
-        <div style={paginationStyle}>
-          {Array.from({ length: Math.ceil(currentReviewers.length / itemsPerPage) }, (_, i) => (
+        <div style={styles.pagination}>
+          {Array.from({ length: Math.ceil(filteredCurrentReviewers.length / itemsPerPage) }, (_, i) => (
             <button
               key={i}
               onClick={() => setCurrentPage(i + 1)}
-              style={paginationButtonStyle(currentPage === i + 1)}
+              style={styles.paginationBtn(currentPage === i + 1)}
             >
               {i + 1}
             </button>
@@ -274,34 +354,47 @@ export default function ManageReviewers() {
         </div>
       </article>
 
+      {/* Add space between current and revoked reviewers */}
+      <div style={{ height: "2.5rem" }} />
+
       {/* Revoked Reviewers */}
-      <article style={articleStyle}>
-        <h2 style={titleStyle}>Revoked or Rejected Reviewers</h2>
-        <p style={paragraphStyle}>
+      <article style={styles.article}>
+        <h2 style={styles.heading}>Revoked or Rejected Reviewers</h2>
+        <p style={styles.description}>
           Below is the list of all reviewers who have been revoked or rejected:
         </p>
-        {revokedReviewers.length === 0 ? (
+        <input
+          type="text"
+          placeholder="Search by reviewer name..."
+          style={styles.searchInput}
+          value={revokedSearchTerm}
+          onChange={e => {
+            setRevokedSearchTerm(e.target.value);
+            setRevokedPage(1);
+          }}
+        />
+        {filteredRevokedReviewers.length === 0 ? (
           <p style={{ textAlign: "center", color: "#a0aec0" }}>No revoked reviewers found.</p>
         ) : (
-          paginate(revokedReviewers, revokedPage).map((reviewer) => (
-            <article key={reviewer.id} style={cardStyle}>
-              <h3 style={{ color: "#64CCC5", marginBottom: "0.5rem" }}>{reviewer.name || "N/A"}</h3>
-              <p><strong>Email:</strong> {reviewer.email || "N/A"}</p>
+          paginate(filteredRevokedReviewers, revokedPage).map((reviewer) => (
+            <div key={reviewer.id} style={styles.card}>
+              <div style={styles.cardName}>{reviewer.name || "N/A"}</div>
+              <div style={styles.cardEmail}><strong>Email:</strong> {reviewer.email || "N/A"}</div>
               <button
                 onClick={() => handleDeleteReviewer(reviewer.id)}
-                style={{ ...buttonStyle, backgroundColor: "#FF6B6B", color: "#ffffff", marginTop: "0.5rem" }}
+                style={{ ...styles.button, ...styles.deleteButton }}
               >
                 Delete
               </button>
-            </article>
+            </div>
           ))
         )}
-        <div style={paginationStyle}>
-          {Array.from({ length: Math.ceil(revokedReviewers.length / itemsPerPage) }, (_, i) => (
+        <div style={styles.pagination}>
+          {Array.from({ length: Math.ceil(filteredRevokedReviewers.length / itemsPerPage) }, (_, i) => (
             <button
               key={i}
               onClick={() => setRevokedPage(i + 1)}
-              style={paginationButtonStyle(revokedPage === i + 1)}
+              style={styles.paginationBtn(revokedPage === i + 1)}
             >
               {i + 1}
             </button>
