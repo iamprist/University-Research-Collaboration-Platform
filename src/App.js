@@ -2,6 +2,9 @@
 import { Routes, Route, Navigate} from "react-router-dom";
 import SignInPage from "./pages/SignInPage";
 import LandingPage from "./pages/LandingPage";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import About from "./components/About";
+import LearnMore from "./pages/LearnMore";
 
 // Admin
 import AdminPage from "./pages/Admin/AdminPage";
@@ -83,7 +86,7 @@ function App() {
       {/* Public */}
       <Route path="/" element={<LandingPage />} />
       <Route path="/signin" element={<SignInPage />} />
-
+       <Route path="/learn-more" element={<LearnMore />} />
       {/* Admin */}
       <Route
         path="/admin"
@@ -101,6 +104,12 @@ function App() {
           </ProtectedRoute>
         }
       />
+
+{/*footer content*/}
+ <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+ <Route path="/about" element={<About />} />
+ <Route path="/terms" element={<TermsAndConditions />} />
+        
 
       {/* Reviewer */}
       <Route

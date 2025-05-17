@@ -1,3 +1,4 @@
+/*ResearcherDashboard.css
 /* ===== GLOBAL VARIABLES ===== */
 :root {
   --primary-blue: #3a4a63;
@@ -34,6 +35,8 @@ body {
 
 .header-title h1 {
   margin: 0;
+  text-align: center;
+  align-items: center;
   font-size: 1.5rem;
   font-weight: 700;
   color: var(--white);
@@ -44,12 +47,12 @@ body {
   margin: 0.5rem 0 0;
   font-size: 0.9rem;
   font-weight: 400;
+  text-align: center;
   font-style: italic;
 }
 
 .header-actions {
   display: flex;
-  align-items: center;
   gap: 1.5rem;
 }
 
@@ -660,7 +663,7 @@ body {
 }
 
 .header-title h1 {
-  color: #B1EDE8;
+  color: #ffffff;
   margin-bottom: 0.5rem;
 }
 
