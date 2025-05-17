@@ -9,6 +9,23 @@ import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import './TermsAndConditions.css';
 import "../pages/Researcher/ResearcherDashboard.css"; // Import your CSS file
 
+// Add this above function SignInPage
+const logEvent = async ({ userId, role, userName, action, details }) => {
+  try {
+    await addDoc(collection(db, "eventLogs"), {
+      userId,
+      role,
+      userName,
+      action,
+      details,
+      timestamp: serverTimestamp(),
+    });
+    // You can also add analytics or logging here if needed
+  } catch (error) {
+    console.error("Error logging event:", error);
+  }
+};
+
 function SignInPage() {
   const navigate = useNavigate();
 
