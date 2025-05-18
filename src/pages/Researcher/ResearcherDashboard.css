@@ -969,3 +969,10 @@ img {
   font-weight: bold;
   margin-bottom: 1.5rem;
 }
+@media (max-width: 600px) {
+  .researcher-header {
+    flex-direction: column; /* Stack items instead of forcing a horizontal layout */
+    align-items: center;
+    padding: 1rem;
+  }
+}
