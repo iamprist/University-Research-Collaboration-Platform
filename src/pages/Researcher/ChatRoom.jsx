@@ -172,7 +172,7 @@ export default function ChatRoom() {
     if (!attachment) return null;
 
     try {
-      const storageRef = ref(storage, `chat_attachments/R{chatId}/${Date.now()}_${attachment.name}`);
+      const storageRef = ref(storage, `chat_attachments/${chatId}/${Date.now()}_${attachment.name}`);
       const snapshot = await uploadBytes(storageRef, attachment);
       const downloadUrl = await getDownloadURL(snapshot.ref);
       
@@ -1030,7 +1030,7 @@ export default function ChatRoom() {
             {filteredMessages.map((msg, i) => (
               <div
                 key={i}
-                className={`message-bubble R{msg.senderId === auth.currentUser?.uid ? 'sent' : 'received'}`}
+                className={`message-bubble ${msg.senderId === auth.currentUser?.uid ? 'sent' : 'received'}`}
               >
                 <div className="message-meta">
                   <span className="sender-name">

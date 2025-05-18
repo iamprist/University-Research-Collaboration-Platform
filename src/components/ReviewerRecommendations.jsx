@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+/*import React, { useEffect, useState } from "react";
 import { getFirestore, collection, doc, getDoc, getDocs } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { Helmet } from "react-helmet";
@@ -356,4 +356,4 @@ export default function ResearchProjectDisplay() {
       </div>
     </>
   );
-}
+}*/
