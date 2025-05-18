@@ -35,12 +35,14 @@ img {
 /* ===== HEADER ===== */
 .researcher-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: space-around;
   align-items: center;
   background: var(--dark-blue);
   color: var(--white);
   border-bottom: 2px solid var(--light-blue);
   padding: 1.5rem 2rem;
+  width: 100%;
+  max-width: 100vw;
 }
 
 .header-title h1 {
