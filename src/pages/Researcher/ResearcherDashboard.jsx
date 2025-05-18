@@ -5,8 +5,9 @@ import { collection, getDocs, query, where, doc, getDoc, onSnapshot, orderBy, up
 import './ResearcherDashboard.css';
 import axios from "axios";
 import CollaborationRequestsPanel from '../../components/CollaborationRequestsPanel';
+import Footer from '../../components/Footer'; // Import the Footer component
 import ContactForm from '../../components/ContactForm';
-
+import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 const MessageNotification = ({ messages, unreadCount, onMessageClick }) => {
   const [showMessages, setShowMessages] = useState(false);
   const dropdownRef = useRef(null);
@@ -35,10 +36,10 @@ const MessageNotification = ({ messages, unreadCount, onMessageClick }) => {
       
       {showMessages && (
         <section className="messages-dropdown">
-          <div className="messages-header">
+          <section className="messages-header">
             <h4>Notifications</h4>
             <button onClick={() => setShowMessages(false)}>×</button>
-          </div>
+          </section>
           {messages.length === 0 ? (
             <p className="no-messages">No new messages</p>
           ) : (
@@ -370,7 +371,18 @@ const ResearcherDashboard = () => {
       )}
 
       <header className="researcher-header">
+         <button 
+            className="back-button"
+            onClick={() => navigate(-1)}
+            style={{ 
+              color: 'var(--white)',
+              marginRight: '1.5rem' // Add spacing between arrow and title
+            }}
+          >
+            <ArrowBackIosIcon />
+          </button>
         <section className="header-title">
+          
           <h1>Welcome, {userName}</h1>
           <p>Manage your research and collaborate with other researchers</p>
         </section>
@@ -413,7 +425,7 @@ const ResearcherDashboard = () => {
               onFocus={handleInputFocus}
             />
             <button type="submit">Search</button>
-            <button type="button" onClick={handleClear}>Clear</button>
+            <button type="submit" onClick={handleClear}>Clear</button>
           </form>
           {dropdownVisible && (
             <section className="search-dropdown">
@@ -460,7 +472,7 @@ const ResearcherDashboard = () => {
               <article key={item.id} className="listing-card">
                 <h4>{item.title}</h4>
                 <p>{item.summary}</p>
-                <div className="listing-actions">
+                <section className="listing-actions">
                   <button
                     onClick={() => navigate(`/listing/${item.id}`)}
                   >
@@ -472,7 +484,7 @@ const ResearcherDashboard = () => {
                   >
                     Chat
                   </button>
-                </div>
+                </section>
               </article>
             ))
           )}
@@ -491,7 +503,7 @@ const ResearcherDashboard = () => {
               <article key={listing.id} className="listing-card">
                 <h4>{listing.title}</h4>
                 <p>{listing.summary}</p>
-                <div className="listing-actions">
+                <section className="listing-actions">
                   <button
                     onClick={() => navigate(`/listing/${listing.id}`)}
                   >
@@ -503,7 +515,7 @@ const ResearcherDashboard = () => {
                   >
                     Chat
                   </button>
-                </div>
+                </section>
               </article>
             ))}
           </section>
@@ -514,17 +526,12 @@ const ResearcherDashboard = () => {
         )}
       </section>
       {showContactForm && (
-      <div className="contact-form-modal">
+      <section className="contact-form-modal">
       <ContactForm onClose={() => setShowContactForm(false)} />
-      </div>
+      </section>
       )}
 
-      <footer className="researcher-footer">
-        <a href="/contact">Contact</a>
-        <a href="/privacy-policy">Privacy Policy</a>
-        <a href="/terms">Terms of Service</a>
-        <p>&copy; {new Date().getFullYear()} Innerk Hub</p>
-      </footer>
+      <Footer />
     </main>
   );
 };

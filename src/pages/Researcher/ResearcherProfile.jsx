@@ -3,13 +3,17 @@ import { db, auth } from '../../config/firebaseConfig';
 import { doc, getDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import './ResearcherDashboard.css';
+import Footer from '../../components/Footer'; // Import the Footer component
 
+import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 const ResearcherProfile = () => {
   const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [userId, setUserId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showMenu, setShowMenu] = useState(false);
+  
 
   // Check authentication and get user ID
   useEffect(() => {
@@ -63,46 +67,74 @@ const ResearcherProfile = () => {
 
   if (loading) {
     return (
-      <div className="loading-container">
+      <section className="loading-container">
         <p>Loading profile...</p>
-      </div>
+      </section>
     );
   }
 
   if (error) {
     return (
-      <div className="error-container">
+      <section className="error-container">
         <p>{error}</p>
         <button onClick={() => window.location.reload()}>Try Again</button>
-      </div>
+      </section>
     );
   }
 
   return (
     <main className="researcher-profile-container">
       <header className="researcher-header">
+        <button 
+            className="back-button"
+            onClick={() => navigate(-1)}
+            style={{ 
+              color: 'var(--white)',
+              marginRight: '1.5rem' // Add spacing between arrow and title
+            }}
+          >
+            <ArrowBackIosIcon />
+          </button>
         <section className="header-title">
           <h1>Researcher Profile</h1>
           <p>View and manage your professional details</p>
         </section>
-        <nav className="header-nav">
-          <a href="/researcher-dashboard" className="header-link">Dashboard</a>
-          <a href="/researcher/add-listing" className="header-link">Add Listing</a>
-          <a href="/researcher/collaborate" className="header-link">Collaborate</a>
-        </nav>
+       <section className="dropdown-menu-container">
+            <button
+              className="menu-toggle-btn"
+              onClick={() => setShowMenu(prev => !prev)}
+            >
+              ☰ 
+            </button>
+            {showMenu && (
+              <section className="menu-dropdown">
+                                <button onClick={() => navigate('/researcher-dashboard')}>Dashboard</button>
+                <button onClick={() => navigate('/researcher/add-listing')}>Add Listing</button>
+                <button onClick={() => navigate('/friends')}>Friends</button>
+                <button onClick={() => navigate('/researcher/collaborate')}>Collaborate</button>
+              </section>
+            )}
+          </section>
       </header>
 
       <section className="profile-content">
         <article className="profile-card">
           <header className="profile-header">
-            {profile.profilePicture && (
+              {profile?.profilePicture ? (
               <img
                 src={profile.profilePicture}
                 alt="Profile"
                 className="profile-image"
+                onError={(e) => {
+                  e.target.style.display = 'none'; // Hide broken images
+                }}
               />
+            ) : (
+            <section className="profile-image-placeholder">
+              {profile?.name?.charAt(0) || 'A'}
+            </section>
             )}
-            <h2 className="profile-name">{profile.title} {profile.name}</h2>
+            <h2 className="profile-name">{profile?.title} {profile?.name}</h2>
           </header>
 
           <section className="profile-details">
@@ -116,22 +148,15 @@ const ResearcherProfile = () => {
           </section>
 
           <footer className="profile-actions">
-            <button
-              onClick={() => navigate('/researcher-edit-profile')}
-              className="edit-button"
-            >
-              Edit Profile
-            </button>
+           <button onClick={() => navigate('/researcher-edit-profile')} className="menu-toggle-btn"
+              >
+                Edit Profile
+             </button>
           </footer>
         </article>
       </section>
 
-      <footer className="researcher-footer">
-        <a href="/contact">Contact</a>
-        <a href="/privacy-policy">Privacy Policy</a>
-        <a href="/terms-of-service">Terms of Service</a>
-        <p>&copy; 2025 Innerk Hub</p>
-      </footer>
+      <Footer />
     </main>
   );
 };

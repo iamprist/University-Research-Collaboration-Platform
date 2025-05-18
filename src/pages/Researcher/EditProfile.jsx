@@ -4,6 +4,8 @@ import { getDoc, doc, setDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import './ResearcherDashboard.css';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
+import Footer from '../../components/Footer'; // Import the Footer component
 
 const researchAreas = [
   'Physics', 'Chemistry', 'Biology', 'Computer Science', 'Mathematics',
@@ -16,6 +18,7 @@ const researchAreas = [
 
 const EditProfile = () => {
   const navigate = useNavigate();
+    const [showMenu, setShowMenu] = useState(false);
   const [profile, setProfile] = useState({
     title: '',
     name: '',
@@ -122,15 +125,36 @@ const EditProfile = () => {
   return (
     <main>
       <header className="researcher-header">
+        <button 
+              className="back-button"
+              onClick={() => navigate(-1)}
+              style={{ 
+                color: 'var(--white)',
+                marginRight: '1.5rem'
+              }}
+            >
+            <ArrowBackIosIcon />
+        </button>
         <section className="header-title">
           <h1>Edit Your Profile</h1>
           <p>Update your research profile information</p>
         </section>
-        <nav className="header-nav">
-          <a href="/researcher-dashboard" className="header-link">Dashboard</a>
-          <a href="/researcher-profile" className="header-link">Profile</a>
-          <a href="/researcher/add-listing" className="header-link">Add Listing</a>
-        </nav>
+        <section className="dropdown-menu-container">
+            <button
+              className="menu-toggle-btn"
+              onClick={() => setShowMenu(prev => !prev)}
+            >
+              ☰ 
+            </button>
+            {showMenu && (
+              <section className="menu-dropdown">
+                <button onClick={() => navigate('/researcher/add-listing')}>Add Listing</button>
+                <button onClick={() => navigate('/researcher-dashboard')}>Dashboard</button>
+                <button onClick={() => navigate('/friends')}>Friends</button>
+                <button onClick={() => navigate('/researcher/collaborate')}>Collaborate</button>
+              </section>
+            )}
+          </section>
       </header>
 
       <section style={{ maxWidth: '700px', margin: '2rem auto', padding: '0 1.5rem' }}>
@@ -320,12 +344,7 @@ const EditProfile = () => {
           </article>
         </form>
       </section>
-      <footer className="researcher-footer">
-        <a href="/contact">Contact</a>
-        <a href="/privacy-policy">Privacy Policy</a>
-        <a href="/terms-of-service">Terms of Service</a>
-        <p>&copy; 2025 Innerk Hub</p>
-      </footer>
+      <Footer />
     </main>
   );
 };

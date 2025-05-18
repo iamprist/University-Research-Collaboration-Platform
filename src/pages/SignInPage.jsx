@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import './TermsAndConditions.css';
-
+import Footer from "../components/Footer"; // Import the Footer component
 import "../pages/Researcher/ResearcherDashboard.css"; // Import your CSS file
 
 // Add this above function SignInPage
@@ -251,21 +251,37 @@ function SignInPage() {
             }}
           >
             <ArrowBackIosIcon />
-          </button>
-        </nav>
+          </button>      
 
-        <section 
-    className="header-title" 
-    aria-label="Header title section"
-    style={{
-      textAlign: 'left',
-      width: '100%',
-      padding: '0 4rem'
-    }}
-  >
+          </nav>
+
+        <section className="header-title" aria-label="Header title section"
+              style={{
+                textAlign: 'left',
+                width: '100%',
+                padding: '0 4rem'
+              }}
+            >
           <h1>Welcome to Innerk Hub</h1>
           <p>Empowering Researchers to Connect, Collaborate, and Innovate</p>
         </section>
+        {/* Right side - Home button */}
+  <section className="header-right-actions">
+    <button
+      className="home-button"
+      onClick={() => navigate("/")}
+      style={{
+        color: 'var(--white)',
+        padding: '0.5rem 1rem',
+        borderRadius: '4px',
+        border: '1px solid var(--white)',
+        background: 'transparent',
+        cursor: 'pointer'
+      }}
+    >
+      Home
+    </button>
+  </section>
       </header>
 
       {/* Sign-In Section */}
@@ -303,20 +319,7 @@ function SignInPage() {
         ))}
       </section>
 
-      {/* Footer */}
-      <footer>
-        <nav style={styles.footerLinks} aria-label="Footer navigation">
-          <a href="/privacy-policy" style={styles.footerLink}>
-            Privacy Policy
-          </a>
-          <a href="/terms" style={styles.footerLink}>
-            Terms of Service
-          </a>
-        </nav>
-        <p style={{ fontSize: "0.9rem", marginTop: "1rem" }}>
-          ©2025 Innerk Hub · Empowering Researchers to Connect, Collaborate, and Innovate.
-        </p>
-      </footer>
+      <Footer/>
     </main>
   );
 }

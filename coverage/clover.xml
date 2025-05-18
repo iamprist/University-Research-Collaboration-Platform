@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1747511248476" clover="3.2.0">
-  <project timestamp="1747511248476" name="All files">
+<coverage generated="1747517771648" clover="3.2.0">
+  <project timestamp="1747517771648" name="All files">
     <metrics statements="144" coveredstatements="80" conditionals="91" coveredconditionals="45" methods="35" coveredmethods="13" elements="270" coveredelements="138" complexity="0" loc="144" ncloc="144" packages="5" files="7" classes="7"/>
     <package name="config">
       <metrics statements="6" coveredstatements="6" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
@@ -18,13 +18,13 @@
       <metrics statements="5" coveredstatements="4" conditionals="0" coveredconditionals="0" methods="3" coveredmethods="2"/>
       <file name="LandingPage.jsx" path="C:\Users\AdmiN\University-Research-Collaboration-Platform\src\pages\LandingPage.jsx">
         <metrics statements="1" coveredstatements="1" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="1"/>
-        <line num="10" count="4" type="stmt"/>
+        <line num="9" count="9" type="stmt"/>
       </file>
       <file name="TermsAndConditions.jsx" path="C:\Users\AdmiN\University-Research-Collaboration-Platform\src\pages\TermsAndConditions.jsx">
         <metrics statements="4" coveredstatements="3" conditionals="0" coveredconditionals="0" methods="2" coveredmethods="1"/>
         <line num="9" count="1" type="stmt"/>
-        <line num="10" count="5" type="stmt"/>
-        <line num="12" count="5" type="stmt"/>
+        <line num="10" count="11" type="stmt"/>
+        <line num="12" count="11" type="stmt"/>
         <line num="15" count="0" type="stmt"/>
       </file>
     </package>

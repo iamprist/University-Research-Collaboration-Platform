@@ -14,7 +14,9 @@ import {
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './ResearcherDashboard.css';
+import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import { sendMessage, messageTypes } from '../../utils/sendMessage';
+import Footer from '../../components/Footer';
 
 const CollaboratePage = () => {
   const navigate = useNavigate();
@@ -214,6 +216,16 @@ const CollaboratePage = () => {
   return (
     <main>
       <header className="researcher-header">
+         <button 
+            className="back-button"
+            onClick={() => navigate(-1)}
+            style={{ 
+              color: 'var(--white)',
+              marginRight: '1.5rem' // Add spacing between arrow and title
+            }}
+          >
+            <ArrowBackIosIcon />
+          </button>
         <section className="header-title">
           <h1>Collaborate with Other Researchers</h1>
           <p>Find projects to join and collaborate on</p>
@@ -229,7 +241,7 @@ const CollaboratePage = () => {
       </header>
 
       <section className="collaborate-main">
-        <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+        <section style={{ textAlign: 'center', marginBottom: '1rem' }}>
           <label style={{ color: '#132238', cursor: 'pointer' }}>
             <input 
               type="checkbox" 
@@ -239,12 +251,12 @@ const CollaboratePage = () => {
             />
             Show Friends Only
           </label>
-        </div>
+        </section>
 
         {loading ? (
-          <div style={{ textAlign: 'center', color: '#132238' }}>
+          <section style={{ textAlign: 'center', color: '#132238' }}>
             <p>Loading available projects...</p>
-          </div>
+          </section>
         ) : (
           <section>
             <h3 style={{ color: '#132238', marginBottom: '1.5rem', textAlign: 'center' }}>Available Projects</h3>
@@ -259,8 +271,8 @@ const CollaboratePage = () => {
                 return (
                   <article key={listing.id} className="collaborate-card">
                     <h4>{listing.title}</h4>
-                    <div className="byline">By: {listing.researcherName}</div>
-                    <div className="summary">{listing.summary}</div>
+                    <section className="byline">By: {listing.researcherName}</section>
+                    <section className="summary">{listing.summary}</section>
                     {!hasPending && (
                       <textarea
                         placeholder="Add a message to the researcher (optional)"
@@ -304,12 +316,7 @@ const CollaboratePage = () => {
         )}
       </section>
 
-      <footer className="collaborate-footer">
-        <a href="/contact">Contact</a>
-        <a href="/privacy-policy">Privacy Policy</a>
-        <a href="/terms-of-service">Terms of Service</a>
-        <p>&copy; 2025 Innerk Hub</p>
-      </footer>
+      <Footer />
     </main>
   );
 };

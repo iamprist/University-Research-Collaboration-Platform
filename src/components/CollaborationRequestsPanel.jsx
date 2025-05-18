@@ -108,18 +108,18 @@ const CollaborationRequestsPanel = () => {
   if (loading) return <p>Loading requests...</p>;
 
   return (
-    <div style={styles.panel}>
+    <section style={styles.panel}>
       <h3>Collaboration Requests</h3>
       {requests.length === 0 ? (
         <p>No pending requests</p>
       ) : (
         requests.map(request => (
-          <div key={request.id} style={styles.requestItem}>
+          <section key={request.id} style={styles.requestItem}>
             <p>
               <strong>{request.requesterName}</strong> wants to collaborate on your project.
             </p>
             {request.message && <p>Message: "{request.message}"</p>}
-            <div style={styles.buttonGroup}>
+            <section style={styles.buttonGroup}>
               <button 
                 style={styles.acceptButton}
                 onClick={() => handleResponse(request.id, 'accepted')}
@@ -132,11 +132,11 @@ const CollaborationRequestsPanel = () => {
               >
                 Reject
               </button>
-            </div>
-          </div>
+            </section>
+          </section>
         ))
       )}
-    </div>
+    </section>
   );
 };
 

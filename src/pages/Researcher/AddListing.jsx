@@ -7,7 +7,7 @@ import { collection, addDoc, doc, getDoc, setDoc, serverTimestamp } from 'fireba
 import { logEvent } from '../../utils/logEvent';
 import { sendMessage, messageTypes } from '../../utils/sendMessage';
 import './ResearcherDashboard.css';
-
+import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 async function fetchUserIP() {
   try {
     const response = await axios.get('https://api.ipify.org?format=json');
@@ -240,17 +240,21 @@ function AddListing() {
   return (
     <main className="researcher-dashboard">
       <header className="researcher-header">
+         <button 
+              className="back-button"
+              onClick={() => navigate(-1)}
+              style={{ 
+                color: 'var(--white)',
+                marginRight: '1.5rem'
+              }}
+            >
+            <ArrowBackIosIcon />
+        </button>
         <section className="header-title">
           <h1>New Research</h1>
           <p>Fill out the form below to create a new research listing.</p>
         </section>
         <section className="header-actions">
-          <button 
-            className="dashboard-btn"
-            onClick={() => navigate('/researcher-dashboard')}
-          >
-            Back to Dashboard
-          </button>
         </section>
       </header>
 

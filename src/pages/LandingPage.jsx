@@ -5,8 +5,6 @@ import About from "../components/About";
 import Footer from "../components/Footer";
 
 
-
-
 function LandingPage() {
   return (
     <main className="App">

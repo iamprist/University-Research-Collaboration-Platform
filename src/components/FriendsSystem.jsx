@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { db, auth } from '../config/firebaseConfig';
 import {
@@ -14,6 +15,7 @@ import {
 } from 'firebase/firestore';
 import { toast } from 'react-toastify';
 import './FriendsSystem.css';
+import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 
 
 const FriendsSystem = () => {
@@ -24,7 +26,7 @@ const FriendsSystem = () => {
   const [searchResults, setSearchResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [sendingRequest, setSendingRequest] = useState(null);
-
+  const navigate = useNavigate();
   const currentUser = auth.currentUser;
 
   useEffect(() => {
@@ -34,7 +36,7 @@ const FriendsSystem = () => {
       collection(db, 'friends'),
       where('users', 'array-contains', currentUser.uid)
     );
-
+   
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const received = [];
       const sent = [];
@@ -127,10 +129,20 @@ const FriendsSystem = () => {
   };
 
   return (
-    <div className="friends-system">
+    <section className="friends-system">
+        <button 
+              className="back-button"
+              onClick={() => navigate(-1)}
+              style={{ 
+                color: 'var(--white)',
+                marginRight: '1.5rem'
+              }}
+            >
+            <ArrowBackIosIcon />
+        </button>
       <h2>Friends</h2>
 
-      <div className="search-section">
+      <section className="search-section">
         <input
           type="text"
           placeholder="Search for researchers..."
@@ -141,22 +153,22 @@ const FriendsSystem = () => {
         <button onClick={handleSearch} disabled={loading}>
           {loading ? 'Searching...' : 'Search'}
         </button>
-      </div>
+      </section>
       {searchResults.length > 0 && (
-        <div className="search-results">
+        <section className="search-results">
           <h3>Search Results</h3>
           {searchResults.map(user => {
             const isPending = pendingSent.includes(user.id);
             const isSending = sendingRequest === user.id;
 
             return (
-              <div key={user.id} className="user-card">
-                <div className="user-info">
+              <section key={user.id} className="user-card">
+                <section className="user-info">
                   <span className="user-name">{user.name}</span>
                   {user.researchArea && (
                     <span className="research-area">{user.researchArea}</span>
                   )}
-                </div>
+                </section>
                 {isPending ? (
                   <span className="request-sent-label">Request Sent</span>
                 ) : (
@@ -168,15 +180,15 @@ const FriendsSystem = () => {
                     {isSending ? 'Sending...' : 'Add Friend'}
                   </button>
                 )}
-              </div>
+              </section>
             );
           })}
-        </div>
+        </section>
       )}
-      <div className="requests-section">
+      <section className="requests-section">
         <h3>Friend Requests</h3>
         {pendingReceived.length > 0 ? (
-          <div className="requests-list">
+          <section className="requests-list">
             {pendingReceived.map(({ docId, userId }) => (
               <FriendCard
                 key={userId}
@@ -185,13 +197,13 @@ const FriendsSystem = () => {
                 onRespond={respondToRequest}
               />
             ))}
-          </div>
+          </section>
         ) : (
           <p className="no-requests">No pending friend requests</p>
         )}
-      </div>
+      </section>
 
-      <div className="friends-list">
+      <section className="friends-list">
         <h3>Your Friends ({friends.length})</h3>
         {friends.length > 0 ? (
           friends.map(friendId => (
@@ -200,8 +212,8 @@ const FriendsSystem = () => {
         ) : (
           <p className="no-friends">You haven't added any friends yet</p>
         )}
-      </div>
-    </div>
+      </section>
+    </section>
   );
 };
 
@@ -216,29 +228,29 @@ const FriendCard = ({ userId, requestDocId, onRespond }) => {
     fetchUser();
   }, [userId]);
 
-  if (!userData) return <div className="user-card loading">Loading...</div>;
+  if (!userData) return <section className="user-card loading">Loading...</section>;
 
   return (
-    <div className="user-card">
-      <div className="user-info">
+    <section className="user-card">
+      <section className="user-info">
         <span className="user-name">{userData.name}</span>
         {userData.researchArea && (
           <span className="research-area">{userData.researchArea}</span>
         )}
-      </div>
+      </section>
       {onRespond ? (
-        <div className="request-actions">
+        <section className="request-actions">
           <button className="accept-btn" onClick={() => onRespond(requestDocId, userId, true)}>
             Accept
           </button>
           <button className="decline-btn" onClick={() => onRespond(requestDocId, userId, false)}>
             Decline
           </button>
-        </div>
+        </section>
       ) : (
         <span className="friend-status">Friends</span>
       )}
-    </div>
+    </section>
   );
 };
 

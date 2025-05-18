@@ -3,9 +3,14 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../config/firebaseConfig';
 import { useEffect, useState } from 'react';
 import './ListingDetailPage.css'; 
+import { useNavigate } from "react-router-dom";
+
+import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
+import '../../pages/Researcher/ResearcherDashboard.css'; // Import your CSS file
 
 const ListingDetailPage = () => {
   const { id } = useParams();
+  const navigate = useNavigate(); 
   const [listing, setListing] = useState(null);
   const [loading, setLoading] = useState(true);
   const [researcher, setResearcher] = useState(null);
@@ -55,6 +60,16 @@ const ListingDetailPage = () => {
 
   return (
     <div className="listing-container">
+        <button 
+            className="back-button"
+            onClick={() => navigate(-1)}
+            style={{ 
+              color: 'var(--white)',
+              marginRight: '1.5rem' // Add spacing between arrow and title
+            }}
+          >
+            <ArrowBackIosIcon />
+          </button>
       <div className="listing-header">
         <h1>{listing.title}</h1>
         {researcher && (
