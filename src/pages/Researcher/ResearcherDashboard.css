@@ -957,162 +957,135 @@ body {
   font-weight: bold;
   margin-bottom: 1.5rem;
 }
-@media (max-width: 480px) {
-  /* Extra Small Screens Adjustments */
-  .researcher-header {
-    padding: 0.8rem;
-  }
-
-  .header-title h1 {
-    font-size: 1.2rem;
-  }
-
-  .search-section input[type="text"] {
-    font-size: 0.9rem;
-  }
-
-  .messages-dropdown {
-    width: 100%;
-    right: 0;
-    left: 0;
-  }
-
-  .listing-card h4 {
-    font-size: 1.1rem;
-  }
-
-  .profile-name {
-    font-size: 1.2rem;
-  }
-}
 @media (max-width: 768px) {
-  /* Global Mobile Adjustments */
-  body {
-    font-size: 14px;
-  }
-
-  /* Header Mobile Styles */
+  /* Improved Mobile Header Layout */
   .researcher-header {
     padding: 1rem;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
   }
 
-  .header-title h1 {
-    font-size: 1.3rem;
-    text-align: left;
+  .back-button {
+    order: 1;
+    margin: 0;
+    padding: 0.5rem;
+    position: absolute;
+    left: 1rem;
   }
 
-  .header-title p {
-    font-size: 0.8rem;
-    text-align: left;
+  .header-title {
+    order: 2;
+    width: 100%;
+    text-align: center;
+    padding: 0 2rem;
+    margin-top: 0.5rem;
   }
 
   .header-actions {
+    order: 3;
     width: 100%;
-    justify-content: space-between;
-    gap: 0.5rem;
-  }
-
-  /* Search Section Mobile */
-  .search-section {
-    margin: 1rem 0;
-    padding: 0 1rem;
-  }
-
-  .search-section form {
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .search-section input[type="text"] {
-    font-size: 1rem;
-    padding: 0.8rem;
-  }
-
-  .search-section button {
-    width: 100%;
-    justify-content: center;
-    padding: 0.8rem;
-    font-size: 1rem;
-  }
-
-  /* Listings Grid Mobile */
-  .listings-grid {
-    grid-template-columns: 1fr;
+    justify-content: flex-end;
     gap: 1rem;
-    padding: 0 1rem;
+    margin-top: 0.5rem;
+    position: relative;
   }
 
-  .listing-card {
-    padding: 1rem;
+  .message-notification-container {
+    margin-right: 0.5rem;
   }
 
-  .listing-actions {
-    flex-direction: column;
-    gap: 0.5rem;
+  .messages-dropdown {
+    width: 100vw;
+    right: -1rem;
+    top: 3.5rem;
+    border-radius: 0;
+    border: none;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
   }
 
-  /* Menu Dropdown Mobile */
-  .menu-dropdown {
-    position: fixed;
-    top: auto;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    width: 100%;
-    border-radius: 1rem 1rem 0 0;
-  }
-
-  /* Form Elements Mobile */
-  .form-section {
-    padding: 1rem;
-    margin: 1rem 0;
-  }
-
-  .form-row {
-    grid-template-columns: 1fr !important;
-    gap: 1rem;
-  }
-
-  /* Chat Room Adjustments */
-  .message {
-    max-width: 85%;
-    padding: 0.8rem;
-  }
-
-  .message-input-area {
-    padding: 0.8rem;
-  }
-
-  /* Profile Page Mobile */
-  .profile-header {
-    padding: 1.5rem;
-  }
-
-  .profile-image {
-    width: 80px;
-    height: 80px;
-  }
-
-  /* Mobile Menu Button */
   .menu-toggle-btn {
     padding: 0.6rem 1rem;
     font-size: 1rem;
+    order: 2;
   }
 
-  /* Contact Form Mobile */
-  .contact-form-container {
-    padding: 1rem;
-    width: 90%;
+  .dropdown-menu-container {
+    order: 3;
   }
 
-  /* Chat Button Mobile */
-  .chat-with-us-btn {
-    bottom: 1rem;
-    right: 1rem;
-    padding: 0.8rem 1.2rem;
+  .menu-dropdown {
+    width: 100vw;
+    right: -1rem;
+    border-radius: 0;
+    top: auto;
+    bottom: 0;
+    transform: translateY(100%);
+  }
+
+  /* Better spacing for header elements */
+  .header-title h1 {
+    font-size: 1.3rem;
+    line-height: 1.3;
+    margin-bottom: 0.3rem;
+  }
+
+  .header-title p {
+    font-size: 0.75rem;
+    line-height: 1.2;
+  }
+
+  /* Notification bell adjustments */
+  .message-notification-bell {
+    font-size: 1.3rem;
+    padding: 0.3rem;
+  }
+
+  .unread-badge {
+    width: 16px;
+    height: 16px;
+    font-size: 0.6rem;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Extra Small Screen Refinements */
+  .researcher-header {
+    padding: 0.8rem;
+  }
+
+  .back-button {
+    left: 0.5rem;
+  }
+
+  .header-title {
+    padding: 0 1rem;
+  }
+
+  .header-title h1 {
+    font-size: 1.1rem;
+  }
+
+  .header-title p {
+    font-size: 0.7rem;
+  }
+
+  .menu-toggle-btn {
+    padding: 0.5rem 0.8rem;
     font-size: 0.9rem;
+  }
+
+  /* Message dropdown items */
+  .message-item {
+    padding: 0.5rem;
+  }
+
+  .message-item h4 {
+    font-size: 0.9rem;
+  }
+
+  .message-item p {
+    font-size: 0.8rem;
   }
 }
