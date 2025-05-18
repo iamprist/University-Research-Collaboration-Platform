@@ -971,7 +971,7 @@ img {
 }
 @media (max-width: 600px) {
   .researcher-header {
-    flex-direction: column; /* Stack items instead of forcing a horizontal layout */
+    flex-direction: row; /* Stack items instead of forcing a horizontal layout */
     align-items: center;
     padding: 1rem;
   }
