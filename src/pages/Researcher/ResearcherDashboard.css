@@ -21,6 +21,16 @@ body {
   padding: 0;
   color: var(--dark-blue);
 }
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
 /* ===== HEADER ===== */
 .researcher-header {

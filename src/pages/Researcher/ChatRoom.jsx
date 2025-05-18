@@ -4,9 +4,12 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, auth, storage } from '../../config/firebaseConfig';
 import { useParams } from 'react-router-dom';
 import './ChatRoom.css';
+import { useNavigate } from 'react-router-dom';
+import './ResearcherDashboard.css';
 import React from 'react';
 import jsPDF from 'jspdf'; // Add this import at the top
 import { v4 as uuidv4 } from 'uuid'; // npm install uuid
+import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 
 export default function ChatRoom() {
   const { chatId } = useParams();
@@ -23,6 +26,7 @@ export default function ChatRoom() {
   const [activeTab, setActiveTab] = useState('all');
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
+  const navigate = useNavigate();
 
   const [funding, setFunding] = useState([]);
   const [expenditures, setExpenditures] = useState([]);
@@ -653,6 +657,16 @@ export default function ChatRoom() {
   return (
     <div className="chat-app">
       <div className="chat-header">
+        <button 
+            className="chat-button"
+            onClick={() => navigate(-1)}
+            style={{ 
+              color: 'var(--white)',
+              marginRight: '1.5rem' // Add spacing between arrow and title
+            }}
+          >
+            <ArrowBackIosIcon />
+          </button>
         <h2>{chatName}</h2>
         <div className="status-indicator">
           <span className="status-dot"></span>
