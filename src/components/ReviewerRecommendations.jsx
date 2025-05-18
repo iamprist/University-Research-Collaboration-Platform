@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { getFirestore, collection, doc, getDoc, getDocs } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
-
+import { Helmet } from "react-helmet";
 
 const tagAliases = {
   PHYS: "Physics",
@@ -39,9 +39,6 @@ const tagAliases = {
   Other: "Other (please specify)",
 };
 
-
-
-// Normalize tags: map alias to canonical form
 function normalizeTag(tag) {
   const t = tag.trim().toLowerCase();
   for (const [alias, canonical] of Object.entries(tagAliases)) {
@@ -60,7 +57,7 @@ export default function ResearchProjectDisplay() {
   const [error, setError] = useState(null);
   const [expertiseTags, setExpertiseTags] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
-  const [expandedProject, setExpandedProject] = useState(null); // Track expanded project
+  const [expandedProject, setExpandedProject] = useState(null);
 
   const auth = getAuth();
   const db = getFirestore();
@@ -77,7 +74,6 @@ export default function ResearchProjectDisplay() {
           return;
         }
 
-        // Get reviewer doc by uid
         const reviewerDocRef = doc(db, "reviewers", user.uid);
         const reviewerDocSnap = await getDoc(reviewerDocRef);
         if (!reviewerDocSnap.exists()) {
@@ -94,30 +90,25 @@ export default function ResearchProjectDisplay() {
           return;
         }
 
-        // Normalize expertise tags
         const normalizedExpertiseTags = normalizeTags(reviewerData.expertiseTags);
         setExpertiseTags(normalizedExpertiseTags);
 
-        // Fetch all research listings
         const researchListingsCol = collection(db, "research-listings");
         const researchSnapshot = await getDocs(researchListingsCol);
         const matches = [];
 
         for (const docSnap of researchSnapshot.docs) {
           const data = docSnap.data();
-          const userId = data.userId; // Get userId from the research listing
+          const userId = data.userId;
 
-          // Normalize research tags
           const keywords = normalizeTags(data.keywords || []);
           const researchArea = data.researchArea ? normalizeTag(data.researchArea) : null;
 
-          // Check for overlap between expertiseTags and keywords or researchArea
           const hasOverlap =
             normalizedExpertiseTags.some((tag) => keywords.includes(tag)) ||
             (researchArea && normalizedExpertiseTags.includes(researchArea));
 
           if (hasOverlap) {
-            // Fetch user details (name, email) from the users collection
             const userDocRef = doc(db, "users", userId);
             const userDocSnap = await getDoc(userDocRef);
             let postedByName = "Unknown";
@@ -129,7 +120,6 @@ export default function ResearchProjectDisplay() {
               postedByEmail = userData.email || "N/A";
             }
 
-            // Combine the research listing with user info
             matches.push({
               id: docSnap.id,
               title: data.title || "Untitled",
@@ -143,7 +133,7 @@ export default function ResearchProjectDisplay() {
               methodology: data.methodology || "Not Specified",
               collaborationNeeds: data.collaborationNeeds || "Not Specified",
               estimatedCompletion: data.estimatedCompletion || "N/A",
-              relatedPublicationLink: data.publicationLink || "#"
+              relatedPublicationLink: data.publicationLink || "#",
             });
           }
         }
@@ -162,25 +152,37 @@ export default function ResearchProjectDisplay() {
 
   const handleExpand = (projectId) => {
     if (expandedProject === projectId) {
-      setExpandedProject(null); // Collapse if already expanded
+      setExpandedProject(null);
     } else {
-      setExpandedProject(projectId); // Expand the project
+      setExpandedProject(projectId);
     }
   };
 
-  if (loading) return <div>Loading recommendations...</div>;
-  if (error) return <div className="alert alert-danger">{error}</div>;
+  if (loading) return (
+    <div className="text-center" style={{ padding: '40px' }}>
+      <div className="spinner-border text-primary" role="status">
+        <span className="sr-only">Loading...</span>
+      </div>
+      <p style={{ marginTop: '15px' }}>Loading recommendations...</p>
+    </div>
+  );
+
+  if (error) return (
+    <div className="alert alert-danger" style={{ maxWidth: '600px', margin: '20px auto' }}>
+      {error}
+    </div>
+  );
 
   if (!expertiseTags.length)
     return (
-      <div>
+      <div className="container py-4 text-center">
         <p>You have no expertise tags set in your profile, so no recommendations can be made.</p>
       </div>
     );
 
   if (recommendations.length === 0)
     return (
-      <div>
+      <div className="container py-4 text-center">
         <p>
           No research listings matched your expertise tags: <b>{expertiseTags.join(", ")}</b>.
         </p>
@@ -188,49 +190,170 @@ export default function ResearchProjectDisplay() {
     );
 
   return (
-    <div className="container">
-      <h3 className="mb-4">Recommended Research Based on Your Expertise</h3>
-      {recommendations.map((r) => (
-        <div key={r.id} className="card mb-4">
-          <div className="card-body">
-            <h5 className="card-title">{r.title}</h5>
-            <p className="card-text"><strong>Lead Researcher:</strong> {r.postedByName}</p>
-            <p className="card-text"><strong>Email:</strong> {r.postedByEmail}</p>
-            <h6 className="mt-3">Project Summary</h6>
-            <p className="card-text">{r.summary}</p>
-            <h6>Research Area</h6>
-            <p className="card-text">{r.researchArea}</p>
-            <h6>Department</h6>
-            <p className="card-text">{r.department}</p>
-            <h6>Methodology</h6>
-            <p className="card-text">{r.methodology}</p>
-            <h6>Collaboration Needs</h6>
-            <p className="card-text">{r.collaborationNeeds}</p>
-            <h6>Estimated Completion</h6>
-            <p className="card-text">{r.estimatedCompletion}</p>
+    <>
+      <Helmet>
+        <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
+      </Helmet>
 
-            <button 
-              className="btn btn-primary" 
-              onClick={() => handleExpand(r.id)}>
-              {expandedProject === r.id ? "Hide Details" : "View Publication"}
-            </button>
+      <div style={{
+        backgroundColor: '#fff',
+        color: '#333',
+        fontFamily: '"Open Sans", sans-serif',
+        padding: '20px',
+        minHeight: '100vh'
+      }}>
+        <div className="container">
+          <h2 style={{
+            fontWeight: 700,
+            marginBottom: '30px',
+            textAlign: 'center',
+            fontSize: '28px',
+            color: '#2c3e50'
+          }}>
+            Recommended Research Projects
+          </h2>
 
-            {expandedProject === r.id && (
-              <div className="mt-4">
-                <h5>Full Project Details</h5>
-                <p><strong>Project Status:</strong> Active</p>
-                <p><strong>Estimated Completion:</strong> {r.estimatedCompletion}</p>
-                <p><strong>Research Area:</strong> {r.researchArea}</p>
-                <p><strong>Methodology:</strong> {r.methodology}</p>
-                <p><strong>Collaboration Needs:</strong> {r.collaborationNeeds}</p>
-                <p><strong>Lead Researcher:</strong> {r.postedByName}</p>
-                <p><strong>Email:</strong> {r.postedByEmail}</p>
+          <div className="row" style={{ marginBottom: '30px' }}>
+            <div className="col-md-12 text-center">
+              <p style={{ fontSize: '16px', marginBottom: '20px' }}>
+                <strong>Your expertise tags:</strong> {expertiseTags.map((tag) => (
+                  <span key={tag} style={{
+                    display: 'inline-block',
+                    backgroundColor: '#e0e0e0',
+                    padding: '5px 10px',
+                    borderRadius: '15px',
+                    margin: '5px',
+                    fontSize: '14px',
+                    fontWeight: 600
+                  }}>
+                    {tagAliases[tag.toUpperCase()] || tag}
+                  </span>
+                ))}
+              </p>
+            </div>
+          </div>
 
+          <div className="row">
+            {recommendations.map((project) => (
+              <div key={project.id} className="col-md-4 col-sm-6" style={{ marginBottom: '30px' }}>
+                <div style={{
+                  border: '1px solid #e0e0e0',
+                  borderRadius: '8px',
+                  padding: '20px',
+                  height: '100%',
+                  boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
+                  transition: 'all 0.3s ease'
+                }}>
+                  <h3 style={{
+                    fontSize: '20px',
+                    fontWeight: 700,
+                    marginBottom: '15px',
+                    color: '#2c3e50'
+                  }}>
+                    {project.title}
+                  </h3>
+
+                  <div style={{ marginBottom: '15px' }}>
+                    <span style={{
+                      backgroundColor: '#3498db',
+                      color: 'white',
+                      padding: '3px 10px',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      display: 'inline-block',
+                      marginBottom: '10px'
+                    }}>
+                      {project.researchArea}
+                    </span>
+                  </div>
+
+                  <p style={{
+                    fontSize: '15px',
+                    lineHeight: '1.6',
+                    marginBottom: '15px'
+                  }}>
+                    {project.summary.length > 150 
+                      ? `${project.summary.substring(0, 150)}...` 
+                      : project.summary}
+                  </p>
+
+                  <div style={{ marginBottom: '15px' }}>
+                    <p style={{ marginBottom: '5px' }}>
+                      <strong style={{ color: '#7f8c8d' }}>Researcher:</strong> {project.postedByName}
+                    </p>
+                    <p style={{ marginBottom: '5px' }}>
+                      <strong style={{ color: '#7f8c8d' }}>Institution:</strong> {project.institution}
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => handleExpand(project.id)}
+                    style={{
+                      backgroundColor: '#3498db',
+                      color: 'white',
+                      border: 'none',
+                      padding: '8px 15px',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      width: '100%',
+                      transition: 'background-color 0.3s'
+                    }}
+                    onMouseOver={(e) => e.target.style.backgroundColor = '#2980b9'}
+                    onMouseOut={(e) => e.target.style.backgroundColor = '#3498db'}
+                  >
+                    {expandedProject === project.id ? 'Show Less' : 'View Details'}
+                  </button>
+
+                  {expandedProject === project.id && (
+                    <div style={{
+                      marginTop: '20px',
+                      paddingTop: '15px',
+                      borderTop: '1px solid #eee'
+                    }}>
+                      <h4 style={{ fontSize: '18px', marginBottom: '10px' }}>Full Details</h4>
+                      <p><strong>Methodology:</strong> {project.methodology}</p>
+                      <p><strong>Collaboration Needs:</strong> {project.collaborationNeeds}</p>
+                      <p><strong>Estimated Completion:</strong> {project.estimatedCompletion}</p>
+                      <p><strong>Department:</strong> {project.department}</p>
+                      <p><strong>Email:</strong> {project.postedByEmail}</p>
+                      <p>
+                        <strong>Keywords:</strong> {project.keywords.map((kw, idx) => (
+                          <span key={idx} style={{
+                            display: 'inline-block',
+                            backgroundColor: '#e0e0e0',
+                            padding: '3px 8px',
+                            borderRadius: '4px',
+                            margin: '3px',
+                            fontSize: '12px'
+                          }}>
+                            {kw}
+                          </span>
+                        ))}
+                      </p>
+                      <a 
+                        href={project.relatedPublicationLink} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        style={{
+                          color: '#3498db',
+                          textDecoration: 'none',
+                          fontWeight: 600,
+                          display: 'inline-block',
+                          marginTop: '10px'
+                        }}
+                      >
+                        View Publication →
+                      </a>
+                    </div>
+                  )}
+                </div>
               </div>
-            )}
+            ))}
           </div>
         </div>
-      ))}
-    </div>
+      </div>
+    </>
   );
 }
