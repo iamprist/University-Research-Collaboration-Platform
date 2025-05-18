@@ -1,23 +1,23 @@
-// src/pages/Reviewer/ReviewerPage.jsx
 import React, { useEffect, useState } from 'react';
 import { doc, getDoc, deleteDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../../config/firebaseConfig';
 import { useAuth } from './authContext';
 import { useNavigate } from 'react-router-dom';
-import TextSummariser from '../../components/TextSummariser'; // Import TextSummariser
-import ReviewerRecommendations from '../../components/ReviewerRecommendations'; // Import ReviewerRecommendations
-import axios from 'axios'; // Import axios for fetching IP
+import TextSummariser from '../../components/TextSummariser';
+import ReviewerRecommendations from '../../components/ReviewerRecommendations';
+import axios from 'axios';
 
 export default function ReviewerPage() {
   const [status, setStatus] = useState('');
   const [reason, setReason] = useState('');
   const [loading, setLoading] = useState(true);
   const { currentUser } = useAuth();
-  const [ipAddress, setIpAddress] = useState(""); // State to store the IP address
+  const [ipAddress, setIpAddress] = useState("");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
 
+  // Fetch IP
   useEffect(() => {
-    // Fetch the user's IP address
     const fetchIpAddress = async () => {
       try {
         const response = await axios.get("https://api.ipify.org?format=json");
@@ -26,26 +26,24 @@ export default function ReviewerPage() {
         console.error("Error fetching IP address:", error);
       }
     };
-
     fetchIpAddress();
   }, []);
 
   const logEvent = async ({ userId, role, userName, action, details, ip, target }) => {
-  try {
-    await addDoc(collection(db, "logs"), {
-      userId,
-      role,
-      userName,
-      action,
-      details,
-      ip, // Add IP address
-      target, // Add target field
-      timestamp: serverTimestamp(),
-    });
-    console.log("Event logged:", { userId, role, userName, action, details, ip, target });
-  } catch (error) {
-    console.error("Error logging event:", error);
-  }
+    try {
+      await addDoc(collection(db, "logs"), {
+        userId,
+        role,
+        userName,
+        action,
+        details,
+        ip,
+        target,
+        timestamp: serverTimestamp(),
+      });
+    } catch (error) {
+      console.error("Error logging event:", error);
+    }
   };
 
   useEffect(() => {
@@ -55,7 +53,6 @@ export default function ReviewerPage() {
         localStorage.setItem('authToken', token);
       }
     };
-
     saveToken();
   }, [currentUser]);
 
@@ -66,13 +63,10 @@ export default function ReviewerPage() {
       try {
         const token = localStorage.getItem('authToken');
         if (!token) {
-          navigate('/signin'); // Redirect to sign-in if no token is found
+          navigate('/signin');
           return;
         }
-
-        if (!currentUser?.uid) {
-          return; // Wait until currentUser is available
-        }
+        if (!currentUser?.uid) return;
 
         const docRef = doc(db, "reviewers", currentUser.uid);
         const docSnap = await getDoc(docRef);
@@ -89,17 +83,12 @@ export default function ReviewerPage() {
       } catch (error) {
         console.error("Error fetching reviewer status:", error);
       } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+        if (isMounted) setLoading(false);
       }
     };
 
     fetchReviewerStatus();
-
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, [currentUser, navigate]);
 
   useEffect(() => {
@@ -114,20 +103,15 @@ export default function ReviewerPage() {
         });
       }
     };
-
     window.addEventListener("beforeunload", handleTabClose);
     return () => window.removeEventListener("beforeunload", handleTabClose);
   }, []);
 
   const handleRevoke = async () => {
     try {
-      if (!currentUser?.uid) {
-        throw new Error('User not authenticated');
-      }
-
+      if (!currentUser?.uid) throw new Error('User not authenticated');
       const docRef = doc(db, "reviewers", currentUser.uid);
       await deleteDoc(docRef);
-
       setStatus('not_found');
     } catch (error) {
       console.error("Error revoking application:", error);
@@ -138,167 +122,203 @@ export default function ReviewerPage() {
     try {
       const user = auth.currentUser;
       if (user) {
-        console.log("Logging out user:", user.uid);
-
-        const target = "Reviewer Dashboard"; // Example target
-
         await logEvent({
           userId: user.uid,
           role: "Reviewer",
           userName: user.displayName || "N/A",
           action: "Logout",
           details: "User logged out",
-          ip: ipAddress, // Use the fetched IP address
-          target, // Pass target
+          ip: ipAddress,
+          target: "Reviewer Dashboard",
         });
-
         await auth.signOut();
-        console.log("User logged out successfully.");
         navigate("/signin");
-      } else {
-        console.warn("No user is currently logged in.");
       }
     } catch (error) {
       console.error("Error during logout:", error);
     }
-  }
+  };
 
-  const statusStyles = {
-    approved: {
-      backgroundColor: '#D1FAE5',
-      borderLeft: '4px solid #10B981',
-      color: '#065F46'
-    },
-    inProgress: {
-      backgroundColor: '#FEF3C7',
-      borderLeft: '4px solid #F59E0B',
-      color: '#92400E'
-    },
-    rejected: {
-      backgroundColor: '#FECACA',
-      borderLeft: '4px solid #EF4444',
-      color: '#991B1B'
+  const toggleSidebar = () => setSidebarOpen(prev => !prev);
+
+const statusStyles = {
+  approved: {
+    backgroundColor: '#D1FAE5',
+    borderLeft: '4px solid #10B981',
+    color: '#065F46' // you can keep or change to '#000000'
+  },
+  inProgress: {
+    backgroundColor: '#FEF3C7',
+    borderLeft: '4px solid #F59E0B',
+    color: '#92400E' // or '#000000'
+  },
+  rejected: {
+    backgroundColor: '#FECACA',
+    borderLeft: '4px solid #EF4444',
+    color: '#991B1B' // or '#000000'
+  }
+};
+
+
+  const renderStatusBadge = () => {
+    switch (status) {
+      case 'approved':
+        return (
+          <div className="p-2 rounded" style={statusStyles.approved}>
+            Approved Reviewer
+          </div>
+        );
+      case 'in_progress':
+        return (
+          <div className="p-2 rounded" style={statusStyles.inProgress}>
+            Application Under Review
+          </div>
+        );
+      case 'rejected':
+        return (
+          <div className="p-2 rounded" style={statusStyles.rejected}>
+            Application Rejected
+          </div>
+        );
+      case 'not_found':
+        return (
+          <div className="p-2 rounded text-muted">
+            {currentUser?.displayName || 'Reviewer'} You are not a reviewer you can apply below.
+          </div>
+        );
+      default:
+        return null;
     }
   };
 
   return (
-    <main 
-      className="min-vh-100 d-flex flex-column align-items-center justify-content-center p-4"
-      style={{ backgroundColor: '#1A2E40' }}
-      aria-label="Reviewer dashboard"
-    >
-      <header className="text-center text-white mb-4">
-        <h1>Reviewer Dashboard</h1>
-        <p className="lead">Manage and track your reviewer application status.</p>
-      </header>
-
-      {loading ? (
-        <section className="text-center text-muted" aria-live="polite">
-          <p className="mt-3">Retrieving your reviewer status...</p>
-          <progress className="spinner-border text-primary" aria-busy="true"></progress>
-        </section>
-      ) : (
-        <article 
-          className="card w-100 text-white"
-          style={{ 
-            maxWidth: '600px', 
-            backgroundColor: '#2B3E50',
-            border: 'none',
-            boxShadow: '0 4px 8px rgba(0,0,0,0.3)'
-          }}
-          aria-labelledby="reviewerStatusHeading"
-        >
-          <section className="card-body">
-            <h2 className="fs-5 mb-3" id="reviewerStatusHeading">Reviewer Status</h2>
-
-            {status === "approved" && (
-              <>
-                <section 
-                  className="p-3 rounded mt-2"
-                  style={statusStyles.approved}
-                  aria-live="polite"
-                >
-                  <p className="fw-medium mb-0">✅ You are an approved reviewer.</p>
-                  <button 
-                    className="btn btn-danger mt-3" 
-                    onClick={handleRevoke}
-                    aria-label="Stop being a reviewer"
-                  >
-                    Stop Being a Reviewer
-                  </button>
-                </section>
-
-                {/* Include TextSummariser component here */}
-                <TextSummariser />
-                
-                {/* Render ReviewerRecommendations for approved reviewers */}
-                <ReviewerRecommendations />
-              </>
-            )}
-
-            {status === "in_progress" && (
-              <section
-                className="p-3 rounded mt-2"
-                style={statusStyles.inProgress}
-                aria-live="polite"
-              >
-                <p className="fw-medium mb-0">🕐 Your application is being reviewed.</p>
-                <button 
-                  className="btn btn-danger mt-3" 
-                  onClick={handleRevoke}
-                  aria-label="Revoke application"
-                >
-                  Revoke Application
-                </button>
-              </section>
-            )}
-
-            {status === "rejected" && (
-              <section
-                className="p-3 rounded mt-2"
-                style={statusStyles.rejected}
-                aria-live="polite"
-              >
-                <p className="fw-medium mb-0">❌ Application rejected.</p>
-                <p className="small mt-2 mb-0">
-                  Reason: {reason || "No reason provided."}
-                </p>
-                <button 
-                  className="btn btn-danger mt-3" 
-                  onClick={handleRevoke}
-                  aria-label="Remove rejected application"
-                >
-                  Remove Rejected Application
-                </button>
-              </section>
-            )}
-
-            {status === "not_found" && (
-              <section className="text-center mt-4" aria-live="polite">
-                <p className="text-muted mb-3">No reviewer profile found.</p>
-                <button 
-                  className="btn btn-success" 
-                  onClick={() => navigate('/reviewer-form')} // Navigate to ReviewerForm
-                  aria-label="Apply as a reviewer"
-                >
-                  Apply Now
-                </button>
-              </section>
-            )}
-          </section>
-
-          {/* Logout Button */}
-          <footer className="card-footer text-center">
+<div style={{ backgroundColor: '#FFFFFF', color: '#000000', minHeight: '100vh' }}>
+      {/* Fixed Navbar */}
+<nav className="navbar navbar-light bg-light fixed-top px-4 py-3" style={{ borderBottom: '1px solid #000' }}>
+        <div className="d-flex align-items-center justify-content-between w-100">
+<span className="navbar-brand fw-bold fs-4 text-dark">Innerk Hub</span>
+          <div className="d-flex align-items-center gap-3">
             <button
-              className="btn btn-danger"
-              onClick={handleLogout}
-              aria-label="Logout"
+              className="btn btn-outline-light p-0"
+              onClick={toggleSidebar}
+              aria-label="Toggle profile sidebar"
+              style={{ borderRadius: '50%', width: '40px', height: '40px', overflow: 'hidden' }}
             >
-              Logout
+              <img
+                src={currentUser?.photoURL || 'https://via.placeholder.com/40?text=👤'}
+                alt="Profile"
+                className="rounded-circle"
+                style={{ width: '40px', height: '40px', objectFit: 'cover', display: 'block' }}
+              />
             </button>
-          </footer>
-        </article>
+          </div>
+        </div>
+      </nav>
+
+      {/* Sidebar */}
+{/* Sidebar */}
+<div
+  className={`position-fixed top-0 end-0 h-100 bg-light shadow p-4 d-flex flex-column ${sidebarOpen ? 'd-block' : 'd-none'}`}
+  style={{ width: '280px', zIndex: 1050 }}
+>
+  <button className="btn-close float-end" onClick={toggleSidebar} aria-label="Close sidebar"></button>
+
+{/* Profile Info with Smaller Picture */}
+<div className="text-center mb-4">
+  <img
+    src={currentUser?.photoURL || 'https://via.placeholder.com/70?text=👤'}
+    alt="Profile"
+    className="rounded-circle mb-2"
+    style={{
+      width: '70px',
+      height: '70px',
+      objectFit: 'cover',
+      border: '2px solid #ccc'
+    }}
+  />
+  <h6 className="mb-0 mt-2">{currentUser?.displayName || 'N/A'}</h6>
+  <small className="text-muted">{currentUser?.email || 'N/A'}</small>
+</div>
+
+
+  {/* Reviewer Status */}
+  <div className="mb-4">
+    {renderStatusBadge()}
+    {status === "rejected" && reason && (
+      <small className="text-danger d-block mt-1">Reason: {reason}</small>
+    )}
+  </div>
+
+  <hr />
+
+<ul className="list-unstyled mb-4">
+  <li><a href="/about" className="text-decoration-none text-dark">About Us</a></li>
+  <li><a href="/terms" className="text-decoration-none text-dark">Terms & Conditions</a></li>
+</ul>
+
+
+  {/* Buttons fixed at bottom */}
+  <div className="mt-auto">
+    {status === "approved" && (
+      <button onClick={handleRevoke} className="btn btn-warning w-100 mb-2">Stop Being a Reviewer</button>
+    )}
+    {(status !== "approved") && status !== "not_found" && (
+      <button onClick={handleRevoke} className="btn btn-warning w-100 mb-2">
+        {status === "rejected" ? "Remove Rejected Application" : "Revoke Application"}
+      </button>
+    )}
+    <button onClick={handleLogout} className="btn btn-danger w-100">Logout</button>
+  </div>
+</div>
+
+
+{/* Content below navbar */}
+<div className="container pt-5 mt-5" style={{ backgroundColor: 'white', color: 'black' }}>
+  <header className="text-center mb-4">
+    <h1>Reviewer Dashboard</h1>
+    <p>👋 Hi {currentUser?.displayName || 'Reviewer'}</p>
+    <p>Welcome back! Ready to read, review, and recommend cutting-edge research?</p>
+  </header>
+
+  {loading ? (
+    <div className="text-center text-muted">
+      <p>Retrieving your reviewer status...</p>
+      <div className="spinner-border text-dark" role="status" />
+    </div>
+  ) : (
+    <div>
+      {status === "approved" && (
+        <>
+          <TextSummariser />
+          <ReviewerRecommendations />
+        </>
       )}
-    </main>
+
+      {status === "not_found" && (
+        <div className="text-center mt-4">
+          <p className="text-muted mb-3">No reviewer profile found.</p>
+          <button className="btn btn-success" onClick={() => navigate('/reviewer-form')}>
+            Apply Now
+          </button>
+        </div>
+      )}
+
+      {status === "in_progress" && (
+        <div className="text-center text-warning mt-4">
+          <p>Your application is currently being reviewed.</p>
+        </div>
+      )}
+
+      {status === "rejected" && (
+        <div className="text-center text-danger mt-4">
+          <p>Your application was rejected.</p>
+          <small>Reason: {reason || "No reason provided."}</small>
+        </div>
+      )}
+    </div>
+  )}
+</div>
+
+    </div>
   );
 }

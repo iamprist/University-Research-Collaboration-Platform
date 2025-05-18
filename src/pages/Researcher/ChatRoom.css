@@ -568,3 +568,109 @@ body {
   height: 1px;
   width: 100%;
 }
+
+/* Funding Section */
+.funding-section {
+  padding: 2rem 1.5rem;
+  background: var(--background);
+  border-radius: 0 0 12px 12px;
+  box-shadow: 0 2px 10px rgba(54, 78, 104, 0.04);
+  margin-bottom: 1rem;
+}
+
+.funding-section h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--primary-blue);
+  margin-bottom: 1rem;
+}
+
+.funding-section h4 {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: var(--dark-blue);
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.funding-section > div {
+  margin-bottom: 1rem;
+}
+
+.funding-section strong {
+  color: var(--primary-blue);
+}
+
+.funding-form,
+.expenditure-form {
+  display: flex;
+  gap: 0.75rem;
+  margin: 1rem 0;
+  flex-wrap: wrap;
+}
+
+.funding-form input,
+.expenditure-form input {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--accent-teal);
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  background: var(--white);
+  color: var(--dark-blue);
+  min-width: 120px;
+  flex: 1 1 120px;
+}
+
+.funding-form button,
+.expenditure-form button,
+.funding-section > div > button {
+  padding: 0.5rem 1.2rem;
+  background: var(--light-blue);
+  color: var(--dark-blue);
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.funding-form button:hover,
+.expenditure-form button:hover,
+.funding-section > div > button:hover {
+  background: var(--accent-teal);
+}
+
+.funding-section ul {
+  list-style: none;
+  padding-left: 0;
+  margin: 0 0 1rem 0;
+}
+
+.funding-section li {
+  background: var(--white);
+  border: 1px solid var(--accent-teal);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.5rem;
+  color: var(--dark-blue);
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.funding-section li:last-child {
+  margin-bottom: 0;
+}
+
+/* Responsive for funding section */
+@media (max-width: 600px) {
+  .funding-section {
+    padding: 1rem 0.5rem;
+  }
+  .funding-form,
+  .expenditure-form {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
