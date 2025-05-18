@@ -957,3 +957,162 @@ body {
   font-weight: bold;
   margin-bottom: 1.5rem;
 }
+@media (max-width: 480px) {
+  /* Extra Small Screens Adjustments */
+  .researcher-header {
+    padding: 0.8rem;
+  }
+
+  .header-title h1 {
+    font-size: 1.2rem;
+  }
+
+  .search-section input[type="text"] {
+    font-size: 0.9rem;
+  }
+
+  .messages-dropdown {
+    width: 100%;
+    right: 0;
+    left: 0;
+  }
+
+  .listing-card h4 {
+    font-size: 1.1rem;
+  }
+
+  .profile-name {
+    font-size: 1.2rem;
+  }
+}
+@media (max-width: 768px) {
+  /* Global Mobile Adjustments */
+  body {
+    font-size: 14px;
+  }
+
+  /* Header Mobile Styles */
+  .researcher-header {
+    padding: 1rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .header-title h1 {
+    font-size: 1.3rem;
+    text-align: left;
+  }
+
+  .header-title p {
+    font-size: 0.8rem;
+    text-align: left;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  /* Search Section Mobile */
+  .search-section {
+    margin: 1rem 0;
+    padding: 0 1rem;
+  }
+
+  .search-section form {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .search-section input[type="text"] {
+    font-size: 1rem;
+    padding: 0.8rem;
+  }
+
+  .search-section button {
+    width: 100%;
+    justify-content: center;
+    padding: 0.8rem;
+    font-size: 1rem;
+  }
+
+  /* Listings Grid Mobile */
+  .listings-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding: 0 1rem;
+  }
+
+  .listing-card {
+    padding: 1rem;
+  }
+
+  .listing-actions {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  /* Menu Dropdown Mobile */
+  .menu-dropdown {
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    border-radius: 1rem 1rem 0 0;
+  }
+
+  /* Form Elements Mobile */
+  .form-section {
+    padding: 1rem;
+    margin: 1rem 0;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr !important;
+    gap: 1rem;
+  }
+
+  /* Chat Room Adjustments */
+  .message {
+    max-width: 85%;
+    padding: 0.8rem;
+  }
+
+  .message-input-area {
+    padding: 0.8rem;
+  }
+
+  /* Profile Page Mobile */
+  .profile-header {
+    padding: 1.5rem;
+  }
+
+  .profile-image {
+    width: 80px;
+    height: 80px;
+  }
+
+  /* Mobile Menu Button */
+  .menu-toggle-btn {
+    padding: 0.6rem 1rem;
+    font-size: 1rem;
+  }
+
+  /* Contact Form Mobile */
+  .contact-form-container {
+    padding: 1rem;
+    width: 90%;
+  }
+
+  /* Chat Button Mobile */
+  .chat-with-us-btn {
+    bottom: 1rem;
+    right: 1rem;
+    padding: 0.8rem 1.2rem;
+    font-size: 0.9rem;
+  }
+}
