@@ -1,359 +1,306 @@
-import React, { useEffect, useState } from "react";
-import { getFirestore, collection, doc, getDoc, getDocs } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
-import { Helmet } from "react-helmet";
+import React, { useEffect, useState } from 'react';
+import { doc, getDoc, deleteDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { db, auth } from '../../config/firebaseConfig';
+import { useAuth } from './authContext';
+import { useNavigate } from 'react-router-dom';
+import TextSummariser from '../../components/TextSummariser';
+import ReviewerRecommendations from '../../components/ReviewerRecommendations';
+import axios from 'axios';
 
-const tagAliases = {
-  PHYS: "Physics",
-  CHEM: "Chemistry",
-  BIO: "Biology",
-  CS: "Computer Science",
-  AI: "Artificial Intelligence",
-  MED: "Medicine",
-  LAW: "Law",
-  BUS: "Business Administration",
-  FIN: "Finance",
-  MKT: "Marketing",
-  HRM: "Human Resources",
-  EDU: "Education",
-  PSY: "Psychology",
-  ENG: "Engineering",
-  ENV: "Environmental Science",
-  SOC: "Sociology",
-  POL: "Political Science",
-  ECO: "Economics",
-  PHIL: "Philosophy",
-  HIST: "History",
-  GEO: "Geography",
-  ART: "Art",
-  MATH: "Mathematics",
-  STAT: "Statistics",
-  ANTH: "Anthropology",
-  LING: "Linguistics",
-  COM: "Communication",
-  NUR: "Nursing",
-  PHAR: "Pharmacy",
-  AGRI: "Agriculture",
-  VET: "Veterinary Science",
-  ARCH: "Architecture",
-  Other: "Other (please specify)",
-};
-
-function normalizeTag(tag) {
-  const t = tag.trim().toLowerCase();
-  for (const [alias, canonical] of Object.entries(tagAliases)) {
-    if (alias.toLowerCase() === t) return canonical.toLowerCase();
-  }
-  return t;
-}
-
-function normalizeTags(tags) {
-  if (!Array.isArray(tags)) return [];
-  return tags.map(normalizeTag);
-}
-
-export default function ResearchProjectDisplay() {
+export default function ReviewerPage() {
+  const [status, setStatus] = useState('');
+  const [reason, setReason] = useState('');
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [expertiseTags, setExpertiseTags] = useState([]);
-  const [recommendations, setRecommendations] = useState([]);
-  const [expandedProject, setExpandedProject] = useState(null);
+  const { currentUser } = useAuth();
+  const [ipAddress, setIpAddress] = useState("");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const navigate = useNavigate();
 
-  const auth = getAuth();
-  const db = getFirestore();
-
+  // Fetch IP
   useEffect(() => {
-    async function fetchRecommendations() {
-      setLoading(true);
-      setError(null);
+    const fetchIpAddress = async () => {
       try {
-        const user = auth.currentUser;
-        if (!user) {
-          setError("User not logged in");
-          setLoading(false);
-          return;
-        }
-
-        const reviewerDocRef = doc(db, "reviewers", user.uid);
-        const reviewerDocSnap = await getDoc(reviewerDocRef);
-        if (!reviewerDocSnap.exists()) {
-          setError("Reviewer profile not found");
-          setLoading(false);
-          return;
-        }
-
-        const reviewerData = reviewerDocSnap.data();
-        if (!Array.isArray(reviewerData.expertiseTags) || reviewerData.expertiseTags.length === 0) {
-          setExpertiseTags([]);
-          setRecommendations([]);
-          setLoading(false);
-          return;
-        }
-
-        const normalizedExpertiseTags = normalizeTags(reviewerData.expertiseTags);
-        setExpertiseTags(normalizedExpertiseTags);
-
-        const researchListingsCol = collection(db, "research-listings");
-        const researchSnapshot = await getDocs(researchListingsCol);
-        const matches = [];
-
-        for (const docSnap of researchSnapshot.docs) {
-          const data = docSnap.data();
-          const userId = data.userId;
-
-          const keywords = normalizeTags(data.keywords || []);
-          const researchArea = data.researchArea ? normalizeTag(data.researchArea) : null;
-
-          const hasOverlap =
-            normalizedExpertiseTags.some((tag) => keywords.includes(tag)) ||
-            (researchArea && normalizedExpertiseTags.includes(researchArea));
-
-          if (hasOverlap) {
-            const userDocRef = doc(db, "users", userId);
-            const userDocSnap = await getDoc(userDocRef);
-            let postedByName = "Unknown";
-            let postedByEmail = "N/A";
-
-            if (userDocSnap.exists()) {
-              const userData = userDocSnap.data();
-              postedByName = userData.name || "Unknown";
-              postedByEmail = userData.email || "N/A";
-            }
-
-            matches.push({
-              id: docSnap.id,
-              title: data.title || "Untitled",
-              summary: data.summary || "",
-              researchArea: data.researchArea || "",
-              keywords: data.keywords || [],
-              institution: data.institution || "",
-              department: data.department || "",
-              postedByName,
-              postedByEmail,
-              methodology: data.methodology || "Not Specified",
-              collaborationNeeds: data.collaborationNeeds || "Not Specified",
-              estimatedCompletion: data.estimatedCompletion || "N/A",
-              relatedPublicationLink: data.publicationLink || "#",
-            });
-          }
-        }
-
-        setRecommendations(matches);
-        setLoading(false);
-      } catch (e) {
-        console.error("Error fetching recommendations:", e);
-        setError("Failed to fetch recommendations");
-        setLoading(false);
+        const response = await axios.get("https://api.ipify.org?format=json");
+        setIpAddress(response.data.ip);
+      } catch (error) {
+        console.error("Error fetching IP address:", error);
       }
-    }
+    };
+    fetchIpAddress();
+  }, []);
 
-    fetchRecommendations();
-  }, [auth, db]);
-
-  const handleExpand = (projectId) => {
-    if (expandedProject === projectId) {
-      setExpandedProject(null);
-    } else {
-      setExpandedProject(projectId);
+  const logEvent = async ({ userId, role, userName, action, details, ip, target }) => {
+    try {
+      await addDoc(collection(db, "logs"), {
+        userId,
+        role,
+        userName,
+        action,
+        details,
+        ip,
+        target,
+        timestamp: serverTimestamp(),
+      });
+    } catch (error) {
+      console.error("Error logging event:", error);
     }
   };
 
-  if (loading) return (
-    <div className="text-center" style={{ padding: '40px' }}>
-      <div className="spinner-border text-primary" role="status">
-        <span className="sr-only">Loading...</span>
-      </div>
-      <p style={{ marginTop: '15px' }}>Loading recommendations...</p>
-    </div>
-  );
+  useEffect(() => {
+    const saveToken = async () => {
+      if (currentUser) {
+        const token = await currentUser.getIdToken();
+        localStorage.setItem('authToken', token);
+      }
+    };
+    saveToken();
+  }, [currentUser]);
 
-  if (error) return (
-    <div className="alert alert-danger" style={{ maxWidth: '600px', margin: '20px auto' }}>
-      {error}
-    </div>
-  );
+  useEffect(() => {
+    let isMounted = true;
 
-  if (!expertiseTags.length)
-    return (
-      <div className="container py-4 text-center">
-        <p>You have no expertise tags set in your profile, so no recommendations can be made.</p>
-      </div>
-    );
+    const fetchReviewerStatus = async () => {
+      try {
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+          navigate('/signin');
+          return;
+        }
+        if (!currentUser?.uid) return;
 
-  if (recommendations.length === 0)
-    return (
-      <div className="container py-4 text-center">
-        <p>
-          No research listings matched your expertise tags: <b>{expertiseTags.join(", ")}</b>.
-        </p>
-      </div>
-    );
+        const docRef = doc(db, "reviewers", currentUser.uid);
+        const docSnap = await getDoc(docRef);
+
+        if (isMounted) {
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            setStatus(data.status || 'in_progress');
+            setReason(data.rejectionReason || '');
+          } else {
+            setStatus('not_found');
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching reviewer status:", error);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    fetchReviewerStatus();
+    return () => { isMounted = false; };
+  }, [currentUser, navigate]);
+
+  useEffect(() => {
+    const handleTabClose = async () => {
+      if (auth.currentUser) {
+        await logEvent({
+          userId: auth.currentUser.uid,
+          role: "Reviewer",
+          userName: auth.currentUser.displayName || "N/A",
+          action: "Logout",
+          details: "User closed the browser/tab",
+        });
+      }
+    };
+    window.addEventListener("beforeunload", handleTabClose);
+    return () => window.removeEventListener("beforeunload", handleTabClose);
+  }, []);
+
+  const handleRevoke = async () => {
+    try {
+      if (!currentUser?.uid) throw new Error('User not authenticated');
+      const docRef = doc(db, "reviewers", currentUser.uid);
+      await deleteDoc(docRef);
+      setStatus('not_found');
+    } catch (error) {
+      console.error("Error revoking application:", error);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      const user = auth.currentUser;
+      if (user) {
+        await logEvent({
+          userId: user.uid,
+          role: "Reviewer",
+          userName: user.displayName || "N/A",
+          action: "Logout",
+          details: "User logged out",
+          ip: ipAddress,
+          target: "Reviewer Dashboard",
+        });
+        await auth.signOut();
+        navigate("/signin");
+      }
+    } catch (error) {
+      console.error("Error during logout:", error);
+    }
+  };
+
+  const toggleSidebar = () => setSidebarOpen(prev => !prev);
+
+  const statusStyles = {
+    approved: {
+      backgroundColor: '#D1FAE5',
+      borderLeft: '4px solid #10B981',
+      color: '#065F46'
+    },
+    inProgress: {
+      backgroundColor: '#FEF3C7',
+      borderLeft: '4px solid #F59E0B',
+      color: '#92400E'
+    },
+    rejected: {
+      backgroundColor: '#FECACA',
+      borderLeft: '4px solid #EF4444',
+      color: '#991B1B'
+    }
+  };
+
+  const renderStatusBadge = () => {
+    switch (status) {
+      case 'approved':
+        return (
+          <div className="p-2 rounded" style={statusStyles.approved}>
+            ✅ Approved Reviewer
+          </div>
+        );
+      case 'in_progress':
+        return (
+          <div className="p-2 rounded" style={statusStyles.inProgress}>
+            🕐 Application Under Review
+          </div>
+        );
+      case 'rejected':
+        return (
+          <div className="p-2 rounded" style={statusStyles.rejected}>
+            ❌ Application Rejected
+          </div>
+        );
+      case 'not_found':
+        return (
+          <div className="p-2 rounded text-muted">
+            No Reviewer Profile
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
 
   return (
-    <>
-      <Helmet>
-        <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
-      </Helmet>
-
-      <div style={{
-        backgroundColor: '#fff',
-        color: '#333',
-        fontFamily: '"Open Sans", sans-serif',
-        padding: '20px',
-        minHeight: '100vh'
-      }}>
-        <div className="container">
-          <h2 style={{
-            fontWeight: 700,
-            marginBottom: '30px',
-            textAlign: 'center',
-            fontSize: '28px',
-            color: '#2c3e50'
-          }}>
-            Recommended Research Projects
-          </h2>
-
-          <div className="row" style={{ marginBottom: '30px' }}>
-            <div className="col-md-12 text-center">
-              <p style={{ fontSize: '16px', marginBottom: '20px' }}>
-                <strong>Your expertise tags:</strong> {expertiseTags.map((tag) => (
-                  <span key={tag} style={{
-                    display: 'inline-block',
-                    backgroundColor: '#e0e0e0',
-                    padding: '5px 10px',
-                    borderRadius: '15px',
-                    margin: '5px',
-                    fontSize: '14px',
-                    fontWeight: 600
-                  }}>
-                    {tagAliases[tag.toUpperCase()] || tag}
-                  </span>
-                ))}
-              </p>
-            </div>
-          </div>
-
-          <div className="row">
-            {recommendations.map((project) => (
-              <div key={project.id} className="col-md-4 col-sm-6" style={{ marginBottom: '30px' }}>
-                <div style={{
-                  border: '1px solid #e0e0e0',
-                  borderRadius: '8px',
-                  padding: '20px',
-                  height: '100%',
-                  boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
-                  transition: 'all 0.3s ease'
-                }}>
-                  <h3 style={{
-                    fontSize: '20px',
-                    fontWeight: 700,
-                    marginBottom: '15px',
-                    color: '#2c3e50'
-                  }}>
-                    {project.title}
-                  </h3>
-
-                  <div style={{ marginBottom: '15px' }}>
-                    <span style={{
-                      backgroundColor: '#3498db',
-                      color: 'white',
-                      padding: '3px 10px',
-                      borderRadius: '4px',
-                      fontSize: '14px',
-                      display: 'inline-block',
-                      marginBottom: '10px'
-                    }}>
-                      {project.researchArea}
-                    </span>
-                  </div>
-
-                  <p style={{
-                    fontSize: '15px',
-                    lineHeight: '1.6',
-                    marginBottom: '15px'
-                  }}>
-                    {project.summary.length > 150 
-                      ? `${project.summary.substring(0, 150)}...` 
-                      : project.summary}
-                  </p>
-
-                  <div style={{ marginBottom: '15px' }}>
-                    <p style={{ marginBottom: '5px' }}>
-                      <strong style={{ color: '#7f8c8d' }}>Researcher:</strong> {project.postedByName}
-                    </p>
-                    <p style={{ marginBottom: '5px' }}>
-                      <strong style={{ color: '#7f8c8d' }}>Institution:</strong> {project.institution}
-                    </p>
-                  </div>
-
-                  <button
-                    onClick={() => handleExpand(project.id)}
-                    style={{
-                      backgroundColor: '#3498db',
-                      color: 'white',
-                      border: 'none',
-                      padding: '8px 15px',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      fontSize: '14px',
-                      fontWeight: 600,
-                      width: '100%',
-                      transition: 'background-color 0.3s'
-                    }}
-                    onMouseOver={(e) => e.target.style.backgroundColor = '#2980b9'}
-                    onMouseOut={(e) => e.target.style.backgroundColor = '#3498db'}
-                  >
-                    {expandedProject === project.id ? 'Show Less' : 'View Details'}
-                  </button>
-
-                  {expandedProject === project.id && (
-                    <div style={{
-                      marginTop: '20px',
-                      paddingTop: '15px',
-                      borderTop: '1px solid #eee'
-                    }}>
-                      <h4 style={{ fontSize: '18px', marginBottom: '10px' }}>Full Details</h4>
-                      <p><strong>Methodology:</strong> {project.methodology}</p>
-                      <p><strong>Collaboration Needs:</strong> {project.collaborationNeeds}</p>
-                      <p><strong>Estimated Completion:</strong> {project.estimatedCompletion}</p>
-                      <p><strong>Department:</strong> {project.department}</p>
-                      <p><strong>Email:</strong> {project.postedByEmail}</p>
-                      <p>
-                        <strong>Keywords:</strong> {project.keywords.map((kw, idx) => (
-                          <span key={idx} style={{
-                            display: 'inline-block',
-                            backgroundColor: '#e0e0e0',
-                            padding: '3px 8px',
-                            borderRadius: '4px',
-                            margin: '3px',
-                            fontSize: '12px'
-                          }}>
-                            {kw}
-                          </span>
-                        ))}
-                      </p>
-                      <a 
-                        href={project.relatedPublicationLink} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        style={{
-                          color: '#3498db',
-                          textDecoration: 'none',
-                          fontWeight: 600,
-                          display: 'inline-block',
-                          marginTop: '10px'
-                        }}
-                      >
-                        View Publication →
-                      </a>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
+    <div style={{ backgroundColor: '#1A2E40', minHeight: '100vh' }}>
+      {/* Fixed Navbar */}
+      <nav className="navbar navbar-dark bg-dark fixed-top px-4 py-3">
+        <div className="d-flex align-items-center justify-content-between w-100">
+          <span className="navbar-brand fw-bold fs-4">Innerk Hub</span>
+          <div className="d-flex align-items-center gap-3">
+            <button
+              className="btn btn-outline-light p-0"
+              onClick={toggleSidebar}
+              aria-label="Toggle profile sidebar"
+              style={{ borderRadius: '50%', width: '40px', height: '40px', overflow: 'hidden' }}
+            >
+              <img
+                src={currentUser?.photoURL || 'https://via.placeholder.com/40?text=👤'}
+                alt="Profile"
+                className="rounded-circle"
+                style={{ width: '40px', height: '40px', objectFit: 'cover', display: 'block' }}
+              />
+            </button>
           </div>
         </div>
+      </nav>
+
+      {/* Sidebar */}
+      <div
+        className={`position-fixed top-0 end-0 h-100 bg-light shadow p-4 d-flex flex-column ${sidebarOpen ? 'd-block' : 'd-none'}`}
+        style={{ width: '280px', zIndex: 1050 }}
+      >
+        <button className="btn-close float-end" onClick={toggleSidebar} aria-label="Close sidebar"></button>
+
+        {/* Profile Info */}
+        <div className="mb-3">
+          <p><strong>Name:</strong> {currentUser?.displayName || 'N/A'}</p>
+          <p><strong>Email:</strong> {currentUser?.email || 'N/A'}</p>
+        </div>
+
+        {/* Reviewer Status */}
+        <div className="mb-4">
+          {renderStatusBadge()}
+          {status === "rejected" && reason && (
+            <small className="text-danger d-block mt-1">Reason: {reason}</small>
+          )}
+        </div>
+
+        <hr />
+
+        <ul className="list-unstyled mb-4">
+          <li><a href="/about" className="text-decoration-none">About Us</a></li>
+          <li><a href="/terms" className="text-decoration-none">Terms & Conditions</a></li>
+        </ul>
+
+        {/* Buttons fixed at bottom */}
+        <div className="mt-auto">
+          {status === "approved" && (
+            <button onClick={handleRevoke} className="btn btn-warning w-100 mb-2">Stop Being a Reviewer</button>
+          )}
+          {(status !== "approved") && status !== "not_found" && (
+            <button onClick={handleRevoke} className="btn btn-warning w-100 mb-2">
+              {status === "rejected" ? "Remove Rejected Application" : "Revoke Application"}
+            </button>
+          )}
+          <button onClick={handleLogout} className="btn btn-danger w-100">Logout</button>
+        </div>
       </div>
-    </>
+
+      {/* Content below navbar */}
+      <div className="container pt-5 mt-5">
+        <header className="text-white text-center mb-4">
+          <h1>Reviewer Dashboard</h1>
+          <p>Hi {currentUser?.displayName || 'Reviewer'}</p>
+        </header>
+
+        {loading ? (
+          <div className="text-center text-muted">
+            <p>Retrieving your reviewer status...</p>
+            <div className="spinner-border text-light" role="status" />
+          </div>
+        ) : (
+          <div>
+            {status === "approved" && (
+              <>
+                <TextSummariser />
+                <ReviewerRecommendations />
+              </>
+            )}
+
+            {status === "not_found" && (
+              <div className="text-center mt-4">
+                <p className="text-muted mb-3">No reviewer profile found.</p>
+                <button className="btn btn-success" onClick={() => navigate('/reviewer-form')}>
+                  Apply Now
+                </button>
+              </div>
+            )}
+
+            {status === "in_progress" && (
+              <div className="text-center text-warning mt-4">
+                <p>Your application is currently being reviewed.</p>
+              </div>
+            )}
+
+            {status === "rejected" && (
+              <div className="text-center text-danger mt-4">
+                <p>Your application was rejected.</p>
+                <small>Reason: {reason || "No reason provided."}</small>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
