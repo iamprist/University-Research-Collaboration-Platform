@@ -40,6 +40,7 @@ export const useResearcherDashboard = () => {
   const [showContactForm, setShowContactForm] = useState(false);
   const [ipAddress, setIpAddress] = useState("");
   const [anchorEl, setAnchorEl] = useState(null);
+  const [showCollaborationRequests, setShowCollaborationRequests] = useState(false);
 
   // Fetch user's public IP address
   useEffect(() => {
@@ -312,6 +313,7 @@ export const useResearcherDashboard = () => {
     showContactForm,
     anchorEl,
     ipAddress,
+    showCollaborationRequests,
     
     // Handlers
     handleSearch,
@@ -325,6 +327,7 @@ export const useResearcherDashboard = () => {
     setSearchTerm,
     setAnchorEl,
     setShowContactForm,
-    setShowErrorModal
+    setShowErrorModal,
+    setShowCollaborationRequests
   };
 };
