@@ -1,3 +1,4 @@
+// CollaboratePage.jsx - Allows researchers to find and request collaboration on research projects
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../../config/firebaseConfig';
@@ -29,14 +30,20 @@ import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import { sendMessage, messageTypes } from '../../utils/sendMessage';
 import Footer from '../../components/Footer';
 
+// Main component for collaboration page
 const CollaboratePage = () => {
   const navigate = useNavigate();
+  // State for listings available for collaboration
   const [collaborateListings, setCollaborateListings] = useState([]);
+  // Loading state for async operations
   const [loading, setLoading] = useState(false);
+  // State for tracking request messages and status per listing
   const [requestStates, setRequestStates] = useState({});
+  // Toggle to show only friends' projects
   const [showFriendsOnly, setShowFriendsOnly] = useState(false);
 
 
+  // Fetch available listings and friends on mount
   useEffect(() => {
     const fetchCollaborateListings = async () => {
       try {
@@ -142,6 +149,7 @@ const CollaboratePage = () => {
     fetchCollaborateListings();
   }, []);
 
+  // Handle sending a collaboration request
   const handleCollaborateRequest = async (listingId, researcherId) => {
     try {
       setRequestStates(prev => ({
@@ -155,6 +163,7 @@ const CollaboratePage = () => {
         return;
       }
 
+      // Check if already collaborating
       const collabQuery = query(
         collection(db, "collaborations"),
         where("listingId", "==", listingId),
@@ -166,6 +175,7 @@ const CollaboratePage = () => {
         return;
       }
 
+      // Check for existing pending request
       const requestQuery = query(
         collection(db, "collaboration-requests"),
         where("listingId", "==", listingId),
@@ -178,8 +188,10 @@ const CollaboratePage = () => {
         return;
       }
 
+      // Use custom message or default
       const message = requestStates[listingId]?.message || `Request to collaborate on your project`;
 
+      // Add collaboration request to Firestore
       await addDoc(collection(db, "collaboration-requests"), {
         listingId,
         researcherId,
@@ -220,12 +232,13 @@ const CollaboratePage = () => {
     }
   };
 
-  // Apply filtering for friends only if enabled
+  // Filter listings to show only friends' projects if enabled
   const displayedListings = showFriendsOnly
     ? collaborateListings.filter(listing => listing.isFriend)
     : collaborateListings;
 
- return (
+  // Render the collaboration page UI
+  return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
       <Box 

@@ -1,8 +1,10 @@
+// ReviewerRecommendations.jsx - Recommends research projects to reviewers based on their expertise tags
 import React, { useEffect, useState } from "react";
 import { getFirestore, collection, doc, getDoc, getDocs } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { Helmet } from "react-helmet";
 
+// Mapping of tag aliases to canonical names
 const tagAliases = {
   PHYS: "Physics",
   CHEM: "Chemistry",
@@ -39,6 +41,7 @@ const tagAliases = {
   Other: "Other (please specify)",
 };
 
+// Normalize a single tag to its canonical form
 function normalizeTag(tag) {
   const t = tag.trim().toLowerCase();
   for (const [alias, canonical] of Object.entries(tagAliases)) {
@@ -47,21 +50,25 @@ function normalizeTag(tag) {
   return t;
 }
 
+// Normalize an array of tags
 function normalizeTags(tags) {
   if (!Array.isArray(tags)) return [];
   return tags.map(normalizeTag);
 }
 
 export default function ResearchProjectDisplay() {
+  // State for loading, error, expertise tags, recommendations, and expanded project
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [expertiseTags, setExpertiseTags] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
   const [expandedProject, setExpandedProject] = useState(null);
 
+  // Firebase auth and Firestore instances
   const auth = getAuth();
   const db = getFirestore();
 
+  // Fetch recommendations on mount
   useEffect(() => {
     async function fetchRecommendations() {
       setLoading(true);
@@ -150,6 +157,7 @@ export default function ResearchProjectDisplay() {
     fetchRecommendations();
   }, [auth, db]);
 
+  // Toggle expanded/collapsed state for a project
   const handleExpand = (projectId) => {
     if (expandedProject === projectId) {
       setExpandedProject(null);
@@ -158,6 +166,18 @@ export default function ResearchProjectDisplay() {
     }
   };
 
+  // Loading state UI
+  if (loading) {
+    return (
+      <section
+        aria-busy="true"
+        style={{ padding: "40px", textAlign: "center" }}
+      >
+        <progress className="spinner-border text-primary" />
+        <p style={{ marginTop: "15px" }}>Loading recommendations...</p>
+      </section>
+    );
+  }
   if (loading) return (
     <div className="text-center" style={{ padding: '40px' }}>
       <div className="spinner-border text-primary" role="status">
@@ -166,12 +186,25 @@ export default function ResearchProjectDisplay() {
     </div>
   );
 
+  // Error state UI
+  if (error) {
+    return (
+      <aside
+        role="alert"
+        style={{ maxWidth: "600px", margin: "20px auto", color: "#842029", backgroundColor: "#f8d7da", padding: "20px", borderRadius: "4px" }}
+      >
+        {error}
+      </aside>
+    );
+  }
   if (error) return (
     <div className="alert alert-danger" style={{ maxWidth: '600px', margin: '20px auto' }}>
       {error}
     </div>
   );
 
+  // No expertise tags UI
+  if (!expertiseTags.length) {
   if (!expertiseTags.length)
     return (
       <div className="container py-4 text-center">
@@ -179,6 +212,8 @@ export default function ResearchProjectDisplay() {
       </div>
     );
 
+  // No recommendations UI
+  if (recommendations.length === 0) {
   if (recommendations.length === 0)
     return (
       <div className="container py-4 text-center">
@@ -188,6 +223,15 @@ export default function ResearchProjectDisplay() {
       </div>
     );
 
+  // Render recommendations UI
+  return (
+    <>
+      <Helmet>
+        <link
+          href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap"
+          rel="stylesheet"
+        />
+      </Helmet>
 return (
   <>
     <Helmet>

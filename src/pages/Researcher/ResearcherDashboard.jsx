@@ -1,13 +1,17 @@
-import React, { useState, useEffect, useRef } from 'react';
+// ResearcherDashboard.jsx - Frontend UI Component
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../../config/firebaseConfig';
 import { collection, getDocs, query, where, doc, getDoc, onSnapshot, orderBy, updateDoc, addDoc, serverTimestamp } from 'firebase/firestore';
+import { auth } from '../../config/firebaseConfig';
 import './ResearcherDashboard.css';
-import axios from "axios";
 import CollaborationRequestsPanel from '../../components/CollaborationRequestsPanel';
 import Footer from '../../components/Footer';
 import ContactForm from '../../components/ContactForm';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
+import {
+  useResearcherDashboard
+} from './researcherDashboardLogic'; // Import backend logic
 
 // MUI Components
 import { 
@@ -27,6 +31,7 @@ import {
 } from '@mui/material';
 import { Notifications, Menu as MenuIcon, Close } from '@mui/icons-material';
 
+// Notification dropdown component
 const MessageNotification = ({ messages, unreadCount, onMessageClick }) => {
   const [anchorEl, setAnchorEl] = useState(null);
 
@@ -116,25 +121,44 @@ const MessageNotification = ({ messages, unreadCount, onMessageClick }) => {
   );
 };
 
+// Main dashboard component
 const ResearcherDashboard = () => {
-  const [allListings, setAllListings] = useState([]);
-  const [myListings, setMyListings] = useState([]);
-  const [userId, setUserId] = useState(null);
-  const [hasProfile, setHasProfile] = useState(false);
-  const [collabListings, setCollabListings] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
-  const [dropdownVisible, setDropdownVisible] = useState(false);
-  const [showNoResults, setShowNoResults] = useState(false);
-  const dropdownTimeout = useRef(null);
-  const [showErrorModal, setShowErrorModal] = useState(false);
-  const [filteredListings, setFilteredListings] = useState([]);
-  const [userName, setUserName] = useState('');
-  const [messages, setMessages] = useState([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [showContactForm, setShowContactForm] = useState(false);
-  const [ipAddress, setIpAddress] = useState("");
-  const [anchorEl, setAnchorEl] = useState(null);
+  // Get all state and handlers from our custom hook
+  const {
+    // State
+    allListings,
+    myListings,
+    userId,
+    hasProfile,
+    collabListings,
+    searchTerm,
+    searchResults,
+    dropdownVisible,
+    showNoResults,
+    showErrorModal,
+    filteredListings,
+    userName,
+    messages,
+    unreadCount,
+    showContactForm,
+    anchorEl,
+    ipAddress,
+    
+    // Handlers
+    handleSearch,
+    handleMessageClick,
+    handleAddListing,
+    handleCollaborate,
+    handleInputFocus,
+    handleInputChange,
+    handleClear,
+    handleLogout,
+    setSearchTerm,
+    setAnchorEl,
+    setShowContactForm,
+    setShowErrorModal
+  } = useResearcherDashboard();
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -447,150 +471,151 @@ const ResearcherDashboard = () => {
 
       {/* Main Content */}
       <Box sx={{ flex: 1, p: 3 }}>
-{/* Updated Search Section with matching buttons */}
-<Box sx={{ maxWidth: 800, mx: 'auto', mb: 4 }}>
-  <Paper 
-    component="form"
-    onSubmit={(e) => { 
-      e.preventDefault();
-      handleSearch();
-    }}
-    sx={{ 
-      p: 1,
-      display: 'flex',
-      gap: 1,
-      bgcolor: 'background.paper',
-      position: 'relative'
-    }}
-  >
-    <TextField
-      fullWidth
-      variant="outlined"
-      placeholder="Search research by title or researcher name..."
-      value={searchTerm}
-      onChange={handleInputChange}
-      onFocus={handleInputFocus}
-      sx={{
-        '& .MuiOutlinedInput-root': {
-          borderRadius: '1.2rem',
-          borderColor: 'var(--dark-blue)'
-        }
-      }}
-    />
-    {/* Error Modal */}
-{showErrorModal && (
-  <Dialog
-    open={showErrorModal}
-    onClose={() => setShowErrorModal(false)}
-    PaperProps={{
-      sx: {
-        bgcolor: 'var(--dark-blue)',
-        color: 'var(--white)',
-        padding: '1.5rem'
-      }
-    }}
-  >
-    <DialogTitle>Profile Error</DialogTitle>
-    <DialogContent>
-      <Typography variant="body1">
-        Error loading profile. Please try again.
-      </Typography>
-      <Button 
-        onClick={() => setShowErrorModal(false)}
-        variant="contained"
-        sx={{ 
-          mt: 2,
-          bgcolor: 'var(--light-blue)',
-          color: 'var(--dark-blue)'
-        }}
-      >
-        Close
-      </Button>
-    </DialogContent>
-  </Dialog>
-)}
-    
-    {/* Clear Button */}
-    <Button 
-      type="button"
-      variant="contained"
-      onClick={handleClear}
-      sx={{
-        bgcolor: 'var(--light-blue)',
-        color: 'var(--dark-blue)',
-        borderRadius: '1.5rem',
-        minWidth: '100px',
-        px: 3,
-        '&:hover': { 
-          bgcolor: '#5AA9A3',
-          color: 'var(--white)'
-        }
-      }}
-    >
-      Clear
-    </Button>
-
-    {/* Search Button */}
-     <Button 
-      type="button"
-      variant="contained"
-      onClick={handleSearch}
-      sx={{
-        bgcolor: 'var(--light-blue)',
-        color: 'var(--dark-blue)',
-        borderRadius: '1.5rem',
-        minWidth: '100px',
-        px: 3,
-        '&:hover': { 
-          bgcolor: '#5AA9A3',
-          color: 'var(--white)'
-        }
-      }}
-    >
-      Search
-    </Button>
-
-    {/* Search Dropdown */}
-    {dropdownVisible && (
-      <Paper sx={{
-        position: 'absolute',
-        top: '110%',
-        left: 0,
-        right: 0,
-        zIndex: 999,
-        bgcolor: 'background.paper',
-        boxShadow: 3,
-        maxHeight: 300,
-        overflowY: 'auto'
-      }}>
-        {searchResults.length === 0 ? (
-      <Typography sx={{ p: 2 }}>
-        {showNoResults ? "No research listings found." : "Start typing to search"}
-      </Typography>
-    ) : 
-      searchResults.map(item => (
-          <Box 
-            key={item.id}
-            sx={{
-              p: 2,
-              cursor: 'pointer',
-              '&:hover': { bgcolor: 'action.hover' }
+        {/* Search Section */}
+        <Box sx={{ maxWidth: 800, mx: 'auto', mb: 4 }}>
+          <Paper 
+            component="form"
+            onSubmit={(e) => { 
+              e.preventDefault();
+              handleSearch();
             }}
-            onClick={() => navigate(`/listing/${item.id}`)}
+            sx={{ 
+              p: 1,
+              display: 'flex',
+              gap: 1,
+              bgcolor: 'background.paper',
+              position: 'relative'
+            }}
           >
-            <Typography variant="subtitle1">{item.title}</Typography>
-            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-              By: {item.researcherName}
-            </Typography>
-            <Typography variant="body2" sx={{ mt: 1 }}>
-              {item.summary}
-            </Typography>
-          </Box>
-        ))}
-      </Paper>
-    )}
-  </Paper>
-</Box>
+            <TextField
+              fullWidth
+              variant="outlined"
+              placeholder="Search research by title or researcher name..."
+              value={searchTerm}
+              onChange={handleInputChange}
+              onFocus={handleInputFocus}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '1.2rem',
+                  borderColor: 'var(--dark-blue)'
+                }
+              }}
+            />
+            
+            {/* Error Modal */}
+            {showErrorModal && (
+              <Dialog
+                open={showErrorModal}
+                onClose={() => setShowErrorModal(false)}
+                PaperProps={{
+                  sx: {
+                    bgcolor: 'var(--dark-blue)',
+                    color: 'var(--white)',
+                    padding: '1.5rem'
+                  }
+                }}
+              >
+                <DialogTitle>Profile Error</DialogTitle>
+                <DialogContent>
+                  <Typography variant="body1">
+                    Error loading profile. Please try again.
+                  </Typography>
+                  <Button 
+                    onClick={() => setShowErrorModal(false)}
+                    variant="contained"
+                    sx={{ 
+                      mt: 2,
+                      bgcolor: 'var(--light-blue)',
+                      color: 'var(--dark-blue)'
+                    }}
+                  >
+                    Close
+                  </Button>
+                </DialogContent>
+              </Dialog>
+            )}
+            
+            {/* Clear Button */}
+            <Button 
+              type="button"
+              variant="contained"
+              onClick={handleClear}
+              sx={{
+                bgcolor: 'var(--light-blue)',
+                color: 'var(--dark-blue)',
+                borderRadius: '1.5rem',
+                minWidth: '100px',
+                px: 3,
+                '&:hover': { 
+                  bgcolor: '#5AA9A3',
+                  color: 'var(--white)'
+                }
+              }}
+            >
+              Clear
+            </Button>
+
+            {/* Search Button */}
+            <Button 
+              type="button"
+              variant="contained"
+              onClick={handleSearch}
+              sx={{
+                bgcolor: 'var(--light-blue)',
+                color: 'var(--dark-blue)',
+                borderRadius: '1.5rem',
+                minWidth: '100px',
+                px: 3,
+                '&:hover': { 
+                  bgcolor: '#5AA9A3',
+                  color: 'var(--white)'
+                }
+              }}
+            >
+              Search
+            </Button>
+
+            {/* Search Dropdown */}
+            {dropdownVisible && (
+              <Paper sx={{
+                position: 'absolute',
+                top: '110%',
+                left: 0,
+                right: 0,
+                zIndex: 999,
+                bgcolor: 'background.paper',
+                boxShadow: 3,
+                maxHeight: 300,
+                overflowY: 'auto'
+              }}>
+                {searchResults.length === 0 ? (
+                  <Typography sx={{ p: 2 }}>
+                    {showNoResults ? "No research listings found." : "Start typing to search"}
+                  </Typography>
+                ) : 
+                  searchResults.map(item => (
+                    <Box 
+                      key={item.id}
+                      sx={{
+                        p: 2,
+                        cursor: 'pointer',
+                        '&:hover': { bgcolor: 'action.hover' }
+                      }}
+                      onClick={() => navigate(`/listing/${item.id}`)}
+                    >
+                      <Typography variant="subtitle1">{item.title}</Typography>
+                      <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                        By: {item.researcherName}
+                      </Typography>
+                      <Typography variant="body2" sx={{ mt: 1 }}>
+                        {item.summary}
+                      </Typography>
+                    </Box>
+                  ))}
+              </Paper>
+            )}
+          </Paper>
+        </Box>
 
         {/* Listings Grid */}
         <Box sx={{ maxWidth: 1200, mx: 'auto' }}>
@@ -641,12 +666,15 @@ const ResearcherDashboard = () => {
             ))}
           </Grid>
         </Box>
-           <Box sx={{ mt: 6, maxWidth: 1200, mx: 'auto' }}>
-  <Typography variant="h4" sx={{ mb: 3, fontSize: '1.7rem' }}>Collaboration Requests</Typography>
-  <Paper sx={{ p: 3, bgcolor: '#132238', borderRadius: 2 }}>
-    <CollaborationRequestsPanel userId={userId} />
-  </Paper>
-</Box> 
+
+        {/* Collaboration Requests */}
+        <Box sx={{ mt: 6, maxWidth: 1200, mx: 'auto' }}>
+          <Typography variant="h4" sx={{ mb: 3, fontSize: '1.7rem' }}>Collaboration Requests</Typography>
+          <Paper sx={{ p: 3, color: '#FFFFFF', bgcolor: '#132238', borderRadius: 2 }}>
+            <CollaborationRequestsPanel userId={userId} />
+          </Paper>
+        </Box> 
+
         {/* Collaborations Section */}
         <Box sx={{ mt: 6, maxWidth: 1200, mx: 'auto' }}>
           <Typography variant="h4" sx={{ mb: 3, fontSize: '1.7rem'}}>Your Collaborations</Typography>
@@ -674,7 +702,6 @@ const ResearcherDashboard = () => {
                       onClick={() => navigate(`/listing/${listing.id}`)}
                       sx={{
                         bgcolor: '#2a3a57',
-                        
                         '&:hover': { bgcolor: '#3a4a67' }
                       }}
                     >

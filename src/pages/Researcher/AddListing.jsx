@@ -1,3 +1,4 @@
+// AddListing.jsx - Form for researchers to create a new research project listing
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Select from 'react-select';
@@ -9,6 +10,7 @@ import { sendMessage, messageTypes } from '../../utils/sendMessage';
 import './ResearcherDashboard.css';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 
+// Fetch the user's public IP address for logging purposes
 async function fetchUserIP() {
   try {
     const response = await axios.get('https://api.ipify.org?format=json');
@@ -18,7 +20,7 @@ async function fetchUserIP() {
   }
 }
 
-// Research area options (30+)
+// Research area options for the select dropdown
 const researchAreaOptions = [
   { value: 'Animal and Veterinary Sciences', label: 'Animal and Veterinary Sciences' },
   { value: 'Anthropology', label: 'Anthropology' },
@@ -52,7 +54,7 @@ const researchAreaOptions = [
   { value: 'Other', label: 'Other (please specify)' },
 ];
 
-// Keywords (32+)
+// Keyword options for the select dropdown
 const keywordOptions = [
   { value: 'PHYS', label: 'Physics' },
   { value: 'CHEM', label: 'Chemistry' },
@@ -89,7 +91,7 @@ const keywordOptions = [
   { value: 'Other', label: 'Other (please specify)' },
 ];
 
-// Methodology
+// Methodology options for the select dropdown
 const methodologyOptions = [
   { value: 'Quantitative', label: 'Quantitative' },
   { value: 'Qualitative', label: 'Qualitative' },
@@ -103,7 +105,7 @@ const methodologyOptions = [
   { value: 'Other', label: 'Other (please specify)' },
 ];
 
-// Departments (20+)
+// Department options for the select dropdown
 const departmentOptions = [
   { value: 'Physics', label: 'Physics' },
   { value: 'Chemistry', label: 'Chemistry' },
@@ -130,6 +132,7 @@ const departmentOptions = [
 
 function AddListing() {
   const navigate = useNavigate();
+  // State variables for all form fields and UI state
   const [title, setTitle] = useState('');
   const [summary, setSummary] = useState('');
   const [researchArea, setResearchArea] = useState('');
@@ -152,13 +155,13 @@ function AddListing() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const countries = ['South Africa', 'United States', 'United Kingdom', 'Canada', 'Kenya', 'Nigeria'];
 
-  // Get today's date in YYYY-MM-DD format for date input min/max attributes
+  // Get today's date and max date for date pickers
   const today = new Date().toISOString().split('T')[0];
-  // Set max date to 5 years from now
   const maxDate = new Date();
   maxDate.setFullYear(maxDate.getFullYear() + 5);
   const maxDateFormatted = maxDate.toISOString().split('T')[0];
 
+  // Fetch universities for the selected country, using cache if available
   useEffect(() => {
     const fetchUniversities = async () => {
       try {
@@ -187,12 +190,13 @@ function AddListing() {
     }
   }, [selectedCountry]);
 
+  // Handle form submission for creating a new research listing
   const handleSubmit = async (e) => {
     e.preventDefault();
     const userId = auth.currentUser?.uid;
     if (!userId) return alert("User not logged in");
 
-    // Validate dates
+    // Validate that end date is after start date
     if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
       alert("End date must be after start date");
       return;
@@ -200,12 +204,14 @@ function AddListing() {
 
     setIsSubmitting(true);
 
+    // Prepare data for saving, handling custom fields
     const keywordsToSave = keywords.map(k => k.value === 'Other' ? customKeyword : k.label).filter(Boolean);
     const methodologyToSave = methodology === 'Other' ? customMethodology : methodology;
     const departmentToSave = department === 'Other' ? customDepartment : department;
     const researchAreaToSave = researchArea === 'Other' ? customResearchArea : researchArea;
 
     try {
+      // Create the new listing object
       const newListing = {
         title,
         summary,
@@ -224,9 +230,10 @@ function AddListing() {
         createdAt: serverTimestamp(),
       };
 
+      // Add the listing to Firestore
       const docRef = await addDoc(collection(db, "research-listings"), newListing);
 
-      // Send success notification to the researcher
+      // Send a confirmation message to the researcher
       await sendMessage(userId, {
         title: 'Project Upload Successful',
         content: `Your project "${title}" has been successfully uploaded and is now live on the platform.`,
@@ -234,6 +241,7 @@ function AddListing() {
         relatedId: docRef.id
       });
 
+      // Log the event for analytics/audit
       await logEvent({
         userId,
         role: "researcher",
@@ -244,6 +252,7 @@ function AddListing() {
         ip: await fetchUserIP(),
       });
 
+      // Redirect to dashboard after successful creation
       navigate("/researcher-dashboard");
     } catch (err) {
       console.error("Error creating listing:", err);
@@ -253,9 +262,11 @@ function AddListing() {
     }
   };
 
+  // Render the form UI
   return (
     <main className="researcher-dashboard">
       <header className="researcher-header">
+         {/* Back button to go to previous page */}
          <button 
               className="back-button"
               onClick={() => navigate(-1)}
@@ -276,6 +287,7 @@ function AddListing() {
 
       <section className="dashboard-content">
         <form onSubmit={handleSubmit} className="add-listing-form">
+          {/* Research Details Section */}
           <fieldset className="form-section">
             <legend className="section-title">Research Details</legend>
             <section className="form-row">
@@ -300,6 +312,7 @@ function AddListing() {
                   className="react-select-container"
                   classNamePrefix="react-select"
                 />
+                {/* Show custom input if 'Other' is selected */}
                 {researchArea === 'Other' && (
                   <section className="form-group">
                     <label className="form-label">Please specify:</label>
@@ -339,6 +352,7 @@ function AddListing() {
                   className="react-select-container"
                   classNamePrefix="react-select"
                 />
+                {/* Show custom input if 'Other' is selected among keywords */}
                 {keywords.some(k => k.value === 'Other') && (
                   <section className="form-group">
                     <label className="form-label">Please specify:</label>
@@ -363,6 +377,7 @@ function AddListing() {
                   className="react-select-container"
                   classNamePrefix="react-select"
                 />
+                {/* Show custom input if 'Other' is selected */}
                 {methodology === 'Other' && (
                   <section className="form-group">
                     <label className="form-label">Please specify:</label>
@@ -379,6 +394,7 @@ function AddListing() {
             </section>
           </fieldset>
 
+          {/* Institution Information Section */}
           <fieldset className="form-section">
             <legend className="section-title">Institution Information</legend>
             <section className="form-row">
@@ -418,6 +434,7 @@ function AddListing() {
                   className="react-select-container"
                   classNamePrefix="react-select"
                 />
+                {/* Show custom input if 'Other' is selected */}
                 {department === 'Other' && (
                   <section className="form-group">
                     <label className="form-label">Please specify:</label>
@@ -434,6 +451,7 @@ function AddListing() {
             </section>
           </fieldset>
 
+          {/* Project Details Section */}
           <fieldset className="form-section">
             <legend className="section-title">Project Details</legend>
             <section className="form-group">
@@ -522,6 +540,7 @@ function AddListing() {
             </section>
           </fieldset>
 
+          {/* Submit button */}
           <section className="form-actions">
             <button 
               type="submit" 
