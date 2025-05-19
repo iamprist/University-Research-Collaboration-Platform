@@ -40,6 +40,11 @@ const titles = [
   'Chancellor', 'President', 'CEO', 'Chairperson'
 ];
 
+// Researcher titles for dropdown
+const titles = [
+  'Dr', 'Prof', 'Mr', 'Ms', 'Mrs', 'Mx', 'Other'
+];
+
 const EditProfile = () => {
   const navigate = useNavigate();
   // State for menu anchor (dropdown menu)

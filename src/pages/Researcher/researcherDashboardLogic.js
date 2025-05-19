@@ -41,7 +41,7 @@ export const useResearcherDashboard = () => {
   const [ipAddress, setIpAddress] = useState("");
   const [anchorEl, setAnchorEl] = useState(null);
   const [showCollaborationRequests, setShowCollaborationRequests] = useState(false);
-  
+
   // Fetch user's public IP address
   useEffect(() => {
     const fetchIpAddress = async () => {
@@ -328,6 +328,6 @@ export const useResearcherDashboard = () => {
     setAnchorEl,
     setShowContactForm,
     setShowErrorModal,
-    setShowCollaborationRequests,
+    setShowCollaborationRequests
   };
 };
