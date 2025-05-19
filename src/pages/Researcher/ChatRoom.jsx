@@ -19,6 +19,7 @@ export default function ChatRoom() {
   const [selectedMedia, setSelectedMedia] = useState(null);
   const [activeTab, setActiveTab] = useState('all');
   const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
   const fileInputRef = useRef(null);
 
   const filteredMessages = messages.filter(msg => {
@@ -27,8 +28,6 @@ export default function ChatRoom() {
     if (activeTab === 'docs') return msg.fileType && !msg.fileType.startsWith('image/');
     return true;
   });
-
-
 
   useEffect(() => {
     if (!chatId) {
@@ -42,7 +41,7 @@ export default function ChatRoom() {
     const setupChat = async () => {
       try {
         const docSnap = await getDoc(chatRef);
-        
+
         if (!docSnap.exists()) {
           await setDoc(chatRef, {
             participants: [auth.currentUser?.uid],
@@ -77,10 +76,6 @@ export default function ChatRoom() {
                 setChatName(userData[otherUserId]);
               }
             }
-
-            setTimeout(() => {
-              messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-            }, 100);
           }
         });
 
@@ -117,12 +112,30 @@ export default function ChatRoom() {
     };
   }, [chatId, userData]);
 
+  // Check if user is near bottom
+  const isUserAtBottom = () => {
+    const container = messagesContainerRef.current;
+    if (!container) return true;
+
+    const threshold = 100; // px from bottom
+    const position = container.scrollTop + container.clientHeight;
+    const height = container.scrollHeight;
+    return height - position <= threshold;
+  };
+
+  // Scroll only if user is at bottom
+  useEffect(() => {
+    if (isUserAtBottom()) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [filteredMessages]);
+
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
     setAttachment(file);
-    
+
     if (file.type.startsWith('image/')) {
       setAttachmentType('image');
       const reader = new FileReader();
@@ -152,7 +165,7 @@ export default function ChatRoom() {
       const storageRef = ref(storage, `chat_attachments/${chatId}/${Date.now()}_${attachment.name}`);
       const snapshot = await uploadBytes(storageRef, attachment);
       const downloadUrl = await getDownloadURL(snapshot.ref);
-      
+
       return {
         url: downloadUrl,
         name: attachment.name,
@@ -212,7 +225,7 @@ export default function ChatRoom() {
           [auth.currentUser.uid]: userName
         }));
       }
-      
+
       setNewMessage('');
       removeAttachment();
       setStatus({ loading: false, error: null });
@@ -241,9 +254,7 @@ export default function ChatRoom() {
         <div className="attachment-preview">
           <div className="preview-container">
             <img src={previewUrl} alt="Preview" className="image-preview" />
-            <button onClick={removeAttachment} className="remove-attachment">
-              ×
-            </button>
+            <button onClick={removeAttachment} className="remove-attachment">×</button>
           </div>
         </div>
       );
@@ -253,17 +264,15 @@ export default function ChatRoom() {
           <div className="document-preview">
             <div className="document-icon">
               <svg viewBox="0 0 24 24">
-                <path fill="currentColor" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"></path>
-                <path fill="currentColor" d="M14 3v5h5"></path>
+                <path fill="currentColor" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" />
+                <path fill="currentColor" d="M14 3v5h5" />
               </svg>
             </div>
             <div className="document-info">
               <p className="document-name" title={attachment.name}>{attachment.name}</p>
               <p className="document-size">{(attachment.size / 1024).toFixed(1)} KB</p>
             </div>
-            <button onClick={removeAttachment} className="remove-attachment">
-              ×
-            </button>
+            <button onClick={removeAttachment} className="remove-attachment">×</button>
           </div>
         </div>
       );
@@ -285,8 +294,8 @@ export default function ChatRoom() {
             <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" className="document-link">
               <div className="document-icon">
                 <svg viewBox="0 0 24 24">
-                  <path fill="currentColor" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"></path>
-                  <path fill="currentColor" d="M14 3v5h5"></path>
+                  <path fill="currentColor" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" />
+                  <path fill="currentColor" d="M14 3v5h5" />
                 </svg>
               </div>
               <div className="document-info">
@@ -331,39 +340,19 @@ export default function ChatRoom() {
           <span>Online</span>
         </div>
       </div>
-      
+
       <div className="media-tabs">
-        <button 
-          className={activeTab === 'all' ? 'active' : ''}
-          onClick={() => setActiveTab('all')}
-        >
-          All Messages
-        </button>
-        <button 
-          className={activeTab === 'images' ? 'active' : ''}
-          onClick={() => setActiveTab('images')}
-        >
-          Photos & Videos
-        </button>
-        <button 
-          className={activeTab === 'docs' ? 'active' : ''}
-          onClick={() => setActiveTab('docs')}
-        >
-          Documents
-        </button>
+        <button className={activeTab === 'all' ? 'active' : ''} onClick={() => setActiveTab('all')}>All Messages</button>
+        <button className={activeTab === 'images' ? 'active' : ''} onClick={() => setActiveTab('images')}>Photos & Videos</button>
+        <button className={activeTab === 'docs' ? 'active' : ''} onClick={() => setActiveTab('docs')}>Documents</button>
       </div>
-      
-      <div className="messages-container">
+
+      <div className="messages-container" ref={messagesContainerRef}>
         {filteredMessages.map((msg, i) => (
-          <div
-            key={i}
-            className={`message-bubble ${msg.senderId === auth.currentUser?.uid ? 'sent' : 'received'}`}
-          >
+          <div key={i} className={`message-bubble ${msg.senderId === auth.currentUser?.uid ? 'sent' : 'received'}`}>
             <div className="message-meta">
               <span className="sender-name">
-                {msg.senderId === auth.currentUser?.uid 
-                  ? 'You' 
-                  : userData[msg.senderId] || 'Unknown'}
+                {msg.senderId === auth.currentUser?.uid ? 'You' : userData[msg.senderId] || 'Unknown'}
               </span>
               <span className="message-time">
                 {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -380,9 +369,7 @@ export default function ChatRoom() {
       {showMediaViewer && (
         <div className="media-viewer-overlay">
           <div className="media-viewer-content">
-            <button className="close-viewer" onClick={closeMediaViewer}>
-              ×
-            </button>
+            <button className="close-viewer" onClick={closeMediaViewer}>×</button>
             {selectedMedia.fileType.startsWith('image/') ? (
               <img src={selectedMedia.fileUrl} alt="Full size" />
             ) : (
@@ -391,21 +378,12 @@ export default function ChatRoom() {
                   src={`https://docs.google.com/viewer?url=${encodeURIComponent(selectedMedia.fileUrl)}&embedded=true`} 
                   title={selectedMedia.fileName}
                 ></iframe>
-                <a 
-                  href={selectedMedia.fileUrl} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="download-button"
-                >
+                <a href={selectedMedia.fileUrl} target="_blank" rel="noopener noreferrer" className="download-button">
                   Download File
                 </a>
               </div>
             )}
-            {selectedMedia.text && (
-              <div className="media-caption-viewer">
-                <p>{selectedMedia.text}</p>
-              </div>
-            )}
+            {selectedMedia.text && <div className="media-caption-viewer"><p>{selectedMedia.text}</p></div>}
           </div>
         </div>
       )}
@@ -420,37 +398,21 @@ export default function ChatRoom() {
             placeholder="Type a message..."
             disabled={status.loading}
           />
-         <div className="action-buttons">
-  <button 
-    type="button" 
-    className="attach-button"
-    onClick={() => fileInputRef.current.click()}
-  >
-    <svg viewBox="0 0 24 24" width="20" height="20">
-      <path fill="currentColor" d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5a2.5 2.5 0 0 1 5 0v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5a2.5 2.5 0 0 0 5 0V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z"></path>
-    </svg>
-    <input
-      type="file"
-      ref={fileInputRef}
-      onChange={handleFileChange}
-      style={{ display: 'none' }}
-      accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
-    />
-  </button>
-  <button 
-    type="submit" 
-    disabled={status.loading || (!newMessage.trim() && !attachment)}
-    className={status.loading ? 'loading' : ''}
-  >
-    {status.loading ? (
-      <span className="send-spinner"></span>
-    ) : (
-      <svg viewBox="0 0 24 24" width="24" height="24">
-        <path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
-      </svg>
-    )}
-  </button>
-</div>
+          <div className="action-buttons">
+            <button type="button" className="attach-button" onClick={() => fileInputRef.current.click()}>
+              📎
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                style={{ display: 'none' }}
+                accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
+              />
+            </button>
+            <button type="submit" disabled={status.loading || (!newMessage.trim() && !attachment)} className={status.loading ? 'loading' : ''}>
+              {status.loading ? '...' : '➤'}
+            </button>
+          </div>
         </div>
       </form>
     </div>
