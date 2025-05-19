@@ -3,12 +3,12 @@
 // It collects research details, keywords, methodology, project details, and funding info.
 // All data is saved to Firestore and a confirmation message is sent to the user.
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import axios from 'axios';
 import Select from 'react-select';
 import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../../config/firebaseConfig';
-import { collection, addDoc, doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { logEvent } from '../../utils/logEvent';
 import { sendMessage, messageTypes } from '../../utils/sendMessage';
 import './ResearcherDashboard.css';
