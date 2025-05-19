@@ -10,9 +10,9 @@ import './ReviewerStyles.css';
 
 export default function ReviewerForm() {
   const navigate = useNavigate();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [user, setUser] = useState(null);
-  const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false); // are we in the middle of submitting?
+  const [user, setUser] = useState(null);                  // current Firebase user
+  const [errors, setErrors] = useState({});                // collect validation errors
   const [formData, setFormData] = useState({
     name: '',
     institution: '',
@@ -23,8 +23,9 @@ export default function ReviewerForm() {
     acceptedTerms: false,
   });
 
-  const [institutionSelect, setInstitutionSelect] = useState('');
+  const [institutionSelect, setInstitutionSelect] = useState(''); // dropdown vs. "Other"
   
+  // list of popular universities, mostly SA but a sprinkle of global
   const institutionList = [
     'University of Cape Town',
     'University of the Witwatersrand',
@@ -43,11 +44,13 @@ export default function ReviewerForm() {
   ];
 
   useEffect(() => {
+    // on mount, try to reload any saved form data from sessionStorage
     const saved = sessionStorage.getItem('reviewerFormData');
     if (saved) {
       try {
         const { cvFile, ...rest } = JSON.parse(saved);
         setFormData(prev => ({ ...prev, ...rest }));
+        // if saved inst is in our list, select it; otherwise show "Other"
         if (rest.institution && institutionList.includes(rest.institution)) {
           setInstitutionSelect(rest.institution);
         } else if (rest.institution) {
@@ -57,6 +60,7 @@ export default function ReviewerForm() {
         console.error('Failed to load saved data:', err);
       }
     }
+    // watch auth state, redirect to sign-in if not logged in
     const unsub = auth.onAuthStateChanged(current => {
       setUser(current);
       if (!current) {
@@ -67,6 +71,7 @@ export default function ReviewerForm() {
     return unsub;
   }, [navigate]);
 
+  // Options for the expertise multi-select
   const expertiseOptions = [
     { value: 'PHYS', label: 'Physics' },
     { value: 'CHEM', label: 'Chemistry' },
@@ -81,11 +86,13 @@ export default function ReviewerForm() {
     { value: 'HRM', label: 'Human Resources' },
   ];
 
+  // Save all fields except the file itself to sessionStorage
   const saveFormDataToSession = () => {
     const { cvFile, ...saveData } = formData;
     sessionStorage.setItem('reviewerFormData', JSON.stringify(saveData));
   };
 
+  // Basic front-end validation
   const validateForm = () => {
     const errs = {};
     if (!formData.name.trim()) errs.name = 'Full name is required';
@@ -97,29 +104,37 @@ export default function ReviewerForm() {
     return errs;
   };
 
+  // What happens when you click submit
   const handleSubmit = async e => {
     e.preventDefault();
     const errs = validateForm();
     if (Object.keys(errs).length) {
       setErrors(errs);
-      toast.error('Please fix errors');
+      toast.error('Please fix errors before moving on');
       return;
     }
+    // file size/type checks
     if (formData.cvFile.size > 5 * 1024 * 1024) {
-      toast.error('CV must be under 5MB');
-      return;
+      toast.error('CV must be under 5MB'); return;
     }
     if (formData.cvFile.type !== 'application/pdf') {
-      toast.error('Only PDF allowed');
-      return;
+      toast.error('Only PDF files allowed'); return;
     }
 
     setIsSubmitting(true);
     try {
+      // upload CV to Firebase Storage
       const storageRef = ref(storage, `reviewer-cvs/${user.uid}/${Date.now()}_${formData.cvFile.name}`);
       await uploadBytes(storageRef, formData.cvFile);
       const cvUrl = await getDownloadURL(storageRef);
-      const pubs = formData.publications.split(/[\n,]+/).map(l => l.trim()).filter(l => l);
+
+      // split publication links into an array
+      const pubs = formData.publications
+        .split(/[\n,]+/)
+        .map(l => l.trim())
+        .filter(l => l);
+
+      // save reviewer document in Firestore
       await setDoc(doc(db, 'reviewers', user.uid), {
         name: formData.name.trim(),
         institution: formData.institution.trim(),
@@ -133,14 +148,15 @@ export default function ReviewerForm() {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
-      toast.success('Application submitted!');
+
+      toast.success('Application submitted successfully!');
       sessionStorage.removeItem('reviewerFormData');
       navigate('/reviewer');
     } catch (err) {
       console.error('Submission error:', err);
-      toast.error(err.message || 'Submission failed');
+      toast.error(err.message || 'Submission failed—try again later');
     } finally {
-      setIsSubmitting(false);
+      setIsSubmitting(false); // re-enable the button
     }
   };
 
@@ -148,8 +164,9 @@ export default function ReviewerForm() {
     <main className="reviewer-application-container" role="region" aria-labelledby="form-heading">
       <h2 id="form-heading">Reviewer Application</h2>
       <form onSubmit={handleSubmit} noValidate>
-        {/* Grid for primary fields */}
+        {/* main grid for the top fields */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          {/* Full Name Field */}
           <fieldset className="form-group">
             <legend>Full Name *</legend>
             <input
@@ -163,6 +180,7 @@ export default function ReviewerForm() {
             {errors.name && <p id="name-error" className="error-message">{errors.name}</p>}
           </fieldset>
 
+          {/* Institution Dropdown + "Other" input */}
           <fieldset className="form-group">
             <legend>Institution *</legend>
             <select
@@ -177,7 +195,9 @@ export default function ReviewerForm() {
               aria-describedby={errors.institution ? 'institution-error' : undefined}
             >
               <option value="">Select your university</option>
-              {institutionList.map(inst => <option key={inst} value={inst}>{inst}</option>)}
+              {institutionList.map(inst => (
+                <option key={inst} value={inst}>{inst}</option>
+              ))}
               <option value="Other">Other</option>
             </select>
             {institutionSelect === 'Other' && (
@@ -194,6 +214,7 @@ export default function ReviewerForm() {
             {errors.institution && <p id="institution-error" className="error-message">{errors.institution}</p>}
           </fieldset>
 
+          {/* Expertise Multi-Select */}
           <fieldset className="form-group">
             <legend>Areas of Expertise *</legend>
             <Select
@@ -208,6 +229,7 @@ export default function ReviewerForm() {
             {errors.expertise && <p id="expertise-error" className="error-message">{errors.expertise}</p>}
           </fieldset>
 
+          {/* Years of Experience */}
           <fieldset className="form-group">
             <legend>Years of Experience *</legend>
             <input
@@ -223,7 +245,7 @@ export default function ReviewerForm() {
           </fieldset>
         </div>
 
-        {/* Remaining fields full width */}
+        {/* CV Upload */}
         <fieldset className="form-group">
           <legend>Upload CV (PDF, max 5MB) *</legend>
           <input
@@ -238,6 +260,7 @@ export default function ReviewerForm() {
           {errors.cv && <p id="cv-error" className="error-message">{errors.cv}</p>}
         </fieldset>
 
+        {/* Publications */}
         <fieldset className="form-group">
           <legend>Publication Links (optional)</legend>
           <textarea
@@ -249,6 +272,7 @@ export default function ReviewerForm() {
           <small className="hint">Separate with commas or new lines</small>
         </fieldset>
 
+        {/* Terms and Conditions */}
         <fieldset className="form-group terms">
           <legend>
             <input
@@ -259,13 +283,15 @@ export default function ReviewerForm() {
               aria-invalid={!!errors.terms}
               aria-describedby={errors.terms ? 'terms-error' : undefined}
             />
-            I accept the {' '}
+            I accept the{' '}
             <Link to="/terms" onClick={saveFormDataToSession} aria-label="View Terms and Conditions">
-              Terms and Conditions</Link> *
+              Terms and Conditions
+            </Link> *
           </legend>
           {errors.terms && <p id="terms-error" className="error-message">{errors.terms}</p>}
         </fieldset>
 
+        {/* Submit Button */}
         <button
           type="submit"
           disabled={isSubmitting}
@@ -273,10 +299,12 @@ export default function ReviewerForm() {
           aria-busy={isSubmitting}
         >
           {isSubmitting ? (
-            <> <i className="spinner" role="status" aria-hidden="true"></i> Submitting... </>
+            <>
+              <i className="spinner" role="status" aria-hidden="true"></i> Submitting...
+            </>
           ) : 'Submit Application'}
         </button>
       </form>
     </main>
-  );
+);
 }
