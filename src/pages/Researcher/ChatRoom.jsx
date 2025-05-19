@@ -2,14 +2,14 @@ import { useState, useEffect, useRef } from 'react';
 import { doc, getDoc, updateDoc, setDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, auth, storage } from '../../config/firebaseConfig';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import './ChatRoom.css';
-import { useNavigate } from 'react-router-dom';
 import './ResearcherDashboard.css';
 import React from 'react';
-import jsPDF from 'jspdf'; // Add this import at the top
-import { v4 as uuidv4 } from 'uuid'; // npm install uuid
+import jsPDF from 'jspdf';
+import { v4 as uuidv4 } from 'uuid';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
+import { Box, Typography, IconButton, Button, CircularProgress, TextField } from '@mui/material';
 
 export default function ChatRoom() {
   const { chatId } = useParams();
@@ -265,34 +265,34 @@ export default function ChatRoom() {
 
     if (attachmentType === 'image') {
       return (
-        <div className="attachment-preview">
-          <div className="preview-container">
+        <Box className="attachment-preview">
+          <Box className="preview-container">
             <img src={previewUrl} alt="Preview" className="image-preview" />
-            <button onClick={removeAttachment} className="remove-attachment">
+            <Button onClick={removeAttachment} className="remove-attachment">
               ×
-            </button>
-          </div>
-        </div>
+            </Button>
+          </Box>
+        </Box>
       );
     } else {
       return (
-        <div className="attachment-preview">
-          <div className="document-preview">
-            <div className="document-icon">
+        <Box className="attachment-preview">
+          <Box className="document-preview">
+            <Box className="document-icon">
               <svg viewBox="0 0 24 24">
                 <path fill="currentColor" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"></path>
                 <path fill="currentColor" d="M14 3v5h5"></path>
               </svg>
-            </div>
-            <div className="document-info">
-              <p className="document-name" title={attachment.name}>{attachment.name}</p>
-              <p className="document-size">{(attachment.size / 1024).toFixed(1)} KB</p>
-            </div>
-            <button onClick={removeAttachment} className="remove-attachment">
+            </Box>
+            <Box className="document-info">
+              <Typography className="document-name" title={attachment.name}>{attachment.name}</Typography>
+              <Typography className="document-size">{(attachment.size / 1024).toFixed(1)} KB</Typography>
+            </Box>
+            <Button onClick={removeAttachment} className="remove-attachment">
               ×
-            </button>
-          </div>
-        </div>
+            </Button>
+          </Box>
+        </Box>
       );
     }
   };
@@ -301,32 +301,32 @@ export default function ChatRoom() {
     if (msg.fileUrl) {
       if (msg.fileType.startsWith('image/')) {
         return (
-          <div className="media-content" onClick={() => openMediaViewer(msg)}>
+          <Box className="media-content" onClick={() => openMediaViewer(msg)}>
             <img src={msg.fileUrl} alt="Shared content" />
-            {msg.text && <p className="media-caption">{msg.text}</p>}
-          </div>
+            {msg.text && <Typography className="media-caption">{msg.text}</Typography>}
+          </Box>
         );
       } else {
         return (
-          <div className="document-content">
+          <Box className="document-content">
             <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" className="document-link">
-              <div className="document-icon">
+              <Box className="document-icon">
                 <svg viewBox="0 0 24 24">
                   <path fill="currentColor" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"></path>
                   <path fill="currentColor" d="M14 3v5h5"></path>
                 </svg>
-              </div>
-              <div className="document-info">
-                <p className="document-name" title={msg.fileName}>{msg.fileName}</p>
-                <p className="document-size">{(msg.fileSize / 1024).toFixed(1)} KB</p>
-              </div>
+              </Box>
+              <Box className="document-info">
+                <Typography className="document-name" title={msg.fileName}>{msg.fileName}</Typography>
+                <Typography className="document-size">{(msg.fileSize / 1024).toFixed(1)} KB</Typography>
+              </Box>
             </a>
-            {msg.text && <p className="document-caption">{msg.text}</p>}
-          </div>
+            {msg.text && <Typography className="document-caption">{msg.text}</Typography>}
+          </Box>
         );
       }
     }
-    return <p>{msg.text}</p>;
+    return <Typography>{msg.text}</Typography>;
   };
 
   // Funding state
@@ -636,81 +636,105 @@ export default function ChatRoom() {
 
   if (status.loading && messages.length === 0) {
     return (
-      <div className="loading-container">
-        <div className="loading-spinner"></div>
-        <p>Loading chat...</p>
-      </div>
+      <Box className="loading-container">
+        <CircularProgress sx={{ color: '#64CCC5', mb: 2 }} />
+        <Typography>Loading chat...</Typography>
+      </Box>
     );
   }
 
   if (status.error) {
     return (
-      <div className="error-container">
-        <div className="error-message">
-          <p>{status.error}</p>
-          <button onClick={() => window.location.reload()}>Retry</button>
-        </div>
-      </div>
+      <Box className="error-container">
+        <Box className="error-message">
+          <Typography>{status.error}</Typography>
+          <Button onClick={() => window.location.reload()}>Retry</Button>
+        </Box>
+      </Box>
     );
   }
 
   return (
-    <div className="chat-app">
-      <div className="chat-header">
-        <button 
-            className="chat-button"
-            onClick={() => navigate(-1)}
-            style={{ 
-              color: 'var(--white)',
-              marginRight: '1.5rem' // Add spacing between arrow and title
-            }}
-          >
-            <ArrowBackIosIcon />
-          </button>
-        <h2>{chatName}</h2>
-        <div className="status-indicator">
+    <Box className="chat-app">
+      {/* Header */}
+      <Box
+        className="chat-header"
+        sx={{
+          padding: '1rem 1.5rem',
+          backgroundColor: 'var(--primary-blue)',
+          color: 'var(--white)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)',
+        }}
+      >
+        <IconButton
+          onClick={() => navigate(-1)}
+          sx={{
+            color: 'var(--white)',
+            background: 'var(--primary-blue)',
+            borderRadius: '4px',
+            mr: 2,
+            '&:hover': { background: 'var(--dark-blue)' },
+          }}
+          className="chat-button"
+        >
+          <ArrowBackIosIcon />
+        </IconButton>
+        <Typography variant="h6" sx={{ fontWeight: 600, flex: 1 }}>
+          {chatName}
+        </Typography>
+        <Box className="status-indicator">
           <span className="status-dot"></span>
           <span>Online</span>
-        </div>
-      </div>
-      
-      <div className="media-tabs">
-        <button 
+        </Box>
+      </Box>
+
+      {/* Media Tabs */}
+      <Box className="media-tabs">
+        <Button
           className={activeTab === 'all' ? 'active' : ''}
           onClick={() => setActiveTab('all')}
+          sx={{ textTransform: 'none' }}
         >
           All Messages
-        </button>
-        <button 
+        </Button>
+        <Button
           className={activeTab === 'images' ? 'active' : ''}
           onClick={() => setActiveTab('images')}
+          sx={{ textTransform: 'none' }}
         >
           Photos & Videos
-        </button>
-        <button 
+        </Button>
+        <Button
           className={activeTab === 'docs' ? 'active' : ''}
           onClick={() => setActiveTab('docs')}
+          sx={{ textTransform: 'none' }}
         >
           Documents
-        </button>
-        <button
+        </Button>
+        <Button
           className={activeTab === 'milestones' ? 'active' : ''}
           onClick={() => setActiveTab('milestones')}
+          sx={{ textTransform: 'none' }}
         >
           Milestones
-        </button>
-        <button
+        </Button>
+        <Button
           className={activeTab === 'funding' ? 'active' : ''}
           onClick={() => setActiveTab('funding')}
+          sx={{ textTransform: 'none' }}
         >
           Funding
-        </button>
-      </div>
-      
+        </Button>
+      </Box>
+
+      {/* Milestones Tab */}
       {activeTab === 'milestones' ? (
-        <div className="funding-section">
-          <h3>Research Milestones</h3>
-          <div>
+        <Box className="funding-section">
+          <Typography variant="h5">Research Milestones</Typography>
+          <Box>
             <strong>Project Created:</strong>{' '}
             {projectCreated ? new Date(projectCreated).toLocaleString() : 'N/A'}
             <br />
@@ -720,43 +744,45 @@ export default function ChatRoom() {
               : milestones.length > 0
                 ? 'Not yet finished'
                 : 'N/A'}
-          </div>
-          <div style={{ marginBottom: '1rem', marginTop: '1rem' }}>
-            <button onClick={() => setShowMilestoneForm(v => !v)}>
+          </Box>
+          <Box sx={{ mb: 2, mt: 2 }}>
+            <Button onClick={() => setShowMilestoneForm(v => !v)}>
               {showMilestoneForm ? 'Cancel' : 'Add Milestone'}
-            </button>
-            <button onClick={handleExportMilestonesPDF} style={{ marginLeft: 8 }}>
+            </Button>
+            <Button onClick={handleExportMilestonesPDF} sx={{ ml: 1 }}>
               Export as PDF
-            </button>
-          </div>
+            </Button>
+          </Box>
           {showMilestoneForm && (
-            <form onSubmit={handleAddMilestone} className="funding-form">
-              <input
-                type="text"
+            <Box component="form" onSubmit={handleAddMilestone} className="funding-form">
+              <TextField
+                size="small"
                 placeholder="Milestone Title"
                 value={milestoneInput.title}
                 onChange={e => setMilestoneInput({ ...milestoneInput, title: e.target.value })}
                 required
+                sx={{ mr: 1 }}
               />
-              <input
-                type="text"
+              <TextField
+                size="small"
                 placeholder="Description (optional)"
                 value={milestoneInput.description}
                 onChange={e => setMilestoneInput({ ...milestoneInput, description: e.target.value })}
+                sx={{ mr: 1 }}
               />
-              <button type="submit">Add</button>
-            </form>
+              <Button type="submit" variant="contained">Add</Button>
+            </Box>
           )}
-          <ul>
+          <Box component="ul" sx={{ pl: 2 }}>
             {milestones.length === 0 && (
-              <li>No milestones yet.</li>
+              <Typography component="li">No milestones yet.</Typography>
             )}
             {milestones.map(m => (
-              <li key={m.id} style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem'
-              }}>
+              <Box
+                component="li"
+                key={m.id}
+                sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+              >
                 <input
                   type="checkbox"
                   checked={m.done}
@@ -779,50 +805,54 @@ export default function ChatRoom() {
                     )}
                   </small>
                 </span>
-                <button
-                  style={{
-                    marginLeft: 'auto',
+                <Button
+                  sx={{
+                    ml: 'auto',
                     background: '#FF6B6B',
                     color: '#fff',
-                    border: 'none',
                     borderRadius: '0.5rem',
-                    padding: '0.2rem 0.7rem',
-                    cursor: 'pointer'
+                    minWidth: 0,
+                    px: 2,
+                    py: 0.5,
+                    fontSize: '0.9rem',
+                    '&:hover': { background: '#e53e3e' }
                   }}
                   onClick={() => handleDeleteMilestone(m.id)}
                   title="Delete"
                   type="button"
                 >
                   Delete
-                </button>
-              </li>
+                </Button>
+              </Box>
             ))}
-          </ul>
+          </Box>
           {allMilestonesDone && (
-            <div style={{
-              marginTop: '1rem',
+            <Box sx={{
+              mt: 2,
               color: '#38A169',
               fontWeight: 'bold',
               textAlign: 'center'
             }}>
               🎉All milestones complete!
-            </div>
+            </Box>
           )}
-          {/* Move the completion button below the milestones */}
-          <div style={{ marginTop: '2rem', textAlign: 'center' }}>
+          <Box sx={{ mt: 4, textAlign: 'center' }}>
             {!researchComplete && (
-              <button
+              <Button
                 onClick={handleMarkResearchComplete}
-                style={{
+                sx={{
                   background: milestones.length === 0 || !allMilestonesDone ? '#ccc' : '#38A169',
                   color: '#fff',
                   fontWeight: 600,
-                  padding: '0.6rem 1.5rem',
+                  px: 4,
+                  py: 1.5,
                   borderRadius: '0.5rem',
-                  border: 'none',
                   fontSize: '1rem',
                   cursor: milestones.length === 0 || !allMilestonesDone ? 'not-allowed' : 'pointer',
-                  opacity: milestones.length === 0 || !allMilestonesDone ? 0.7 : 1
+                  opacity: milestones.length === 0 || !allMilestonesDone ? 0.7 : 1,
+                  '&:hover': {
+                    background: milestones.length === 0 || !allMilestonesDone ? '#ccc' : '#2f855a'
+                  }
                 }}
                 disabled={milestones.length === 0 || !allMilestonesDone}
                 title={
@@ -834,219 +864,225 @@ export default function ChatRoom() {
                 }
               >
                 Mark Research as Complete
-              </button>
+              </Button>
             )}
             {researchComplete && (
-              <div>
+              <Box>
                 <span style={{ color: '#38A169', fontWeight: 600 }}>
                   Research marked as complete
                 </span>
-                <button
+                <Button
                   onClick={handleUnmarkResearchComplete}
-                  style={{
-                    marginLeft: 16,
+                  sx={{
+                    ml: 2,
                     background: '#FF6B6B',
                     color: '#fff',
                     fontWeight: 600,
-                    padding: '0.5rem 1.2rem',
+                    px: 3,
+                    py: 1,
                     borderRadius: '0.5rem',
-                    border: 'none',
                     fontSize: '1rem',
-                    cursor: 'pointer'
+                    '&:hover': { background: '#e53e3e' }
                   }}
                 >
                   Unmark as Complete
-                </button>
-              </div>
+                </Button>
+              </Box>
             )}
-          </div>
-        </div>
+          </Box>
+        </Box>
       ) : activeTab === 'funding' ? (
-        <div className="funding-section">
-          <h3>Research Funding Management</h3>
-          <div>
+        <Box className="funding-section">
+          <Typography variant="h5">Research Funding Management</Typography>
+          <Box>
             <strong>Total Funding:</strong> R{totalFunding.toFixed(2)}<br />
             <strong>Total Spent:</strong> R{totalSpent.toFixed(2)}<br />
             <strong>Balance:</strong> R{balance.toFixed(2)}
-          </div>
-          <div style={{ margin: '1rem 0' }}>
-            <button onClick={() => setShowFundingForm(v => !v)}>
+          </Box>
+          <Box sx={{ my: 2 }}>
+            <Button onClick={() => setShowFundingForm(v => !v)}>
               {showFundingForm ? 'Cancel' : 'Add Funding'}
-            </button>
-            <button onClick={() => setShowExpenditureForm(v => !v)} style={{ marginLeft: 8 }}>
+            </Button>
+            <Button onClick={() => setShowExpenditureForm(v => !v)} sx={{ ml: 1 }}>
               {showExpenditureForm ? 'Cancel' : 'Add Expenditure'}
-            </button>
-            <button onClick={handleExportFundingPDF} style={{ marginLeft: 8 }}>
+            </Button>
+            <Button onClick={handleExportFundingPDF} sx={{ ml: 1 }}>
               Export as PDF
-            </button>
-          </div>
+            </Button>
+          </Box>
           {showFundingForm && (
-            <form onSubmit={handleAddFunding} className="funding-form">
-              <input
+            <Box component="form" onSubmit={handleAddFunding} className="funding-form">
+              <TextField
+                size="small"
                 type="number"
                 step="0.01"
                 placeholder="Amount"
                 value={fundingInput.amount}
                 onChange={e => setFundingInput({ ...fundingInput, amount: e.target.value })}
                 required
+                sx={{ mr: 1 }}
               />
-              <input
-                type="text"
+              <TextField
+                size="small"
                 placeholder="Source"
                 value={fundingInput.source}
                 onChange={e => setFundingInput({ ...fundingInput, source: e.target.value })}
                 required
+                sx={{ mr: 1 }}
               />
-              <input
+              <TextField
+                size="small"
                 type="date"
                 value={fundingInput.date}
                 onChange={e => setFundingInput({ ...fundingInput, date: e.target.value })}
+                sx={{ mr: 1 }}
               />
-              <button type="submit">Add Funding</button>
-            </form>
+              <Button type="submit" variant="contained">Add Funding</Button>
+            </Box>
           )}
           {showExpenditureForm && (
-            <form onSubmit={handleAddExpenditure} className="expenditure-form">
-              <input
+            <Box component="form" onSubmit={handleAddExpenditure} className="expenditure-form">
+              <TextField
+                size="small"
                 type="number"
                 step="0.01"
                 placeholder="Amount"
                 value={expenditureInput.amount}
                 onChange={e => setExpenditureInput({ ...expenditureInput, amount: e.target.value })}
                 required
+                sx={{ mr: 1 }}
               />
-              <input
-                type="text"
+              <TextField
+                size="small"
                 placeholder="Description"
                 value={expenditureInput.description}
                 onChange={e => setExpenditureInput({ ...expenditureInput, description: e.target.value })}
                 required
+                sx={{ mr: 1 }}
               />
-              <input
+              <TextField
+                size="small"
                 type="date"
                 value={expenditureInput.date}
                 onChange={e => setExpenditureInput({ ...expenditureInput, date: e.target.value })}
+                sx={{ mr: 1 }}
               />
-              <button type="submit">Add Expenditure</button>
-            </form>
+              <Button type="submit" variant="contained">Add Expenditure</Button>
+            </Box>
           )}
 
-          <div style={{
-  marginBottom: '1rem',
-  background: '#f7fafc',
-  border: '1px solid #e2e8f0',
-  borderRadius: '0.5rem',
-  padding: '1rem',
-  maxWidth: 420
-}}>
-  <form onSubmit={handleSaveTotalNeeded} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-    <label style={{ fontWeight: 600, minWidth: 170 }}>
-      Total Funding Needed (R)
-    </label>
-    <input
-      type="number"
-      step="0.01"
-      placeholder="e.g. 5000"
-      value={totalNeededInput}
-      onChange={e => setTotalNeededInput(e.target.value)}
-      style={{
-        maxWidth: 120,
-        padding: '0.4rem 0.7rem',
-        border: '1px solid #cbd5e1',
-        borderRadius: '0.3rem'
-      }}
-    />
-    <button
-      type="submit"
-      disabled={!totalNeededInput}
-      style={{
-        background: '#3182ce',
-        color: '#fff',
-        border: 'none',
-        borderRadius: '0.3rem',
-        padding: '0.4rem 1.1rem',
-        fontWeight: 600,
-        cursor: totalNeededInput ? 'pointer' : 'not-allowed'
-      }}
-    >
-      Save
-    </button>
-  </form>
-  {totalNeeded !== null && (
-    <div style={{ marginTop: 10, display: 'flex', gap: 24 }}>
-      <span style={{ fontWeight: 500 }}>
-        Total Needed: <span style={{ color: '#3182ce', fontWeight: 700 }}>R{totalNeeded.toFixed(2)}</span>
-      </span>
-      <span style={{ fontWeight: 500 }}>
-        Still Needed: <span style={{ color: '#e53e3e', fontWeight: 700 }}>
-          R{Math.max(0, totalNeeded - totalFunding).toFixed(2)}
-        </span>
-      </span>
-    </div>
-  )}
-</div>
+          <Box sx={{
+            mb: 2,
+            background: '#f7fafc',
+            border: '1px solid #e2e8f0',
+            borderRadius: '0.5rem',
+            p: 2,
+            maxWidth: 420
+          }}>
+            <Box component="form" onSubmit={handleSaveTotalNeeded} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography sx={{ fontWeight: 600, minWidth: 170 }}>
+                Total Funding Needed (R)
+              </Typography>
+              <TextField
+                size="small"
+                type="number"
+                step="0.01"
+                placeholder="e.g. 5000"
+                value={totalNeededInput}
+                onChange={e => setTotalNeededInput(e.target.value)}
+                sx={{ maxWidth: 120 }}
+              />
+              <Button
+                type="submit"
+                disabled={!totalNeededInput}
+                sx={{
+                  background: '#3182ce',
+                  color: '#fff',
+                  borderRadius: '0.3rem',
+                  px: 2,
+                  fontWeight: 600,
+                  cursor: totalNeededInput ? 'pointer' : 'not-allowed',
+                  '&:hover': { background: '#2563eb' }
+                }}
+              >
+                Save
+              </Button>
+            </Box>
+            {totalNeeded !== null && (
+              <Box sx={{ mt: 1, display: 'flex', gap: 3 }}>
+                <Typography sx={{ fontWeight: 500 }}>
+                  Total Needed: <span style={{ color: '#3182ce', fontWeight: 700 }}>R{totalNeeded.toFixed(2)}</span>
+                </Typography>
+                <Typography sx={{ fontWeight: 500 }}>
+                  Still Needed: <span style={{ color: '#e53e3e', fontWeight: 700 }}>
+                    R{Math.max(0, totalNeeded - totalFunding).toFixed(2)}
+                  </span>
+                </Typography>
+              </Box>
+            )}
+          </Box>
 
-          <h4>Funding Sources</h4>
-          <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '1rem' }}>
-            <thead>
-              <tr style={{ background: '#f5f5f5' }}>
-                <th style={{ border: '1px solid #ddd', padding: '8px' }}>Amount (R)</th>
-                <th style={{ border: '1px solid #ddd', padding: '8px' }}>Source</th>
-                <th style={{ border: '1px solid #ddd', padding: '8px' }}>Date</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Typography variant="h6" sx={{ mt: 2 }}>Funding Sources</Typography>
+          <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse', mb: 2 }}>
+            <Box component="thead">
+              <Box component="tr" sx={{ background: '#f5f5f5' }}>
+                <Box component="th" sx={{ border: '1px solid #ddd', p: 1 }}>Amount (R)</Box>
+                <Box component="th" sx={{ border: '1px solid #ddd', p: 1 }}>Source</Box>
+                <Box component="th" sx={{ border: '1px solid #ddd', p: 1 }}>Date</Box>
+              </Box>
+            </Box>
+            <Box component="tbody">
               {funding.length === 0 ? (
-                <tr>
-                  <td colSpan="3" style={{ textAlign: 'center', padding: '8px' }}>No funding sources.</td>
-                </tr>
+                <Box component="tr">
+                  <Box component="td" colSpan={3} sx={{ textAlign: 'center', p: 1 }}>No funding sources.</Box>
+                </Box>
               ) : (
                 funding.map((f, idx) => (
-                  <tr key={idx}>
-                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>R{f.amount.toFixed(2)}</td>
-                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>{f.source}</td>
-                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>{f.date ? new Date(f.date).toLocaleDateString() : 'N/A'}</td>
-                  </tr>
+                  <Box component="tr" key={idx}>
+                    <Box component="td" sx={{ border: '1px solid #ddd', p: 1 }}>R{f.amount.toFixed(2)}</Box>
+                    <Box component="td" sx={{ border: '1px solid #ddd', p: 1 }}>{f.source}</Box>
+                    <Box component="td" sx={{ border: '1px solid #ddd', p: 1 }}>{f.date ? new Date(f.date).toLocaleDateString() : 'N/A'}</Box>
+                  </Box>
                 ))
               )}
-            </tbody>
-          </table>
+            </Box>
+          </Box>
 
-          <h4>Expenditures</h4>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ background: '#f5f5f5' }}>
-                <th style={{ border: '1px solid #ddd', padding: '8px' }}>Amount (R)</th>
-                <th style={{ border: '1px solid #ddd', padding: '8px' }}>Description</th>
-                <th style={{ border: '1px solid #ddd', padding: '8px' }}>Date</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Typography variant="h6" sx={{ mt: 2 }}>Expenditures</Typography>
+          <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse' }}>
+            <Box component="thead">
+              <Box component="tr" sx={{ background: '#f5f5f5' }}>
+                <Box component="th" sx={{ border: '1px solid #ddd', p: 1 }}>Amount (R)</Box>
+                <Box component="th" sx={{ border: '1px solid #ddd', p: 1 }}>Description</Box>
+                <Box component="th" sx={{ border: '1px solid #ddd', p: 1 }}>Date</Box>
+              </Box>
+            </Box>
+            <Box component="tbody">
               {expenditures.length === 0 ? (
-                <tr>
-                  <td colSpan="3" style={{ textAlign: 'center', padding: '8px' }}>No expenditures.</td>
-                </tr>
+                <Box component="tr">
+                  <Box component="td" colSpan={3} sx={{ textAlign: 'center', p: 1 }}>No expenditures.</Box>
+                </Box>
               ) : (
                 expenditures.map((e, idx) => (
-                  <tr key={idx}>
-                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>R{e.amount.toFixed(2)}</td>
-                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>{e.description}</td>
-                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>{e.date ? new Date(e.date).toLocaleDateString() : 'N/A'}</td>
-                  </tr>
+                  <Box component="tr" key={idx}>
+                    <Box component="td" sx={{ border: '1px solid #ddd', p: 1 }}>R{e.amount.toFixed(2)}</Box>
+                    <Box component="td" sx={{ border: '1px solid #ddd', p: 1 }}>{e.description}</Box>
+                    <Box component="td" sx={{ border: '1px solid #ddd', p: 1 }}>{e.date ? new Date(e.date).toLocaleDateString() : 'N/A'}</Box>
+                  </Box>
                 ))
               )}
-            </tbody>
-          </table>
-        </div>
+            </Box>
+          </Box>
+        </Box>
       ) : (
         <>
-          <div className="messages-container">
+          <Box className="messages-container">
             {filteredMessages.map((msg, i) => (
-              <div
+              <Box
                 key={i}
                 className={`message-bubble ${msg.senderId === auth.currentUser?.uid ? 'sent' : 'received'}`}
               >
-                <div className="message-meta">
+                <Box className="message-meta">
                   <span className="sender-name">
                     {msg.senderId === auth.currentUser?.uid 
                       ? 'You' 
@@ -1055,27 +1091,27 @@ export default function ChatRoom() {
                   <span className="message-time">
                     {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
-                </div>
-                <div className="message-content">
+                </Box>
+                <Box className="message-content">
                   {renderMessageContent(msg)}
-                </div>
-              </div>
+                </Box>
+              </Box>
             ))}
-            <div ref={messagesEndRef} className="scroll-anchor"></div>
-          </div>
+            <Box ref={messagesEndRef} className="scroll-anchor"></Box>
+          </Box>
 
           {showMediaViewer && (
-            <div className="media-viewer-overlay">
-              <div className="media-viewer-content">
-                <button className="close-viewer" onClick={closeMediaViewer}>
+            <Box className="media-viewer-overlay">
+              <Box className="media-viewer-content">
+                <Button className="close-viewer" onClick={closeMediaViewer}>
                   ×
-                </button>
+                </Button>
                 {selectedMedia.fileType.startsWith('image/') ? (
                   <img src={selectedMedia.fileUrl} alt="Full size" />
                 ) : (
-                  <div className="document-viewer">
+                  <Box className="document-viewer">
                     <iframe 
-                      src={`https://docs.google.com/viewer?url=R{encodeURIComponent(selectedMedia.fileUrl)}&embedded=true`} 
+                      src={`https://docs.google.com/viewer?url=${encodeURIComponent(selectedMedia.fileUrl)}&embedded=true`} 
                       title={selectedMedia.fileName}
                     ></iframe>
                     <a 
@@ -1086,62 +1122,64 @@ export default function ChatRoom() {
                     >
                       Download File
                     </a>
-                  </div>
+                  </Box>
                 )}
                 {selectedMedia.text && (
-                  <div className="media-caption-viewer">
-                    <p>{selectedMedia.text}</p>
-                  </div>
+                  <Box className="media-caption-viewer">
+                    <Typography>{selectedMedia.text}</Typography>
+                  </Box>
                 )}
-              </div>
-            </div>
+              </Box>
+            </Box>
           )}
 
-          <form onSubmit={sendMessage} className="message-input-container">
+          <Box component="form" onSubmit={sendMessage} className="message-input-container">
             {renderAttachmentPreview()}
-            <div className="input-row">
-              <input
-                type="text"
+            <Box className="input-row">
+              <TextField
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 placeholder="Type a message..."
                 disabled={status.loading}
+                fullWidth
+                size="small"
+                sx={{ bgcolor: '#fff', borderRadius: '0.5rem' }}
               />
-             <div className="action-buttons">
-  <button 
-    type="button" 
-    className="attach-button"
-    onClick={() => fileInputRef.current.click()}
-  >
-    <svg viewBox="0 0 24 24" width="20" height="20">
-      <path fill="currentColor" d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5a2.5 2.5 0 0 1 5 0v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5a2.5 2.5 0 0 0 5 0V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z"></path>
-    </svg>
-    <input
-      type="file"
-      ref={fileInputRef}
-      onChange={handleFileChange}
-      style={{ display: 'none' }}
-      accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
-    />
-  </button>
-  <button 
-    type="submit" 
-    disabled={status.loading || (!newMessage.trim() && !attachment)}
-    className={status.loading ? 'loading' : ''}
-  >
-    {status.loading ? (
-      <span className="send-spinner"></span>
-    ) : (
-      <svg viewBox="0 0 24 24" width="24" height="24">
-        <path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
-      </svg>
-    )}
-  </button>
-</div>
-            </div>
-          </form>
+              <Box className="action-buttons">
+                <IconButton 
+                  type="button" 
+                  className="attach-button"
+                  onClick={() => fileInputRef.current.click()}
+                >
+                  <svg viewBox="0 0 24 24" width="20" height="20">
+                    <path fill="currentColor" d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5a2.5 2.5 0 0 1 5 0v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5a2.5 2.5 0 0 0 5 0V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z"></path>
+                  </svg>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    style={{ display: 'none' }}
+                    accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
+                  />
+                </IconButton>
+                <IconButton 
+                  type="submit" 
+                  disabled={status.loading || (!newMessage.trim() && !attachment)}
+                  className={status.loading ? 'loading' : ''}
+                >
+                  {status.loading ? (
+                    <span className="send-spinner"></span>
+                  ) : (
+                    <svg viewBox="0 0 24 24" width="24" height="24">
+                      <path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
+                    </svg>
+                  )}
+                </IconButton>
+              </Box>
+            </Box>
+          </Box>
         </>
       )}
-    </div>
+    </Box>
   );
 }

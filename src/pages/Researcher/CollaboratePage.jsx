@@ -13,7 +13,18 @@ import {
 } from 'firebase/firestore';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import './ResearcherDashboard.css';
+import { 
+  Box,
+  Button,
+  Typography,
+  Checkbox,
+  FormControlLabel,
+  TextField,
+  Paper,
+  Grid,
+  CircularProgress,
+  IconButton
+} from '@mui/material';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import { sendMessage, messageTypes } from '../../utils/sendMessage';
 import Footer from '../../components/Footer';
@@ -24,6 +35,7 @@ const CollaboratePage = () => {
   const [loading, setLoading] = useState(false);
   const [requestStates, setRequestStates] = useState({});
   const [showFriendsOnly, setShowFriendsOnly] = useState(false);
+
 
   useEffect(() => {
     const fetchCollaborateListings = async () => {
@@ -213,111 +225,179 @@ const CollaboratePage = () => {
     ? collaborateListings.filter(listing => listing.isFriend)
     : collaborateListings;
 
-  return (
-    <main>
-      <header className="researcher-header">
-         <button 
-            className="back-button"
-            onClick={() => navigate(-1)}
-            style={{ 
-              color: 'var(--white)',
-              marginRight: '1.5rem' // Add spacing between arrow and title
-            }}
-          >
-            <ArrowBackIosIcon />
-          </button>
-        <section className="header-title">
-          <h1>Collaborate with Other Researchers</h1>
-          <p>Find projects to join and collaborate on</p>
-        </section>
-        <section className="header-actions">
-          <button 
-            className="dashboard-btn"
-            onClick={() => navigate('/researcher-dashboard')}
-          >
-            Back to Dashboard
-          </button>
-        </section>
-      </header>
+ return (
+    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      {/* Header */}
+      <Box 
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          bgcolor: 'var(--dark-blue)',
+          color: '#B1EDE8',
+          p: 3,
+          borderBottom: '2px solid #2a3a57'
+        }}
+      >
+        <IconButton 
+          onClick={() => navigate(-1)}
+          sx={{ color: '#FFFFFF', mr: 2 }}
+        >
+          <ArrowBackIosIcon />
+        </IconButton>
+        <Box>
+          <Typography variant="h4" sx={{ fontWeight: 600, color: '#FFFFFF' }}>
+            Collaborate with Other Researchers
+          </Typography>
+          <Typography variant="body1" sx={{ color: '#7a8fb1' }}>
+            Find projects to join and collaborate on
+          </Typography>
+        </Box>
+        <Button
+          variant="contained"
+          onClick={() => navigate('/researcher-dashboard')}
+          sx={{ 
+            ml: 'auto',
+            bgcolor: '#B1EDE8',
+            color: '#132238',
+            '&:hover': { bgcolor: '#9dd8d3' }
+          }}
+        >
+          Back to Dashboard
+        </Button>
+      </Box>
 
-      <section className="collaborate-main">
-        <section style={{ textAlign: 'center', marginBottom: '1rem' }}>
-          <label style={{ color: '#132238', cursor: 'pointer' }}>
-            <input 
-              type="checkbox" 
-              checked={showFriendsOnly} 
-              onChange={() => setShowFriendsOnly(!showFriendsOnly)} 
-              style={{ marginRight: '0.5rem' }}
+      {/* Main Content */}
+      <Box sx={{ flex: 1, p: 3, maxWidth: 1200, mx: 'auto', width: '100%' }}>
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={showFriendsOnly}
+              onChange={() => setShowFriendsOnly(!showFriendsOnly)}
+              sx={{ color: '#132238', }}
             />
-            Show Friends Only
-          </label>
-        </section>
+          }
+          label="Show Friends Only"
+          sx={{ color: '#132238', mb: 3, justifyContent: 'center' }}
+        />
 
         {loading ? (
-          <section style={{ textAlign: 'center', color: '#132238' }}>
-            <p>Loading available projects...</p>
-          </section>
+          <Box sx={{ textAlign: 'center', mt: 4 }}>
+            <CircularProgress sx={{ color: '#132238' }} />
+            <Typography variant="body1" sx={{ color: '#B1EDE8', mt: 2 }}>
+              Loading available projects...
+            </Typography>
+          </Box>
         ) : (
-          <section>
-            <h3 style={{ color: '#132238', marginBottom: '1.5rem', textAlign: 'center' }}>Available Projects</h3>
+          <Box>
+            <Typography variant="h5" sx={{ color: '#132238', mb: 4, textAlign: 'center' }}>
+              Available Projects
+            </Typography>
+            
             {displayedListings.length === 0 ? (
-              <p style={{ textAlign: 'center', color: '#132238' }}>No projects available for collaboration at this time.</p>
+              <Typography sx={{ textAlign: 'center', color: '#7a8fb1' }}>
+                No projects available for collaboration at this time.
+              </Typography>
             ) : (
-              displayedListings.map((listing) => {
-                const state = requestStates[listing.id] || {};
-                const isRequesting = state.requesting;
-                const hasPending = state.hasPendingRequest;
+              <Grid container spacing={3}>
+                {displayedListings.map((listing) => {
+                  const state = requestStates[listing.id] || {};
+                  const isRequesting = state.requesting;
+                  const hasPending = state.hasPendingRequest;
 
-                return (
-                  <article key={listing.id} className="collaborate-card">
-                    <h4>{listing.title}</h4>
-                    <section className="byline">By: {listing.researcherName}</section>
-                    <section className="summary">{listing.summary}</section>
-                    {!hasPending && (
-                      <textarea
-                        placeholder="Add a message to the researcher (optional)"
-                        value={state.message || ""}
-                        onChange={(e) =>
-                          setRequestStates((prev) => ({
-                            ...prev,
-                            [listing.id]: {
-                              ...prev[listing.id],
-                              message: e.target.value
+                  return (
+                    <Grid item xs={12} md={6} key={listing.id}>
+                      <Paper 
+                        sx={{
+                          p: 3,
+                          bgcolor: '#132238',
+                          color: '#B1EDE8',
+                          borderRadius: 2,
+                          border: '1px solid #2a3a57'
+                        }}
+                      >
+                        <Typography variant="h6"  gutterBottom>
+                          {listing.title}
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: '#FFFFFF', mb: 2 }}>
+                          By: {listing.researcherName}
+                        </Typography>
+                        <Typography variant="body1" sx={{ mb: 2, color: '#FFFFFF' }}>
+                          {listing.summary} 
+                        </Typography>
+
+                        {!hasPending && (
+                          <TextField
+                            fullWidth
+                            multiline
+                            rows={2}
+                            variant="outlined"
+                            placeholder="Add a message to the researcher (optional)"
+                            value={state.message || ""}
+                            onChange={(e) =>
+                              setRequestStates((prev) => ({
+                                ...prev,
+                                [listing.id]: {
+                                  ...prev[listing.id],
+                                  message: e.target.value
+                                }
+                              }))
                             }
-                          }))
-                        }
-                        rows={2}
-                      />
-                    )}
-                    <section className="button-row">
-                      <button
-                        className="view-btn"
-                        onClick={() => navigate(`/listing/${listing.id}`)}
-                      >
-                        View Details
-                      </button>
-                      <button
-                        className={hasPending ? "collab-btn disabled-btn" : "collab-btn"}
-                        onClick={() => !hasPending && handleCollaborateRequest(listing.id, listing.researcherId)}
-                        disabled={hasPending || isRequesting}
-                      >
-                        {hasPending
-                          ? "Request Pending"
-                          : isRequesting
-                          ? "Sending..."
-                          : "Request Collaboration"}
-                      </button>
-                    </section>
-                  </article>
-                );
-              })
+                            sx={{
+                              mb: 2,
+                              '& .MuiOutlinedInput-root': {
+                                color: '#FFFFFF',
+                                '& fieldset': { borderColor: '#2a3a57' }
+                              }
+                            }}
+                          />
+                        )}
+
+                        <Box sx={{ display: 'flex', gap: 2 }}>
+                          <Button
+                            variant="outlined"
+                            onClick={() => navigate(`/listing/${listing.id}`)}
+                            sx={{
+                              color: '#B1EDE8',
+                              borderColor: '#2a3a57',
+                              '&:hover': { borderColor: '#B1EDE8' }
+                            }}
+                          >
+                            View Details
+                          </Button>
+                          <Button
+                            variant="contained"
+                            onClick={() => !hasPending && handleCollaborateRequest(listing.id, listing.researcherId)}
+                            disabled={hasPending || isRequesting}
+                            sx={{
+                              bgcolor: hasPending ? '#2a3a57' : '#B1EDE8',
+                              color: hasPending ? '#FFFFFF' : '#132238',
+                              '&:hover': { 
+                                bgcolor: hasPending ? '#2a3a57' : '#9dd8d3',
+                                boxShadow: 'none'
+                                
+                              },
+                              flexGrow: 1
+                            }}
+                          >
+                            {hasPending
+                              ? "Request Pending"
+                              : isRequesting
+                              ? "Sending..."
+                              : "Request Collaboration"}
+                          </Button>
+                        </Box>
+                      </Paper>
+                    </Grid>
+                  );
+                })}
+              </Grid>
             )}
-          </section>
+          </Box>
         )}
-      </section>
+      </Box>
 
       <Footer />
-    </main>
+    </Box>
   );
 };
 
