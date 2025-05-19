@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../../config/firebaseConfig';
-import { collection, getDocs, query, where, doc, getDoc, onSnapshot, orderBy, updateDoc, addDoc, serverTimestamp, arrayUnion } from 'firebase/firestore';
+import { collection, getDocs, query, where, doc, getDoc, onSnapshot, orderBy, updateDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import './ResearcherDashboard.css';
 import axios from "axios";
 import CollaborationRequestsPanel from '../../components/CollaborationRequestsPanel';
@@ -308,7 +308,7 @@ const ResearcherDashboard = () => {
     markMessageAsRead(message.id);
     switch(message.type) {
       case 'collaboration-request':
-        setShowCollaborationRequests(true);
+        navigate('/collaboration-requests');
         break;
       case 'review-request':
         navigate(`/review-requests/${message.relatedId}`);
@@ -317,68 +317,6 @@ const ResearcherDashboard = () => {
         navigate(`/listing/${message.relatedId}`);
         break;
       default: break;
-    }
-  };
-
-  const handleViewRequesterProfile = async (request) => {
-    try {
-      const profileDoc = await getDoc(doc(db, 'users', request.requesterId));
-      if (profileDoc.exists()) {
-        setRequesterProfile(profileDoc.data());
-        setSelectedRequest(request);
-      }
-    } catch (error) {
-      console.error("Error fetching requester profile:", error);
-    }
-  };
-
-  const handleAcceptCollaboration = async () => {
-    if (!selectedRequest) return;
-
-    try {
-      const requestRef = doc(db, 'collaboration-requests', selectedRequest.id);
-      await updateDoc(requestRef, { 
-        status: 'accepted',
-        respondedAt: new Date()
-      });
-
-      // Create collaboration
-      await addDoc(collection(db, 'collaborations'), {
-        listingId: selectedRequest.listingId,
-        researcherId: selectedRequest.researcherId,
-        collaboratorId: selectedRequest.requesterId,
-        joinedAt: new Date(),
-        status: 'active'
-      });
-
-      // Update listing collaborators
-      await updateDoc(doc(db, 'research-listings', selectedRequest.listingId), {
-        collaborators: arrayUnion(selectedRequest.requesterId)
-      });
-
-      // Close the profile view
-      setSelectedRequest(null);
-      setRequesterProfile(null);
-    } catch (error) {
-      console.error('Error accepting collaboration:', error);
-    }
-  };
-
-  const handleRejectCollaboration = async () => {
-    if (!selectedRequest) return;
-
-    try {
-      const requestRef = doc(db, 'collaboration-requests', selectedRequest.id);
-      await updateDoc(requestRef, { 
-        status: 'rejected',
-        respondedAt: new Date()
-      });
-
-      // Close the profile view
-      setSelectedRequest(null);
-      setRequesterProfile(null);
-    } catch (error) {
-      console.error('Error rejecting collaboration:', error);
     }
   };
 
@@ -415,7 +353,6 @@ const ResearcherDashboard = () => {
       console.error("Error logging event:", error);
     }
   };
-
 
   const handleLogout = async () => {
     try {
@@ -706,7 +643,7 @@ const ResearcherDashboard = () => {
         </Box>
            <Box sx={{ mt: 6, maxWidth: 1200, mx: 'auto' }}>
   <Typography variant="h4" sx={{ mb: 3, fontSize: '1.7rem' }}>Collaboration Requests</Typography>
-  <Paper sx={{ p: 3, color: '#FFFFFF', bgcolor: '#132238', borderRadius: 2 }}>
+  <Paper sx={{ p: 3, bgcolor: '#132238', borderRadius: 2 }}>
     <CollaborationRequestsPanel userId={userId} />
   </Paper>
 </Box> 

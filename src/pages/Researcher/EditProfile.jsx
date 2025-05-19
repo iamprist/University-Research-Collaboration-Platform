@@ -22,7 +22,6 @@ import {
   Avatar,
 } from '@mui/material';
 
-// Predefined options for form fields
 const researchAreas = [
   'Physics', 'Chemistry', 'Biology', 'Computer Science', 'Mathematics',
   'Statistics', 'Engineering', 'Medicine', 'Nursing', 'Pharmacy', 'Law',
@@ -32,17 +31,12 @@ const researchAreas = [
   'Geography', 'Philosophy', 'Linguistics', 'Communication', 'Other'
 ];
 
-const countries = [
-  'United States', 'United Kingdom', 'Canada', 'Australia', 'Germany',
-  'France', 'Japan', 'China', 'South Africa', 'Nigeria', 'Kenya',
-  'Brazil', 'India', 'Russia', 'Other'
-];
-
-const universities = [
-  'Harvard University', 'Stanford University', 'MIT', 'University of Oxford',
-  'University of Cambridge', 'ETH Zurich', 'University of Cape Town',
-  'University of Nairobi', 'University of Lagos', 'University of Johannesburg',
-  'Other'
+const titles = [
+  'Mr', 'Mrs', 'Ms', 'Miss', 'Mx', 'Dr', 'Prof', 'Professor', 'Rev',
+  'Father', 'Sister', 'Brother', 'Imam', 'Rabbi', 'Sheikh', 'Eng',
+  'Engr', 'Hon', 'Capt', 'Major', 'Colonel', 'Lt', 'Lt. Col',
+  'Sir', 'Dame', 'Judge', 'Attorney', 'Principal', 'Dean',
+  'Chancellor', 'President', 'CEO', 'Chairperson'
 ];
 
 const EditProfile = () => {
@@ -58,7 +52,6 @@ const EditProfile = () => {
   });
   const [userId, setUserId] = useState(null);
 
-  // Check authentication status on component mount
   useEffect(() => {
     const checkAuthToken = async () => {
       const token = localStorage.getItem('authToken');
@@ -82,7 +75,6 @@ const EditProfile = () => {
     checkAuthToken();
   }, [navigate]);
 
-  // Fetch user profile when userId changes
   useEffect(() => {
     const fetchProfile = async () => {
       if (!userId) return;
@@ -98,10 +90,6 @@ const EditProfile = () => {
             email: data.email || '',
             researchArea: data.researchArea || '',
             biography: data.biography || '',
-            country: data.country || '',
-            university: data.university || '',
-            otherUniversity: data.otherUniversity || '',
-            otherCountry: data.otherCountry || '',
             profilePicture: data.profilePicture || null
           });
         }
@@ -113,7 +101,6 @@ const EditProfile = () => {
     fetchProfile();
   }, [userId]);
 
-  // Handle form input changes
   const handleChange = (e) => {
     const { name, value, files } = e.target;
     if (name === 'profilePicture') {
@@ -123,7 +110,6 @@ const EditProfile = () => {
     }
   };
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!userId) {
@@ -134,7 +120,7 @@ const EditProfile = () => {
     try {
       let profileData = { ...profile };
 
-      // Upload new profile picture if selected
+      // Handle profile picture upload if a new file is selected
       if (profile.profilePicture instanceof File) {
         const storageRef = ref(storage, `profilePictures/${userId}`);
         await uploadBytes(storageRef, profile.profilePicture);
@@ -144,7 +130,7 @@ const EditProfile = () => {
         profileData.profilePicture = null;
       }
 
-      // Clean undefined values before saving
+      // Remove any undefined values (Firestore does not accept undefined)
       Object.keys(profileData).forEach((key) => {
         if (typeof profileData[key] === 'undefined') {
           profileData[key] = null;
