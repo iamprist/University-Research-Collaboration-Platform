@@ -26,6 +26,15 @@ export default function ManageReviewers() {
   const [currentSearchTerm, setCurrentSearchTerm] = useState("");
   const [revokedSearchTerm, setRevokedSearchTerm] = useState("");
 
+  const [showRevokeModal, setShowRevokeModal] = useState(false);
+  const [revokeReason, setRevokeReason] = useState("");
+  const [revokingReviewerId, setRevokingReviewerId] = useState(null);
+
+  // Add state for reject modal
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+  const [rejectingReviewerId, setRejectingReviewerId] = useState(null);
+
   const fetchReviewers = async () => {
     try {
       setLoading(true);
@@ -103,24 +112,59 @@ export default function ManageReviewers() {
     }
   };
 
-  const handleReject = async (id) => {
+  // Modified handleReject to open modal
+  const handleReject = (id) => {
+    setRejectingReviewerId(id);
+    setRejectReason("");
+    setShowRejectModal(true);
+  };
+
+  // Confirm reject with reason
+  const confirmReject = async () => {
+    if (!rejectingReviewerId || !rejectReason.trim()) return;
     try {
-      const reviewerDoc = doc(db, "reviewers", id);
-      await updateDoc(reviewerDoc, { status: "rejected" });
-      setReviewers((prev) => prev.filter((reviewer) => reviewer.id !== id));
+      const reviewerDoc = doc(db, "reviewers", rejectingReviewerId);
+      await updateDoc(reviewerDoc, {
+        status: "rejected",
+        reason: rejectReason.trim(),
+      });
+      setReviewers((prev) => prev.filter((reviewer) => reviewer.id !== rejectingReviewerId));
       fetchRevokedReviewers();
     } catch (error) {
       console.error("Error rejecting reviewer:", error);
+    } finally {
+      setShowRejectModal(false);
+      setRejectReason("");
+      setRejectingReviewerId(null);
     }
   };
 
-  const handleRevoke = async (id) => {
+  // Modified handleRevoke to open modal
+  const handleRevoke = (id) => {
+    setRevokingReviewerId(id);
+    setRevokeReason("");
+    setShowRevokeModal(true);
+  };
+
+  // Confirm revoke with reason
+  const confirmRevoke = async () => {
+    if (!revokingReviewerId || !revokeReason.trim()) return;
     try {
-      const userDoc = doc(db, "users", id);
-      await updateDoc(userDoc, { role: "revoked" });
-      setCurrentReviewers((prev) => prev.filter((reviewer) => reviewer.id !== id));
+      const reviewerDoc = doc(db, "reviewers", revokingReviewerId);
+      await updateDoc(reviewerDoc, {
+        status: "revoked",
+        reason: revokeReason.trim(),
+      });
+      setCurrentReviewers((prev) =>
+        prev.filter((reviewer) => reviewer.id !== revokingReviewerId)
+      );
+      fetchRevokedReviewers();
     } catch (error) {
       console.error("Error revoking reviewer:", error);
+    } finally {
+      setShowRevokeModal(false);
+      setRevokeReason("");
+      setRevokingReviewerId(null);
     }
   };
 
@@ -349,6 +393,91 @@ export default function ManageReviewers() {
         </div>
       </article>
 
+      {/* Reject Reason Modal */}
+      {showRejectModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0, left: 0, right: 0, bottom: 0,
+            background: "rgba(0,0,0,0.5)",
+            zIndex: 1000,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center"
+          }}
+        >
+          <div
+            style={{
+              background: "#243447",
+              padding: "2rem",
+              borderRadius: "0.5rem",
+              minWidth: 320,
+              maxWidth: "90vw",
+              boxShadow: "0 4px 24px rgba(0,0,0,0.3)"
+            }}
+          >
+            <h3 style={{ marginBottom: "1rem", color: "#fff" }}>Reject Reviewer</h3>
+            <label htmlFor="reject-reason" style={{ color: "#64CCC5", fontWeight: 600, display: "block", marginBottom: 8 }}>
+              Please provide a reason for rejection:
+            </label>
+            <textarea
+              id="reject-reason"
+              value={rejectReason}
+              onChange={e => setRejectReason(e.target.value)}
+              rows={4}
+              style={{
+                width: "100%",
+                borderRadius: "0.4rem",
+                border: "1.5px solid #64CCC5",
+                background: "#132238",
+                color: "#fff",
+                padding: "0.7rem",
+                marginBottom: "1.2rem",
+                fontSize: "1rem",
+                resize: "vertical"
+              }}
+              placeholder="Enter reason..."
+            />
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem" }}>
+              <button
+                onClick={() => {
+                  setShowRejectModal(false);
+                  setRejectReason("");
+                  setRejectingReviewerId(null);
+                }}
+                style={{
+                  background: "#4a5568",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "0.5rem",
+                  padding: "0.5rem 1.2rem",
+                  fontWeight: 600,
+                  cursor: "pointer"
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmReject}
+                disabled={!rejectReason.trim()}
+                style={{
+                  background: "#FF6B6B",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "0.5rem",
+                  padding: "0.5rem 1.2rem",
+                  fontWeight: 600,
+                  cursor: rejectReason.trim() ? "pointer" : "not-allowed",
+                  opacity: rejectReason.trim() ? 1 : 0.7
+                }}
+              >
+                Confirm Reject
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Current Reviewers */}
       <article style={styles.article}>
         <h2 style={styles.heading}>Current Reviewers</h2>
@@ -422,6 +551,91 @@ export default function ManageReviewers() {
         </div>
       </article>
 
+      {/* Revoke Reason Modal */}
+      {showRevokeModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0, left: 0, right: 0, bottom: 0,
+            background: "rgba(0,0,0,0.5)",
+            zIndex: 1000,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center"
+          }}
+        >
+          <div
+            style={{
+              background: "#243447",
+              padding: "2rem",
+              borderRadius: "0.5rem",
+              minWidth: 320,
+              maxWidth: "90vw",
+              boxShadow: "0 4px 24px rgba(0,0,0,0.3)"
+            }}
+          >
+            <h3 style={{ marginBottom: "1rem", color: "#fff" }}>Revoke Reviewer</h3>
+            <label htmlFor="revoke-reason" style={{ color: "#64CCC5", fontWeight: 600, display: "block", marginBottom: 8 }}>
+              Please provide a reason for revoking:
+            </label>
+            <textarea
+              id="revoke-reason"
+              value={revokeReason}
+              onChange={e => setRevokeReason(e.target.value)}
+              rows={4}
+              style={{
+                width: "100%",
+                borderRadius: "0.4rem",
+                border: "1.5px solid #64CCC5",
+                background: "#132238",
+                color: "#fff",
+                padding: "0.7rem",
+                marginBottom: "1.2rem",
+                fontSize: "1rem",
+                resize: "vertical"
+              }}
+              placeholder="Enter reason..."
+            />
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem" }}>
+              <button
+                onClick={() => {
+                  setShowRevokeModal(false);
+                  setRevokeReason("");
+                  setRevokingReviewerId(null);
+                }}
+                style={{
+                  background: "#4a5568",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "0.5rem",
+                  padding: "0.5rem 1.2rem",
+                  fontWeight: 600,
+                  cursor: "pointer"
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmRevoke}
+                disabled={!revokeReason.trim()}
+                style={{
+                  background: "#FF6B6B",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "0.5rem",
+                  padding: "0.5rem 1.2rem",
+                  fontWeight: 600,
+                  cursor: revokeReason.trim() ? "pointer" : "not-allowed",
+                  opacity: revokeReason.trim() ? 1 : 0.7
+                }}
+              >
+                Confirm Revoke
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Add space between current and revoked reviewers */}
       <div style={{ height: "2.5rem" }} />
 
@@ -479,6 +693,10 @@ export default function ManageReviewers() {
                 </div>
               )}
               <div style={styles.cardEmail}><strong>Status:</strong> {reviewer.status || reviewer.role || "N/A"}</div>
+              {/* Show reason for rejection/revocation */}
+              <div style={styles.cardEmail}>
+                <strong>Reason:</strong> {reviewer.reason ? reviewer.reason : <span style={{ color: "#888" }}>—</span>}
+              </div>
               <div style={styles.cardEmail}><strong>Joined:</strong> {reviewer.createdAt ? new Date(reviewer.createdAt.seconds ? reviewer.createdAt.seconds * 1000 : reviewer.createdAt).toLocaleDateString() : "N/A"}</div>
               <button
                 onClick={() => handleDeleteReviewer(reviewer.id)}
