@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../../config/firebaseConfig';
-import { collection, getDocs, query, where, doc, getDoc, onSnapshot, orderBy, updateDoc, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, getDocs, query, where, doc, getDoc, onSnapshot, orderBy, updateDoc, addDoc, serverTimestamp, arrayUnion } from 'firebase/firestore';
 import './ResearcherDashboard.css';
 import axios from "axios";
 import CollaborationRequestsPanel from '../../components/CollaborationRequestsPanel';
-import Footer from '../../components/Footer'; // Import the Footer component
+import Footer from '../../components/Footer';
 import ContactForm from '../../components/ContactForm';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
+
 const MessageNotification = ({ messages, unreadCount, onMessageClick }) => {
   const [showMessages, setShowMessages] = useState(false);
   const dropdownRef = useRef(null);
@@ -91,11 +92,13 @@ const ResearcherDashboard = () => {
   const [messages, setMessages] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showContactForm, setShowContactForm] = useState(false);
-  const [ipAddress, setIpAddress] = useState(""); // State to store the IP address
+  const [ipAddress, setIpAddress] = useState("");
+  const [showCollaborationRequests, setShowCollaborationRequests] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [requesterProfile, setRequesterProfile] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Fetch the user's IP address
     const fetchIpAddress = async () => {
       try {
         const response = await axios.get("https://api.ipify.org?format=json");
@@ -107,7 +110,6 @@ const ResearcherDashboard = () => {
 
     fetchIpAddress();
   }, []);
-  
 
   useEffect(() => {
     const token = localStorage.getItem('authToken');
@@ -148,7 +150,6 @@ const ResearcherDashboard = () => {
   useEffect(() => {
     if (!userId) return;
     
-    // Listen for messages
     const messagesRef = collection(db, 'users', userId, 'messages');
     const messagesQuery = query(messagesRef, orderBy('timestamp', 'desc'));
     
@@ -162,7 +163,6 @@ const ResearcherDashboard = () => {
       setUnreadCount(messagesData.filter(msg => !msg.read).length);
     });
 
-    // Listen for collaborations
     const collabQuery = query(
       collection(db, "collaborations"),
       where("collaboratorId", "==", userId)
@@ -276,7 +276,7 @@ const ResearcherDashboard = () => {
     
     switch(message.type) {
       case 'collaboration-request':
-        navigate('/collaboration-requests');
+        setShowCollaborationRequests(true);
         break;
       case 'review-request':
         navigate(`/review-requests/${message.relatedId}`);
@@ -286,6 +286,68 @@ const ResearcherDashboard = () => {
         break;
       default:
         // Default action if needed
+    }
+  };
+
+  const handleViewRequesterProfile = async (request) => {
+    try {
+      const profileDoc = await getDoc(doc(db, 'users', request.requesterId));
+      if (profileDoc.exists()) {
+        setRequesterProfile(profileDoc.data());
+        setSelectedRequest(request);
+      }
+    } catch (error) {
+      console.error("Error fetching requester profile:", error);
+    }
+  };
+
+  const handleAcceptCollaboration = async () => {
+    if (!selectedRequest) return;
+
+    try {
+      const requestRef = doc(db, 'collaboration-requests', selectedRequest.id);
+      await updateDoc(requestRef, { 
+        status: 'accepted',
+        respondedAt: new Date()
+      });
+
+      // Create collaboration
+      await addDoc(collection(db, 'collaborations'), {
+        listingId: selectedRequest.listingId,
+        researcherId: selectedRequest.researcherId,
+        collaboratorId: selectedRequest.requesterId,
+        joinedAt: new Date(),
+        status: 'active'
+      });
+
+      // Update listing collaborators
+      await updateDoc(doc(db, 'research-listings', selectedRequest.listingId), {
+        collaborators: arrayUnion(selectedRequest.requesterId)
+      });
+
+      // Close the profile view
+      setSelectedRequest(null);
+      setRequesterProfile(null);
+    } catch (error) {
+      console.error('Error accepting collaboration:', error);
+    }
+  };
+
+  const handleRejectCollaboration = async () => {
+    if (!selectedRequest) return;
+
+    try {
+      const requestRef = doc(db, 'collaboration-requests', selectedRequest.id);
+      await updateDoc(requestRef, { 
+        status: 'rejected',
+        respondedAt: new Date()
+      });
+
+      // Close the profile view
+      setSelectedRequest(null);
+      setRequesterProfile(null);
+    } catch (error) {
+      console.error('Error rejecting collaboration:', error);
     }
   };
 
@@ -317,8 +379,8 @@ const ResearcherDashboard = () => {
         userName,
         action,
         details,
-        ip, // Add IP address
-        target, // Add target field
+        ip,
+        target,
         timestamp: serverTimestamp(),
       });
       console.log("Event logged:", { userId, role, userName, action, details, ip, target });
@@ -326,6 +388,7 @@ const ResearcherDashboard = () => {
       console.error("Error logging event:", error);
     }
   };
+
   const handleLogout = async () => {
     try {
       const user = auth.currentUser;
@@ -370,19 +433,73 @@ const ResearcherDashboard = () => {
         </section>
       )}
 
+      {showCollaborationRequests && (
+        <section className="collaboration-requests-modal">
+          <div className="modal-content">
+            <button 
+              className="close-modal"
+              onClick={() => setShowCollaborationRequests(false)}
+            >
+              ×
+            </button>
+            <CollaborationRequestsPanel 
+              userId={userId} 
+              onViewProfile={handleViewRequesterProfile}
+            />
+          </div>
+        </section>
+      )}
+
+      {selectedRequest && requesterProfile && (
+        <section className="requester-profile-modal">
+          <div className="modal-content">
+            <button 
+              className="close-modal"
+              onClick={() => {
+                setSelectedRequest(null);
+                setRequesterProfile(null);
+              }}
+            >
+              ×
+            </button>
+            <h3>{requesterProfile.name}'s Profile</h3>
+            <div className="profile-details">
+              <p><strong>Email:</strong> {requesterProfile.email}</p>
+              <p><strong>Institution:</strong> {requesterProfile.institution}</p>
+              <p><strong>Department:</strong> {requesterProfile.department}</p>
+              <p><strong>Research Interests:</strong> {requesterProfile.researchInterests}</p>
+              <p><strong>Bio:</strong> {requesterProfile.bio}</p>
+            </div>
+            <div className="request-actions">
+              <button 
+                className="accept-btn"
+                onClick={handleAcceptCollaboration}
+              >
+                Accept Collaboration
+              </button>
+              <button 
+                className="reject-btn"
+                onClick={handleRejectCollaboration}
+              >
+                Reject Request
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
+
       <header className="researcher-header">
-         <button 
-            className="back-button"
-            onClick={() => navigate(-1)}
-            style={{ 
-              color: 'var(--white)',
-              marginRight: '1.5rem' // Add spacing between arrow and title
-            }}
-          >
-            <ArrowBackIosIcon />
-          </button>
+        <button 
+          className="back-button"
+          onClick={() => navigate(-1)}
+          style={{ 
+            color: 'var(--white)',
+            marginRight: '1.5rem'
+          }}
+        >
+          <ArrowBackIosIcon />
+        </button>
         <section className="header-title">
-          
           <h1>Welcome, {userName}</h1>
           <p>Manage your research and collaborate with other researchers</p>
         </section>
@@ -406,7 +523,7 @@ const ResearcherDashboard = () => {
                 <button onClick={handleAddListing}>New Research</button>
                 <button onClick={() => navigate('/friends')}>Friends</button>
                 <button onClick={handleCollaborate}>Collaborate</button>
-                <button className="chat-with-us-btn" onClick={() => setShowContactForm(true)} > Chat with Us </button>
+                <button className="chat-with-us-btn" onClick={() => setShowContactForm(true)}>Chat with Us</button>
                 <button onClick={handleLogout}>Logout</button>
               </section>
             )}
@@ -489,46 +606,43 @@ const ResearcherDashboard = () => {
             ))
           )}
         </section>
+
+        <section className="collaborations-section">
+          <h3>Your Collaborations</h3>
+          {collabListings.length > 0 ? (
+            <section className="listings-grid">
+              {collabListings.map(listing => (
+                <article key={listing.id} className="listing-card">
+                  <h4>{listing.title}</h4>
+                  <p>{listing.summary}</p>
+                  <section className="listing-actions">
+                    <button
+                      onClick={() => navigate(`/listing/${listing.id}`)}
+                    >
+                      View Project
+                    </button>
+                    <button
+                      className="chat-btn"
+                      onClick={() => navigate(`/chat/${listing.id}`)}
+                    >
+                      Chat
+                    </button>
+                  </section>
+                </article>
+              ))}
+            </section>
+          ) : (
+            <p className="no-listings">
+              No active collaborations yet. Browse projects to collaborate!
+            </p>
+          )}
+        </section>
       </section>
 
-      <section className="collaboration-requests-section">
-        <CollaborationRequestsPanel userId={userId} />
-      </section>
-
-      <section className="collaborations-section">
-        <h3>Your Collaborations</h3>
-        {collabListings.length > 0 ? (
-          <section className="listings-grid">
-            {collabListings.map(listing => (
-              <article key={listing.id} className="listing-card">
-                <h4>{listing.title}</h4>
-                <p>{listing.summary}</p>
-                <section className="listing-actions">
-                  <button
-                    onClick={() => navigate(`/listing/${listing.id}`)}
-                  >
-                    View Project
-                  </button>
-                  <button
-                    className="chat-btn"
-                    onClick={() => navigate(`/chat/${listing.id}`)}
-                  >
-                    Chat
-                  </button>
-                </section>
-              </article>
-            ))}
-          </section>
-        ) : (
-          <p className="no-listings">
-            No active collaborations yet. Browse projects to collaborate!
-          </p>
-        )}
-      </section>
       {showContactForm && (
-      <section className="contact-form-modal">
-      <ContactForm onClose={() => setShowContactForm(false)} />
-      </section>
+        <section className="contact-form-modal">
+          <ContactForm onClose={() => setShowContactForm(false)} />
+        </section>
       )}
 
       <Footer />

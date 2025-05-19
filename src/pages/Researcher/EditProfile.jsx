@@ -5,8 +5,9 @@ import { useNavigate } from 'react-router-dom';
 import './ResearcherDashboard.css';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
-import Footer from '../../components/Footer'; // Import the Footer component
+import Footer from '../../components/Footer';
 
+// Predefined options for form fields
 const researchAreas = [
   'Physics', 'Chemistry', 'Biology', 'Computer Science', 'Mathematics',
   'Statistics', 'Engineering', 'Medicine', 'Nursing', 'Pharmacy', 'Law',
@@ -16,19 +17,37 @@ const researchAreas = [
   'Geography', 'Philosophy', 'Linguistics', 'Communication', 'Other'
 ];
 
+const countries = [
+  'United States', 'United Kingdom', 'Canada', 'Australia', 'Germany',
+  'France', 'Japan', 'China', 'South Africa', 'Nigeria', 'Kenya',
+  'Brazil', 'India', 'Russia', 'Other'
+];
+
+const universities = [
+  'Harvard University', 'Stanford University', 'MIT', 'University of Oxford',
+  'University of Cambridge', 'ETH Zurich', 'University of Cape Town',
+  'University of Nairobi', 'University of Lagos', 'University of Johannesburg',
+  'Other'
+];
+
 const EditProfile = () => {
   const navigate = useNavigate();
-    const [showMenu, setShowMenu] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
   const [profile, setProfile] = useState({
     title: '',
     name: '',
     email: '',
     researchArea: '',
     biography: '',
-    profilePicture: null // This will be a File object if uploading, or a string (URL)
+    country: '',
+    university: '',
+    otherUniversity: '',
+    otherCountry: '',
+    profilePicture: null
   });
   const [userId, setUserId] = useState(null);
 
+  // Check authentication status on component mount
   useEffect(() => {
     const checkAuthToken = async () => {
       const token = localStorage.getItem('authToken');
@@ -52,6 +71,7 @@ const EditProfile = () => {
     checkAuthToken();
   }, [navigate]);
 
+  // Fetch user profile when userId changes
   useEffect(() => {
     const fetchProfile = async () => {
       if (!userId) return;
@@ -60,7 +80,6 @@ const EditProfile = () => {
         const userDocRef = doc(db, 'users', userId);
         const userDoc = await getDoc(userDocRef);
         if (userDoc.exists()) {
-          // Ensure all fields are defined (replace undefined with empty string/null)
           const data = userDoc.data();
           setProfile({
             title: data.title || '',
@@ -68,6 +87,10 @@ const EditProfile = () => {
             email: data.email || '',
             researchArea: data.researchArea || '',
             biography: data.biography || '',
+            country: data.country || '',
+            university: data.university || '',
+            otherUniversity: data.otherUniversity || '',
+            otherCountry: data.otherCountry || '',
             profilePicture: data.profilePicture || null
           });
         }
@@ -79,6 +102,7 @@ const EditProfile = () => {
     fetchProfile();
   }, [userId]);
 
+  // Handle form input changes
   const handleChange = (e) => {
     const { name, value, files } = e.target;
     if (name === 'profilePicture') {
@@ -88,6 +112,7 @@ const EditProfile = () => {
     }
   };
 
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!userId) {
@@ -98,7 +123,7 @@ const EditProfile = () => {
     try {
       let profileData = { ...profile };
 
-      // Handle profile picture upload if a new file is selected
+      // Upload new profile picture if selected
       if (profile.profilePicture instanceof File) {
         const storageRef = ref(storage, `profilePictures/${userId}`);
         await uploadBytes(storageRef, profile.profilePicture);
@@ -108,7 +133,7 @@ const EditProfile = () => {
         profileData.profilePicture = null;
       }
 
-      // Remove any undefined values (Firestore does not accept undefined)
+      // Clean undefined values before saving
       Object.keys(profileData).forEach((key) => {
         if (typeof profileData[key] === 'undefined') {
           profileData[key] = null;
@@ -126,35 +151,35 @@ const EditProfile = () => {
     <main>
       <header className="researcher-header">
         <button 
-              className="back-button"
-              onClick={() => navigate(-1)}
-              style={{ 
-                color: 'var(--white)',
-                marginRight: '1.5rem'
-              }}
-            >
-            <ArrowBackIosIcon />
+          className="back-button"
+          onClick={() => navigate(-1)}
+          style={{ 
+            color: 'var(--white)',
+            marginRight: '1.5rem'
+          }}
+        >
+          <ArrowBackIosIcon />
         </button>
         <section className="header-title">
           <h1>Edit Your Profile</h1>
           <p>Update your research profile information</p>
         </section>
         <section className="dropdown-menu-container">
-            <button
-              className="menu-toggle-btn"
-              onClick={() => setShowMenu(prev => !prev)}
-            >
-              ☰ 
-            </button>
-            {showMenu && (
-              <section className="menu-dropdown">
-                <button onClick={() => navigate('/researcher/add-listing')}>Add Listing</button>
-                <button onClick={() => navigate('/researcher-dashboard')}>Dashboard</button>
-                <button onClick={() => navigate('/friends')}>Friends</button>
-                <button onClick={() => navigate('/researcher/collaborate')}>Collaborate</button>
-              </section>
-            )}
-          </section>
+          <button
+            className="menu-toggle-btn"
+            onClick={() => setShowMenu(prev => !prev)}
+          >
+            ☰ 
+          </button>
+          {showMenu && (
+            <section className="menu-dropdown">
+              <button onClick={() => navigate('/researcher/add-listing')}>Add Listing</button>
+              <button onClick={() => navigate('/researcher-dashboard')}>Dashboard</button>
+              <button onClick={() => navigate('/friends')}>Friends</button>
+              <button onClick={() => navigate('/researcher/collaborate')}>Collaborate</button>
+            </section>
+          )}
+        </section>
       </header>
 
       <section style={{ maxWidth: '700px', margin: '2rem auto', padding: '0 1.5rem' }}>
@@ -186,10 +211,19 @@ const EditProfile = () => {
                 }}
               />
               {typeof profile.profilePicture === 'string' && (
-                <img src={profile.profilePicture} alt="Profile" style={{ marginTop: '1rem', maxWidth: '150px', borderRadius: '0.5rem' }} />
+                <img 
+                  src={profile.profilePicture} 
+                  alt="Profile" 
+                  style={{ 
+                    marginTop: '1rem', 
+                    maxWidth: '150px', 
+                    borderRadius: '0.5rem' 
+                  }} 
+                />
               )}
             </section>
 
+            {/* Title Selection */}
             <section style={{ marginBottom: '1.5rem' }}>
               <label style={{ display: 'block', marginBottom: '0.5rem', color: '#64CCC5', fontWeight: '600' }}>
                 Title
@@ -221,6 +255,7 @@ const EditProfile = () => {
               </select>
             </section>
 
+            {/* Name Input */}
             <section style={{ marginBottom: '1.5rem' }}>
               <label style={{ display: 'block', marginBottom: '0.5rem', color: '#64CCC5', fontWeight: '600' }}>
                 Name and Surname
@@ -242,6 +277,7 @@ const EditProfile = () => {
               />
             </section>
 
+            {/* Email Input */}
             <section style={{ marginBottom: '1.5rem' }}>
               <label style={{ display: 'block', marginBottom: '0.5rem', color: '#64CCC5', fontWeight: '600' }}>
                 Email
@@ -263,7 +299,97 @@ const EditProfile = () => {
               />
             </section>
 
-            {/* Research Area Dropdown */}
+            {/* Country Selection */}
+            <section style={{ marginBottom: '1.5rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', color: '#64CCC5', fontWeight: '600' }}>
+                Country
+              </label>
+              <select
+                name="country"
+                value={profile.country || ''}
+                onChange={handleChange}
+                required
+                style={{
+                  width: '100%',
+                  padding: '0.7rem',
+                  backgroundColor: '#132238',
+                  border: '1.5px solid #64CCC5',
+                  borderRadius: '0.5rem',
+                  color: '#FFFFFF'
+                }}
+              >
+                <option value="">-- Select Country --</option>
+                {countries.map((country) => (
+                  <option key={country} value={country}>{country}</option>
+                ))}
+              </select>
+              {profile.country === 'Other' && (
+                <input
+                  type="text"
+                  name="otherCountry"
+                  value={profile.otherCountry || ''}
+                  onChange={handleChange}
+                  placeholder="Please specify your country"
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '0.7rem',
+                    backgroundColor: '#132238',
+                    border: '1.5px solid #64CCC5',
+                    borderRadius: '0.5rem',
+                    color: '#FFFFFF',
+                    marginTop: '0.5rem'
+                  }}
+                />
+              )}
+            </section>
+
+            {/* University Selection */}
+            <section style={{ marginBottom: '1.5rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', color: '#64CCC5', fontWeight: '600' }}>
+                University/Institution
+              </label>
+              <select
+                name="university"
+                value={profile.university || ''}
+                onChange={handleChange}
+                required
+                style={{
+                  width: '100%',
+                  padding: '0.7rem',
+                  backgroundColor: '#132238',
+                  border: '1.5px solid #64CCC5',
+                  borderRadius: '0.5rem',
+                  color: '#FFFFFF'
+                }}
+              >
+                <option value="">-- Select University --</option>
+                {universities.map((university) => (
+                  <option key={university} value={university}>{university}</option>
+                ))}
+              </select>
+              {profile.university === 'Other' && (
+                <input
+                  type="text"
+                  name="otherUniversity"
+                  value={profile.otherUniversity || ''}
+                  onChange={handleChange}
+                  placeholder="Please specify your university"
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '0.7rem',
+                    backgroundColor: '#132238',
+                    border: '1.5px solid #64CCC5',
+                    borderRadius: '0.5rem',
+                    color: '#FFFFFF',
+                    marginTop: '0.5rem'
+                  }}
+                />
+              )}
+            </section>
+
+            {/* Research Area Selection */}
             <section style={{ marginBottom: '1.5rem' }}>
               <label style={{ display: 'block', marginBottom: '0.5rem', color: '#64CCC5', fontWeight: '600' }}>
                 Research Area
@@ -289,6 +415,7 @@ const EditProfile = () => {
               </select>
             </section>
 
+            {/* Biography Textarea */}
             <section style={{ marginBottom: '1.5rem' }}>
               <label style={{ display: 'block', marginBottom: '0.5rem', color: '#64CCC5', fontWeight: '600' }}>
                 Biography
@@ -310,6 +437,7 @@ const EditProfile = () => {
               />
             </section>
 
+            {/* Form Action Buttons */}
             <section style={{ display: 'flex', justifyContent: 'space-between' }}>
               <button
                 type="button"
