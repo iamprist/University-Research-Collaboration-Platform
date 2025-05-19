@@ -192,107 +192,153 @@ const statusStyles = {
   };
 
   return (
-<div style={{ backgroundColor: '#FFFFFF', color: '#000000', minHeight: '100vh' }}>
-      {/* Fixed Navbar */}
-<nav className="navbar navbar-light bg-light fixed-top px-4 py-3" style={{ borderBottom: '1px solid #000' }}>
-        <div className="d-flex align-items-center justify-content-between w-100">
-<span className="navbar-brand fw-bold fs-4 text-dark">Innerk Hub</span>
-          <div className="d-flex align-items-center gap-3">
-            <button
-              className="btn btn-outline-light p-0"
-              onClick={toggleSidebar}
-              aria-label="Toggle profile sidebar"
-              style={{ borderRadius: '50%', width: '40px', height: '40px', overflow: 'hidden' }}
-            >
-              <img
-                src={currentUser?.photoURL || 'https://via.placeholder.com/40?text=👤'}
-                alt="Profile"
-                className="rounded-circle"
-                style={{ width: '40px', height: '40px', objectFit: 'cover', display: 'block' }}
-              />
-            </button>
-          </div>
-        </div>
-      </nav>
+    <main
+      style={{
+        backgroundColor: '#FFFFFF',
+        color: '#000000',
+        minHeight: '100vh',
+        paddingTop: '70px' /* offset for the fixed navbar */
+      }}
+    >
+      <header
+        className="navbar navbar-light bg-light fixed-top px-4 py-3"
+        style={{ borderBottom: '1px solid #000' }}
+      >
+        <h1 className="navbar-brand fw-bold fs-4">Innerk Hub</h1>
+        <button
+          className="btn btn-outline-light p-0"
+          onClick={toggleSidebar}
+          aria-label="Toggle profile sidebar"
+          style={{
+            borderRadius: '50%',
+            width: '40px',
+            height: '40px',
+            overflow: 'hidden'
+          }}
+        >
+          <img
+            src={currentUser?.photoURL || 'https://via.placeholder.com/40'}
+            alt="Profile"
+            className="rounded-circle"
+            style={{
+              width: '40px',
+              height: '40px',
+              objectFit: 'cover',
+              display: 'block'
+            }}
+          />
+        </button>
+      </header>
 
-      {/* Sidebar */}
-{/* Sidebar */}
-<div
-  className={`position-fixed top-0 end-0 h-100 bg-light shadow p-4 d-flex flex-column ${sidebarOpen ? 'd-block' : 'd-none'}`}
-  style={{ width: '280px', zIndex: 1050 }}
->
-  <button className="btn-close float-end" onClick={toggleSidebar} aria-label="Close sidebar"></button>
+      <aside
+        className={`position-fixed top-0 end-0 h-100 bg-light shadow p-4 d-flex flex-column ${
+          sidebarOpen ? 'd-block' : 'd-none'
+        }`}
+        style={{ width: '280px', zIndex: 1050 }}
+      >
+        <button
+          className="btn-close align-self-end"
+          onClick={toggleSidebar}
+          aria-label="Close sidebar"
+        />
 
-{/* Profile Info with Smaller Picture */}
-<div className="text-center mb-4">
-  <img
-    src={currentUser?.photoURL || 'https://via.placeholder.com/70?text=👤'}
-    alt="Profile"
-    className="rounded-circle mb-2"
-    style={{
-      width: '70px',
-      height: '70px',
-      objectFit: 'cover',
-      border: '2px solid #ccc'
-    }}
-  />
-  <h6 className="mb-0 mt-2">{currentUser?.displayName || 'N/A'}</h6>
-  <small className="text-muted">{currentUser?.email || 'N/A'}</small>
-</div>
+        <section className="text-center mb-4">
+          <img
+            src={currentUser?.photoURL || 'https://via.placeholder.com/70'}
+            alt="Profile"
+            className="rounded-circle mb-2"
+            style={{
+              width: '70px',
+              height: '70px',
+              objectFit: 'cover',
+              border: '2px solid #ccc'
+            }}
+          />
+          <h2 className="h6 mb-0 mt-2">
+            {currentUser?.displayName || 'N/A'}
+          </h2>
+          <address className="text-muted">
+            {currentUser?.email || 'N/A'}
+          </address>
+        </section>
 
-
-  {/* Reviewer Status */}
-  <div className="mb-4">
-    {renderStatusBadge()}
-    {status === "rejected" && reason && (
-      <small className="text-danger d-block mt-1">Reason: {reason}</small>
-    )}
-  </div>
+        <section className="mb-4">
+          {renderBadge()}
+          {status === 'rejected' && reason && (
+            <small className="text-danger d-block mt-1">
+              Reason: {reason}
+            </small>
+          )}
+        </section>
 
   <hr />
 
-<ul className="list-unstyled mb-4">
-  <li><a href="/about" className="text-decoration-none text-dark">About Us</a></li>
-  <li><a href="/terms" className="text-decoration-none text-dark">Terms & Conditions</a></li>
-</ul>
+        <nav aria-label="Sidebar links" className="mb-4">
+          <ul className="list-unstyled">
+            <li>
+              <a href="/about" className="text-decoration-none text-dark">
+                About Us
+              </a>
+            </li>
+            <li>
+              <a href="/terms" className="text-decoration-none text-dark">
+                Terms &amp; Conditions
+              </a>
+            </li>
+          </ul>
+        </nav>
 
+        <section className="mt-auto">
+          {status === 'approved' && (
+            <button
+              onClick={handleRevoke}
+              className="btn btn-warning w-100 mb-2"
+            >
+              Stop Being a Reviewer
+            </button>
+          )}
+          {status !== 'approved' && status !== 'not_found' && (
+            <button
+              onClick={handleRevoke}
+              className="btn btn-warning w-100 mb-2"
+            >
+              {status === 'rejected'
+                ? 'Remove Rejected Application'
+                : 'Revoke Application'}
+            </button>
+          )}
+          <button
+            onClick={handleLogout}
+            className="btn btn-danger w-100"
+          >
+            Logout
+          </button>
+        </section>
+      </aside>
 
-  {/* Buttons fixed at bottom */}
-  <div className="mt-auto">
-    {status === "approved" && (
-      <button onClick={handleRevoke} className="btn btn-warning w-100 mb-2">Stop Being a Reviewer</button>
-    )}
-    {(status !== "approved") && status !== "not_found" && (
-      <button onClick={handleRevoke} className="btn btn-warning w-100 mb-2">
-        {status === "rejected" ? "Remove Rejected Application" : "Revoke Application"}
-      </button>
-    )}
-    <button onClick={handleLogout} className="btn btn-danger w-100">Logout</button>
-  </div>
-</div>
+      <section
+        className="container"
+        style={{ backgroundColor: 'white', color: 'black' }}
+      >
+        {loading ? (
+          <section className="text-center text-muted mt-4">
+            <p>Retrieving your reviewer status…</p>
+            <div className="spinner-border text-dark" role="status" />
+          </section>
+        ) : (
+          <>
+            <header className="text-center my-4">
+              <h2>Reviewer Dashboard</h2>
+              <p>Hi {currentUser?.displayName || 'Reviewer'}</p>
+              <p>
+                Welcome back! Ready to read, review, and recommend
+                cutting-edge research?
+              </p>
+            </header>
 
-
-{/* Content below navbar */}
-<div className="container pt-5 mt-5" style={{ backgroundColor: 'white', color: 'black' }}>
-  <header className="text-center mb-4">
-    <h1>Reviewer Dashboard</h1>
-    <p>👋 Hi {currentUser?.displayName || 'Reviewer'}</p>
-    <p>Welcome back! Ready to read, review, and recommend cutting-edge research?</p>
-  </header>
-
-  {loading ? (
-    <div className="text-center text-muted">
-      <p>Retrieving your reviewer status...</p>
-      <div className="spinner-border text-dark" role="status" />
-    </div>
-  ) : (
-    <div>
-      {status === "approved" && (
-        <>
-          <TextSummariser />
-          <ReviewerRecommendations />
-        </>
-      )}
+            {status === 'approved' && (
+              <ReviewerRecommendations />
+            )}
 
       {status === "not_found" && (
         <div className="text-center mt-4">
