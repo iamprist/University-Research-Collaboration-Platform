@@ -126,6 +126,207 @@ describe('ResearcherProfile Component', () => {
     });
   });
 
+ 
+test('should display default avatar letter if name is missing', async () => {
+  const { getDoc } = require('firebase/firestore');
+  getDoc.mockImplementationOnce(() =>
+    Promise.resolve({
+      exists: () => true,
+      data: () => ({
+        profilePicture: null,
+        name: '',
+        title: 'Dr.',
+        email: 'no.name@example.com',
+        researchArea: 'Biology',
+        biography: 'Bio.',
+      }),
+    })
+  );
+
+  render(
+    <Router>
+      <ResearcherProfile />
+    </Router>
+  );
+
+  await waitFor(() => {
+    expect(screen.queryByText('Loading profile...')).not.toBeInTheDocument();
+  });
+
+  // Should show default avatar letter (A for anonymous/no name)
+  expect(screen.getByText('A')).toBeInTheDocument();
+});
+
+test('should handle missing biography gracefully', async () => {
+  const { getDoc } = require('firebase/firestore');
+  getDoc.mockImplementationOnce(() =>
+    Promise.resolve({
+      exists: () => true,
+      data: () => ({
+        profilePicture: null,
+        name: 'Jane Doe',
+        title: 'Ms.',
+        email: 'jane.doe@example.com',
+        researchArea: 'Physics',
+        biography: '',
+      }),
+    })
+  );
+
+  render(
+    <Router>
+      <ResearcherProfile />
+    </Router>
+  );
+
+  await waitFor(() => {
+    expect(screen.queryByText('Loading profile...')).not.toBeInTheDocument();
+  });
+
+  // Should still render the profile without crashing
+  expect(screen.getByText(/ms\. jane doe/i)).toBeInTheDocument();
+  expect(screen.getByText(/jane.doe@example.com/i)).toBeInTheDocument();
+  expect(screen.getByText(/physics/i)).toBeInTheDocument();
+});
+
+test('should handle missing researchArea gracefully', async () => {
+  const { getDoc } = require('firebase/firestore');
+  getDoc.mockImplementationOnce(() =>
+    Promise.resolve({
+      exists: () => true,
+      data: () => ({
+        profilePicture: null,
+        name: 'Jane Doe',
+        title: 'Ms.',
+        email: 'jane.doe@example.com',
+        researchArea: '',
+        biography: 'Physics researcher.',
+      }),
+    })
+  );
+
+  render(
+    <Router>
+      <ResearcherProfile />
+    </Router>
+  );
+
+  await waitFor(() => {
+    expect(screen.queryByText('Loading profile...')).not.toBeInTheDocument();
+  });
+
+  expect(screen.getByText(/ms\. jane doe/i)).toBeInTheDocument();
+  expect(screen.getByText(/jane.doe@example.com/i)).toBeInTheDocument();
+  expect(screen.getByText(/physics researcher\./i)).toBeInTheDocument();
+});
+
+test('should handle missing title gracefully', async () => {
+  const { getDoc } = require('firebase/firestore');
+  getDoc.mockImplementationOnce(() =>
+    Promise.resolve({
+      exists: () => true,
+      data: () => ({
+        profilePicture: null,
+        name: 'Jane Doe',
+        title: '',
+        email: 'jane.doe@example.com',
+        researchArea: 'Physics',
+        biography: 'Physics researcher.',
+      }),
+    })
+  );
+
+  render(
+    <Router>
+      <ResearcherProfile />
+    </Router>
+  );
+
+  await waitFor(() => {
+    expect(screen.queryByText('Loading profile...')).not.toBeInTheDocument();
+  });
+
+  // Should show name without title
+  expect(screen.getByText(/jane doe/i)).toBeInTheDocument();
+});
+test('should show loading state', () => {
+  // Render and check loading
+  render(
+    <Router>
+      <ResearcherProfile />
+    </Router>
+  );
+  expect(screen.getByText(/loading profile/i)).toBeInTheDocument();
+});
+
+test('should show error state if Firestore fails', async () => {
+  const { getDoc } = require('firebase/firestore');
+  getDoc.mockImplementationOnce(() =>
+    Promise.reject(new Error('Firestore error'))
+  );
+
+  render(
+    <Router>
+      <ResearcherProfile />
+    </Router>
+  );
+
+  await waitFor(() => {
+    expect(screen.getByText(/failed to load profile/i)).toBeInTheDocument();
+  });
+});
+
+test('should show "Profile not found" if user doc does not exist', async () => {
+  const { getDoc } = require('firebase/firestore');
+  getDoc.mockImplementationOnce(() =>
+    Promise.resolve({
+      exists: () => false,
+      data: () => ({}),
+    })
+  );
+
+  render(
+    <Router>
+      <ResearcherProfile />
+    </Router>
+  );
+
+  await waitFor(() => {
+    expect(screen.getByText(/profile not found/i)).toBeInTheDocument();
+  });
+});
+
+test('should show profile image placeholder if no profilePicture', async () => {
+  const { getDoc } = require('firebase/firestore');
+  getDoc.mockImplementationOnce(() =>
+    Promise.resolve({
+      exists: () => true,
+      data: () => ({
+        profilePicture: null,
+        name: 'Jane Doe',
+        title: 'Ms.',
+        email: 'jane.doe@example.com',
+        researchArea: 'Physics',
+        biography: 'Physics researcher.',
+      }),
+    })
+  );
+
+  render(
+    <Router>
+      <ResearcherProfile />
+    </Router>
+  );
+
+  await waitFor(() => {
+    expect(screen.queryByText('Loading profile...')).not.toBeInTheDocument();
+  });
+
+  // Should show the first letter of the name as placeholder
+  expect(screen.getByText('J')).toBeInTheDocument();
+  expect(screen.getByText(/ms\. jane doe/i)).toBeInTheDocument();
+});
+
   test('should allow user to navigate to the edit profile page', async () => {
     // Ensure Firestore getDoc mock returns valid profile data
     const { getDoc } = require('firebase/firestore');

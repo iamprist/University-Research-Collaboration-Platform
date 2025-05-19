@@ -51,7 +51,7 @@ const Footer = () => {
         text-align: center;
         padding: 1rem;
         color: #132238;
-        background: #f5f5f5;
+        background: #FFFFFF;
         margin-top: 2rem;
       }
       .footer-wrapper a {

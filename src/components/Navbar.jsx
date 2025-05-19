@@ -13,6 +13,7 @@ import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
 import HomeIcon from "@mui/icons-material/Home";
 import InfoIcon from "@mui/icons-material/Info";
+import LoginIcon from '@mui/icons-material/Login';
 
 
 
@@ -22,6 +23,8 @@ const Navbar = () => {
   const menuOptions = [
     { text: "Home", icon: <HomeIcon />, path: "/" },
     { text: "About", icon: <InfoIcon />, path: "/about" },
+    { text: "Log In", icon: <LoginIcon />, path: "/signin" },
+
     
   ];
 
@@ -33,7 +36,8 @@ const Navbar = () => {
       <menu className="navbar-links-container">
         <Link to="/">Home</Link>
         <Link to="/about" state={{ fromNavbar: true }}>About</Link>
-      
+        <Link to="/signin" state={{ fromNavbar: true }}>Login</Link>
+        
 
       </menu>
       <section className="navbar-menu-container">
