@@ -1,8 +1,8 @@
-// ReviewerRecommendations.jsx - Recommends research projects to reviewers based on their expertise tags
 import React, { useEffect, useState } from "react";
 import { getFirestore, collection, doc, getDoc, getDocs } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { Helmet } from "react-helmet";
+import { Box, Paper, Typography, Chip, Button, Collapse } from "@mui/material";
 
 // Mapping of tag aliases to canonical names
 const tagAliases = {
@@ -41,7 +41,6 @@ const tagAliases = {
   Other: "Other (please specify)",
 };
 
-// Normalize a single tag to its canonical form
 function normalizeTag(tag) {
   const t = tag.trim().toLowerCase();
   for (const [alias, canonical] of Object.entries(tagAliases)) {
@@ -49,26 +48,21 @@ function normalizeTag(tag) {
   }
   return t;
 }
-
-// Normalize an array of tags
 function normalizeTags(tags) {
   if (!Array.isArray(tags)) return [];
   return tags.map(normalizeTag);
 }
 
-export default function ResearchProjectDisplay() {
-  // State for loading, error, expertise tags, recommendations, and expanded project
+export default function ReviewerRecommendations() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [expertiseTags, setExpertiseTags] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
   const [expandedProject, setExpandedProject] = useState(null);
 
-  // Firebase auth and Firestore instances
   const auth = getAuth();
   const db = getFirestore();
 
-  // Fetch recommendations on mount
   useEffect(() => {
     async function fetchRecommendations() {
       setLoading(true);
@@ -157,7 +151,6 @@ export default function ResearchProjectDisplay() {
     fetchRecommendations();
   }, [auth, db]);
 
-  // Toggle expanded/collapsed state for a project
   const handleExpand = (projectId) => {
     if (expandedProject === projectId) {
       setExpandedProject(null);
@@ -169,58 +162,51 @@ export default function ResearchProjectDisplay() {
   // Loading state UI
   if (loading) {
     return (
-      <section
-        aria-busy="true"
-        style={{ padding: "40px", textAlign: "center" }}
-      >
-        <progress className="spinner-border text-primary" />
-        <p style={{ marginTop: "15px" }}>Loading recommendations...</p>
-      </section>
+      <Box sx={{ py: 6, textAlign: "center" }}>
+        <Box className="spinner-border text-primary" sx={{ mb: 2 }} />
+        <Typography sx={{ color: "#132238" }}>Loading recommendations...</Typography>
+      </Box>
     );
   }
-  if (loading) return (
-    <div className="text-center" style={{ padding: '40px' }}>
-      <div className="spinner-border text-primary" role="status">
-      </div>
-      <p style={{ marginTop: '15px' }}>Loading recommendations...</p>
-    </div>
-  );
 
   // Error state UI
   if (error) {
     return (
-      <aside
+      <Paper
         role="alert"
-        style={{ maxWidth: "600px", margin: "20px auto", color: "#842029", backgroundColor: "#f8d7da", padding: "20px", borderRadius: "4px" }}
+        sx={{
+          maxWidth: 600,
+          mx: "auto",
+          my: 3,
+          color: "#842029",
+          bgcolor: "#fff",
+          p: 3,
+          borderRadius: 2,
+          border: "1px solid #FECACA",
+        }}
       >
-        {error}
-      </aside>
+        <Typography sx={{ color: "#EF4444" }}>{error}</Typography>
+      </Paper>
     );
   }
-  if (error) return (
-    <div className="alert alert-danger" style={{ maxWidth: '600px', margin: '20px auto' }}>
-      {error}
-    </div>
-  );
-
- // ...existing code...
 
   // No expertise tags UI
   if (!expertiseTags.length)
     return (
-      <div className="container py-4 text-center">
-        <p>You have no expertise tags set in your profile, so no recommendations can be made.</p>
-      </div>
+      <Paper sx={{ bgcolor: "#fff", color: "#132238", p: 3, borderRadius: 3, my: 3, textAlign: "center", border: "1px solid #e0e0e0" }}>
+        <Typography>You have no expertise tags set in your profile, so no recommendations can be made.</Typography>
+      </Paper>
     );
 
   // No recommendations UI
   if (recommendations.length === 0)
     return (
-      <div className="container py-4 text-center">
-        <p>
-          No research listings matched your expertise tags: <b>{expertiseTags.join(", ")}</b>.
-        </p>
-      </div>
+      <Paper sx={{ bgcolor: "#fff", color: "#132238", p: 3, borderRadius: 3, my: 3, textAlign: "center", border: "1px solid #e0e0e0" }}>
+        <Typography>
+          No research listings matched your expertise tags:{" "}
+          <b>{expertiseTags.join(", ")}</b>.
+        </Typography>
+      </Paper>
     );
 
   // Render recommendations UI
@@ -232,170 +218,128 @@ export default function ResearchProjectDisplay() {
           rel="stylesheet"
         />
       </Helmet>
-      <div
-        style={{
-          backgroundColor: 'white',
-          color: 'black',
-          fontFamily: '"Open Sans", sans-serif',
-          padding: '20px',
-          minHeight: '100vh',
-        }}
-      >
-        <div className="container">
-          <h2
-            style={{
-              fontWeight: 700,
-              marginBottom: '30px',
-              textAlign: 'center',
-              fontSize: '28px',
-              color: 'black',
-            }}
-          >
+      <Box sx={{ fontFamily: '"Open Sans", sans-serif', minHeight: "100vh", p: 0 }}>
+        <Paper
+          sx={{
+            bgcolor: "#fff",
+            color: "#132238",
+            p: { xs: 2, md: 3 },
+            borderRadius: 3,
+            mb: 3,
+            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+            border: "1px solid #e0e0e0",
+          }}
+        >
+          <Typography variant="h5" sx={{ color: "#132238", fontWeight: 700, mb: 2, textAlign: "center" }}>
             Recommended Research Projects
-          </h2>
-
-          <div className="row" style={{ marginBottom: '30px' }}>
-            <div className="col-md-12 text-center">
-              <p style={{ fontSize: '16px', marginBottom: '20px', color: 'black' }}>
-                <strong>Your expertise tags:</strong>{' '}
-                {expertiseTags.map((tag) => (
-                  <span
-                    key={tag}
-                    style={{
-                      display: 'inline-block',
-                      backgroundColor: '#e0e0e0',
-                      padding: '5px 10px',
-                      borderRadius: '15px',
-                      margin: '5px',
-                      fontSize: '14px',
-                      fontWeight: 600,
-                      color: 'black',
-                    }}
-                  >
-                    {tagAliases[tag.toUpperCase()] || tag}
-                  </span>
-                ))}
-              </p>
-            </div>
-          </div>
-
-          <div className="row">
-            {recommendations.map((project) => (
-              <div key={project.id} className="col-md-12" style={{ marginBottom: '30px' }}>
-                <div
-                  style={{
-                    border: '1px solid #ccc',
-                    borderRadius: '8px',
-                    padding: '20px',
-                    boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-                    backgroundColor: 'white',
-                    color: 'black',
-                    transition: 'all 0.3s ease',
+          </Typography>
+          <Box sx={{ textAlign: "center", mb: 3 }}>
+            <Typography sx={{ color: "#132238", fontSize: 16, mb: 1 }}>
+              <b>Your expertise tags:</b>{" "}
+              {expertiseTags.map((tag) => (
+                <Chip
+                  key={tag}
+                  label={tagAliases[tag.toUpperCase()] || tag}
+                  sx={{
+                    bgcolor: "#e0e0e0",
+                    color: "#132238",
+                    fontWeight: 600,
+                    fontSize: 14,
+                    mx: 0.5,
+                    my: 0.5,
                   }}
-                >
-                  <h3
-                    style={{
-                      fontSize: '20px',
-                      fontWeight: 700,
-                      marginBottom: '15px',
-                      color: 'black',
-                    }}
-                  >
-                    {project.title}
-                  </h3>
-
-                  <div style={{ marginBottom: '15px' }}>
-                    <span
-                      style={{
-                        backgroundColor: '#3498db',
-                        color: 'white',
-                        padding: '3px 10px',
-                        borderRadius: '4px',
-                        fontSize: '14px',
-                        display: 'inline-block',
-                        marginBottom: '10px',
-                      }}
-                    >
-                      {project.researchArea}
-                    </span>
-                  </div>
-
-                  <p
-                    style={{
-                      fontSize: '15px',
-                      lineHeight: '1.6',
-                      marginBottom: '15px',
-                      color: 'black',
-                    }}
-                  >
-                    {project.summary.length > 150
-                      ? `${project.summary.substring(0, 150)}...`
-                      : project.summary}
-                  </p>
-
-                  <div style={{ marginBottom: '15px' }}>
-                    <p style={{ marginBottom: '5px', color: 'black' }}>
-                      <strong style={{ color: '#7f8c8d' }}>Researcher:</strong> {project.postedByName}
-                    </p>
-                    <p style={{ marginBottom: '5px', color: 'black' }}>
-                      <strong style={{ color: '#7f8c8d' }}>Institution:</strong> {project.institution}
-                    </p>
-                  </div>
-
-                  <button
-                    onClick={() => handleExpand(project.id)}
-                    style={{
-                      backgroundColor: '#3498db',
-                      color: 'white',
-                      border: 'none',
-                      padding: '8px 15px',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      fontSize: '14px',
+                  size="small"
+                />
+              ))}
+            </Typography>
+          </Box>
+          <Box>
+            {recommendations.map((project) => (
+              <Paper
+                key={project.id}
+                sx={{
+                  bgcolor: "#f9fafb",
+                  color: "#132238",
+                  border: "1px solid #e0e0e0",
+                  borderRadius: 2,
+                  p: 3,
+                  mb: 3,
+                  boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
+                  transition: "all 0.3s",
+                }}
+              >
+                <Typography variant="h6" sx={{ color: "#132238", fontWeight: 700, mb: 1 }}>
+                  {project.title}
+                </Typography>
+                <Box sx={{ mb: 1 }}>
+                  <Chip
+                    label={project.researchArea}
+                    sx={{
+                      bgcolor: "#3498db",
+                      color: "#fff",
                       fontWeight: 600,
-                      width: '100%',
-                      transition: 'background-color 0.3s',
+                      fontSize: 14,
+                      mb: 1,
                     }}
-                    onMouseOver={(e) => (e.target.style.backgroundColor = '#2980b9')}
-                    onMouseOut={(e) => (e.target.style.backgroundColor = '#3498db')}
-                  >
-                    {expandedProject === project.id ? 'Show Less' : 'View Details'}
-                  </button>
-
-                  {expandedProject === project.id && (
-                    <div
-                      style={{
-                        marginTop: '20px',
-                        paddingTop: '15px',
-                        borderTop: '1px solid #ccc',
-                        color: 'black',
-                      }}
-                    >
-                      <p>
-                        <strong>Methodology:</strong> {project.methodology}
-                      </p>
-                      <p>
-                        <strong>Collaboration Needs:</strong> {project.collaborationNeeds}
-                      </p>
-                      <p>
-                        <strong>Estimated Completion:</strong> {project.estimatedCompletion}
-                      </p>
-                      <p>
-                        <a href={project.relatedPublicationLink} target="_blank" rel="noopener noreferrer">
-                          Related Publication
-                        </a>
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
+                    size="small"
+                  />
+                </Box>
+                <Typography sx={{ fontSize: 15, lineHeight: 1.6, mb: 2, color: "#132238" }}>
+                  {project.summary.length > 150
+                    ? `${project.summary.substring(0, 150)}...`
+                    : project.summary}
+                </Typography>
+                <Box sx={{ mb: 2 }}>
+                  <Typography sx={{ mb: 0.5, color: "#132238" }}>
+                    <b style={{ color: "#132238" }}>Researcher:</b> {project.postedByName}
+                  </Typography>
+                  <Typography sx={{ mb: 0.5, color: "#132238" }}>
+                    <b style={{ color: "#132238" }}>Institution:</b> {project.institution}
+                  </Typography>
+                </Box>
+                <Button
+                  variant="contained"
+                  sx={{
+                bgcolor: 'var(--light-blue)',
+                color: 'var(--dark-blue)',
+                borderRadius: '1.5rem',
+                fontWeight: 600,
+                px: 3,
+                py: 1.2,
+                '&:hover': { bgcolor: '#5AA9A3', color: 'var(--white)' },
+                  }}
+                  onClick={() => handleExpand(project.id)}
+                >
+                  {expandedProject === project.id ? "Show Less" : "View Details"}
+                </Button>
+                <Collapse in={expandedProject === project.id}>
+                  <Box sx={{ mt: 2, pt: 2, borderTop: "1px solid #e0e0e0", color: "#132238" }}>
+                    <Typography sx={{ mb: 1 }}>
+                      <b>Methodology:</b> {project.methodology}
+                    </Typography>
+                    <Typography sx={{ mb: 1 }}>
+                      <b>Collaboration Needs:</b> {project.collaborationNeeds}
+                    </Typography>
+                    <Typography sx={{ mb: 1 }}>
+                      <b>Estimated Completion:</b> {project.estimatedCompletion}
+                    </Typography>
+                    <Typography sx={{ mb: 1 }}>
+                      <a
+                        href={project.relatedPublicationLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: "#3498db", textDecoration: "underline" }}
+                      >
+                        Related Publication
+                      </a>
+                    </Typography>
+                  </Box>
+                </Collapse>
+              </Paper>
             ))}
-          </div>
-        </div>
-      </div>
+          </Box>
+        </Paper>
+      </Box>
     </>
   );
 }
-
-
-
