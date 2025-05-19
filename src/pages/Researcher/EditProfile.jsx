@@ -5,7 +5,22 @@ import { useNavigate } from 'react-router-dom';
 import './ResearcherDashboard.css';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
-import Footer from '../../components/Footer'; // Import the Footer component
+import MenuIcon from '@mui/icons-material/Menu';
+import Footer from '../../components/Footer';
+
+import {
+  Box,
+  Button,
+  IconButton,
+  Menu,
+  MenuItem,
+  Typography,
+  TextField,
+  Select,
+  InputLabel,
+  FormControl,
+  Avatar,
+} from '@mui/material';
 
 const researchAreas = [
   'Physics', 'Chemistry', 'Biology', 'Computer Science', 'Mathematics',
@@ -16,16 +31,24 @@ const researchAreas = [
   'Geography', 'Philosophy', 'Linguistics', 'Communication', 'Other'
 ];
 
+const titles = [
+  'Mr', 'Mrs', 'Ms', 'Miss', 'Mx', 'Dr', 'Prof', 'Professor', 'Rev',
+  'Father', 'Sister', 'Brother', 'Imam', 'Rabbi', 'Sheikh', 'Eng',
+  'Engr', 'Hon', 'Capt', 'Major', 'Colonel', 'Lt', 'Lt. Col',
+  'Sir', 'Dame', 'Judge', 'Attorney', 'Principal', 'Dean',
+  'Chancellor', 'President', 'CEO', 'Chairperson'
+];
+
 const EditProfile = () => {
   const navigate = useNavigate();
-    const [showMenu, setShowMenu] = useState(false);
+  const [menuAnchorEl, setMenuAnchorEl] = useState(null);
   const [profile, setProfile] = useState({
     title: '',
     name: '',
     email: '',
     researchArea: '',
     biography: '',
-    profilePicture: null // This will be a File object if uploading, or a string (URL)
+    profilePicture: null
   });
   const [userId, setUserId] = useState(null);
 
@@ -60,7 +83,6 @@ const EditProfile = () => {
         const userDocRef = doc(db, 'users', userId);
         const userDoc = await getDoc(userDocRef);
         if (userDoc.exists()) {
-          // Ensure all fields are defined (replace undefined with empty string/null)
           const data = userDoc.data();
           setProfile({
             title: data.title || '',
@@ -123,229 +145,400 @@ const EditProfile = () => {
   };
 
   return (
-    <main>
-      <header className="researcher-header">
-        <button 
-              className="back-button"
-              onClick={() => navigate(-1)}
-              style={{ 
-                color: 'var(--white)',
-                marginRight: '1.5rem'
+    <Box component="main" sx={{ minHeight: '100vh', bgcolor: '#f5f7fa' }}>
+      {/* HEADER */}
+      <Box
+        component="header"
+        className="researcher-header"
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-around',
+          alignItems: 'center',
+          bgcolor: 'var(--dark-blue)',
+          color: 'var(--white)',
+          borderBottom: '2px solid var(--light-blue)',
+          p: '1.5rem 2rem',
+          width: '100%',
+          maxWidth: '100vw',
+        }}
+      >
+        <IconButton
+          className="back-button"
+          onClick={() => navigate(-1)}
+          sx={{
+            color: 'var(--white)',
+            mr: '1.5rem',
+          }}
+        >
+          <ArrowBackIosIcon />
+        </IconButton>
+        <Box className="header-title" sx={{ flex: 1 }}>
+          <Typography variant="h4" sx={{ fontWeight: 700, fontSize: '1.5rem', textAlign: 'center', letterSpacing: '0.04em' }}>
+            Edit Your Profile
+          </Typography>
+          <Typography sx={{ fontSize: '0.9rem', fontStyle: 'italic', textAlign: 'center', mt: 0.5 }}>
+            Update your research profile information
+          </Typography>
+        </Box>
+        <Box className="dropdown-menu-container" sx={{ position: 'relative' }}>
+          <Button
+            className="menu-toggle-btn"
+            onClick={(e) => setMenuAnchorEl(e.currentTarget)}
+            sx={{
+              bgcolor: 'var(--light-blue)',
+              color: 'var(--dark-blue)',
+              borderRadius: '1.5rem',
+              fontWeight: 600,
+              px: 3,
+              py: 1.2,
+              boxShadow: '0 2px 10px rgba(100,204,197,0.2)',
+              '&:hover': { bgcolor: '#5AA9A3', color: 'var(--white)' },
+            }}
+          >
+            <MenuIcon />
+          </Button>
+          <Menu
+            anchorEl={menuAnchorEl}
+            open={Boolean(menuAnchorEl)}
+            onClose={() => setMenuAnchorEl(null)}
+            PaperProps={{
+              sx: {
+                bgcolor: 'var(--dark-blue)',
+                color: 'var(--accent-teal)',
+                borderRadius: '0.8rem',
+                minWidth: 200,
+                mt: 1,
+                boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+              },
+            }}
+            anchorOrigin={{
+              vertical: 'bottom',
+              horizontal: 'right',
+            }}
+            transformOrigin={{
+              vertical: 'top',
+              horizontal: 'right',
+            }}
+          >
+            <MenuItem
+              onClick={() => {
+                setMenuAnchorEl(null);
+                navigate('/researcher/add-listing');
+              }}
+              sx={{
+                color: 'var(--accent-teal)',
+                borderRadius: '0.5rem',
+                px: 2,
+                py: 1,
+                fontSize: '1.1rem',
+                '&:hover': { bgcolor: 'var(--light-blue)', color: 'var(--dark-blue)' },
               }}
             >
-            <ArrowBackIosIcon />
-        </button>
-        <section className="header-title">
-          <h1>Edit Your Profile</h1>
-          <p>Update your research profile information</p>
-        </section>
-        <section className="dropdown-menu-container">
-            <button
-              className="menu-toggle-btn"
-              onClick={() => setShowMenu(prev => !prev)}
+              Add Listing
+            </MenuItem>
+            <MenuItem
+              onClick={() => {
+                setMenuAnchorEl(null);
+                navigate('/researcher-dashboard');
+              }}
+              sx={{
+                color: 'var(--accent-teal)',
+                borderRadius: '0.5rem',
+                px: 2,
+                py: 1,
+                fontSize: '1.1rem',
+                '&:hover': { bgcolor: 'var(--light-blue)', color: 'var(--dark-blue)' },
+              }}
             >
-              ☰ 
-            </button>
-            {showMenu && (
-              <section className="menu-dropdown">
-                <button onClick={() => navigate('/researcher/add-listing')}>Add Listing</button>
-                <button onClick={() => navigate('/researcher-dashboard')}>Dashboard</button>
-                <button onClick={() => navigate('/friends')}>Friends</button>
-                <button onClick={() => navigate('/researcher/collaborate')}>Collaborate</button>
-              </section>
-            )}
-          </section>
-      </header>
+              Dashboard
+            </MenuItem>
+            <MenuItem
+              onClick={() => {
+                setMenuAnchorEl(null);
+                navigate('/friends');
+              }}
+              sx={{
+                color: 'var(--accent-teal)',
+                borderRadius: '0.5rem',
+                px: 2,
+                py: 1,
+                fontSize: '1.1rem',
+                '&:hover': { bgcolor: 'var(--light-blue)', color: 'var(--dark-blue)' },
+              }}
+            >
+              Friends
+            </MenuItem>
+            <MenuItem
+              onClick={() => {
+                setMenuAnchorEl(null);
+                navigate('/researcher/collaborate');
+              }}
+              sx={{
+                color: 'var(--accent-teal)',
+                borderRadius: '0.5rem',
+                px: 2,
+                py: 1,
+                fontSize: '1.1rem',
+                '&:hover': { bgcolor: 'var(--light-blue)', color: 'var(--dark-blue)' },
+              }}
+            >
+              Collaborate
+            </MenuItem>
+          </Menu>
+        </Box>
+      </Box>
 
-      <section style={{ maxWidth: '700px', margin: '2rem auto', padding: '0 1.5rem' }}>
+      {/* FORM */}
+      <Box sx={{ maxWidth: '700px', margin: '2rem auto', px: '1.5rem' }}>
         <form onSubmit={handleSubmit}>
-          <article style={{
-            background: '#1A2E40',
-            borderRadius: '1rem',
-            boxShadow: '0 4px 6px rgba(0,0,0,0.12)',
-            padding: '2rem',
-            color: '#FFFFFF'
-          }}>
+          <Box
+            sx={{
+              background: '#1A2E40',
+              borderRadius: '1rem',
+              boxShadow: '0 4px 6px rgba(0,0,0,0.12)',
+              p: '2rem',
+              color: '#FFFFFF',
+            }}
+          >
             {/* Profile Picture Upload */}
-            <section style={{ marginBottom: '1.5rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', color: '#64CCC5', fontWeight: '600' }}>
+            <Box sx={{ mb: '1.5rem' }}>
+              <Typography sx={{ display: 'block', mb: '0.5rem', color: '#64CCC5', fontWeight: 600 }}>
                 Profile Picture
-              </label>
-              <input
-                type="file"
-                name="profilePicture"
-                accept="image/*"
-                onChange={handleChange}
-                style={{
+              </Typography>
+              <Button
+                variant="outlined"
+                component="label"
+                sx={{
                   width: '100%',
-                  padding: '0.7rem',
-                  backgroundColor: '#132238',
-                  border: '1.5px solid #64CCC5',
-                  borderRadius: '0.5rem',
-                  color: '#FFFFFF'
-                }}
-              />
-              {typeof profile.profilePicture === 'string' && (
-                <img src={profile.profilePicture} alt="Profile" style={{ marginTop: '1rem', maxWidth: '150px', borderRadius: '0.5rem' }} />
-              )}
-            </section>
-
-            <section style={{ marginBottom: '1.5rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', color: '#64CCC5', fontWeight: '600' }}>
-                Title
-              </label>
-              <select
-                name="title"
-                value={profile.title || ''}
-                onChange={handleChange}
-                required
-                style={{
-                  width: '100%',
-                  padding: '0.7rem',
-                  backgroundColor: '#132238',
-                  border: '1.5px solid #64CCC5',
-                  borderRadius: '0.5rem',
-                  color: '#FFFFFF'
-                }}
-              >
-                <option value="">-- Select Title --</option>
-                {[
-                  'Mr', 'Mrs', 'Ms', 'Miss', 'Mx', 'Dr', 'Prof', 'Professor', 'Rev',
-                  'Father', 'Sister', 'Brother', 'Imam', 'Rabbi', 'Sheikh', 'Eng',
-                  'Engr', 'Hon', 'Capt', 'Major', 'Colonel', 'Lt', 'Lt. Col',
-                  'Sir', 'Dame', 'Judge', 'Attorney', 'Principal', 'Dean',
-                  'Chancellor', 'President', 'CEO', 'Chairperson'
-                ].map((t) => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
-              </select>
-            </section>
-
-            <section style={{ marginBottom: '1.5rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', color: '#64CCC5', fontWeight: '600' }}>
-                Name and Surname
-              </label>
-              <input
-                type="text"
-                name="name"
-                value={profile.name || ''}
-                onChange={handleChange}
-                required
-                style={{
-                  width: '100%',
-                  padding: '0.7rem',
-                  backgroundColor: '#132238',
-                  border: '1.5px solid #64CCC5',
-                  borderRadius: '0.5rem',
-                  color: '#FFFFFF'
-                }}
-              />
-            </section>
-
-            <section style={{ marginBottom: '1.5rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', color: '#64CCC5', fontWeight: '600' }}>
-                Email
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={profile.email || ''}
-                onChange={handleChange}
-                required
-                style={{
-                  width: '100%',
-                  padding: '0.7rem',
-                  backgroundColor: '#132238',
-                  border: '1.5px solid #64CCC5',
-                  borderRadius: '0.5rem',
-                  color: '#FFFFFF'
-                }}
-              />
-            </section>
-
-            {/* Research Area Dropdown */}
-            <section style={{ marginBottom: '1.5rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', color: '#64CCC5', fontWeight: '600' }}>
-                Research Area
-              </label>
-              <select
-                name="researchArea"
-                value={profile.researchArea || ''}
-                onChange={handleChange}
-                required
-                style={{
-                  width: '100%',
-                  padding: '0.7rem',
-                  backgroundColor: '#132238',
-                  border: '1.5px solid #64CCC5',
-                  borderRadius: '0.5rem',
-                  color: '#FFFFFF'
-                }}
-              >
-                <option value="">-- Select Research Area --</option>
-                {researchAreas.map((area) => (
-                  <option key={area} value={area}>{area}</option>
-                ))}
-              </select>
-            </section>
-
-            <section style={{ marginBottom: '1.5rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', color: '#64CCC5', fontWeight: '600' }}>
-                Biography
-              </label>
-              <textarea
-                name="biography"
-                value={profile.biography || ''}
-                onChange={handleChange}
-                rows="6"
-                style={{
-                  width: '100%',
-                  padding: '0.7rem',
-                  backgroundColor: '#132238',
+                  bgcolor: '#132238',
                   border: '1.5px solid #64CCC5',
                   borderRadius: '0.5rem',
                   color: '#FFFFFF',
-                  resize: 'vertical'
+                  py: '0.7rem',
+                  mb: 1,
+                  '&:hover': { bgcolor: '#18304a', borderColor: '#64CCC5' },
+                }}
+              >
+                Upload
+                <input
+                  type="file"
+                  name="profilePicture"
+                  accept="image/*"
+                  hidden
+                  onChange={handleChange}
+                />
+              </Button>
+              {typeof profile.profilePicture === 'string' && (
+                <Avatar
+                  src={profile.profilePicture}
+                  alt="Profile"
+                  sx={{
+                    mt: 2,
+                    width: 80,
+                    height: 80,
+                    borderRadius: '0.5rem',
+                    mx: 'auto',
+                  }}
+                />
+              )}
+            </Box>
+
+           
+
+{/* Title */}
+<Box sx={{ mb: '1.5rem' }}>
+  <InputLabel
+    htmlFor="title"
+    sx={{ display: 'block', mb: '0.5rem', color: '#64CCC5', fontWeight: 600 }}
+  >
+    Title
+  </InputLabel>
+  <FormControl fullWidth>
+    <Select
+      id="title"
+      name="title"
+      value={profile.title || ''}
+      onChange={handleChange}
+      sx={{
+        width: '100%',
+        bgcolor: '#132238',
+        border: '1.5px solid #64CCC5',
+        borderRadius: '0.5rem',
+        color: '#FFFFFF',
+        py: '0.7rem',
+        '& .MuiSelect-icon': { color: '#64CCC5' },
+      }}
+      MenuProps={{
+        PaperProps: {
+          sx: {
+            bgcolor: '#132238',
+            color: '#FFFFFF',
+          },
+        },
+      }}
+    >
+      <MenuItem value="">
+        <em>-- Select Title --</em>
+      </MenuItem>
+      {titles.map((t) => (
+        <MenuItem key={t} value={t}>
+          {t}
+        </MenuItem>
+      ))}
+    </Select>
+  </FormControl>
+</Box>
+
+ {/* Email */}
+            <Box sx={{ mb: '1.5rem' }}>
+              <InputLabel
+                htmlFor="email"
+                sx={{ display: 'block', mb: '0.5rem', color: '#64CCC5', fontWeight: 600 }}
+              >
+                Email
+              </InputLabel>
+              <TextField
+                id="email"
+                name="email"
+                type="email"
+                value={profile.email || ''}
+                onChange={handleChange}
+                required
+                fullWidth
+                variant="outlined"
+                sx={{
+                  input: {
+                    bgcolor: '#132238',
+                    color: '#FFFFFF',
+                    borderRadius: '0.5rem',
+                    padding: '0.7rem',
+                  },
+                  '& fieldset': {
+                    border: '1.5px solid #64CCC5',
+                  },
                 }}
               />
-            </section>
+            </Box>
 
-            <section style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <button
+            {/* Research Area Dropdown */}
+<Box sx={{ mb: '1.5rem' }}>
+  <InputLabel
+    htmlFor="researchArea"
+    sx={{ display: 'block', mb: '0.5rem', color: '#64CCC5', fontWeight: 600 }}
+  >
+    Research Area
+  </InputLabel>
+  <FormControl fullWidth>
+    <Select
+      id="researchArea"
+      name="researchArea"
+      value={profile.researchArea || ''}
+      onChange={handleChange}
+      sx={{
+        bgcolor: '#132238',
+        border: '1.5px solid #64CCC5',
+        borderRadius: '0.5rem',
+        color: '#FFFFFF',
+        py: '0.7rem',
+        '& .MuiSelect-icon': { color: '#64CCC5' },
+      }}
+      MenuProps={{
+        PaperProps: {
+          sx: {
+            bgcolor: '#132238',
+            color: '#FFFFFF',
+          },
+        },
+      }}
+    >
+      <MenuItem value="">
+        <em>-- Select Research Area --</em>
+      </MenuItem>
+      {researchAreas.map((area) => (
+        <MenuItem key={area} value={area}>
+          {area}
+        </MenuItem>
+      ))}
+    </Select>
+  </FormControl>
+</Box>
+           
+            {/* Biography */}
+            <Box sx={{ mb: '1.5rem' }}>
+              <InputLabel
+                htmlFor="biography"
+                sx={{ display: 'block', mb: '0.5rem', color: '#64CCC5', fontWeight: 600 }}
+              >
+                Biography
+              </InputLabel>
+              <TextField
+                id="biography"
+                name="biography"
+                value={profile.biography || ''}
+                onChange={handleChange}
+                multiline
+                minRows={6}
+                fullWidth
+                variant="outlined"
+                sx={{
+                  textarea: {
+                    bgcolor: '#132238',
+                    color: '#FFFFFF',
+                    borderRadius: '0.5rem',
+                    padding: '0.7rem',
+                  },
+                  '& fieldset': {
+                    border: '1.5px solid #64CCC5',
+                  },
+                }}
+              />
+            </Box>
+
+            {/* Actions */}
+            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+              <Button
                 type="button"
                 onClick={() => navigate(-1)}
-                style={{
+                sx={{
                   backgroundColor: '#B1EDE8',
                   color: '#132238',
                   border: 'none',
-                  padding: '0.7rem 1.5rem',
+                  px: '1.7rem',
+                  py: '0.3rem',
                   borderRadius: '0.5rem',
-                  fontWeight: '600',
-                  cursor: 'pointer'
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  '&:hover': {
+                    backgroundColor: '#A0E1DB',
+                  },
                 }}
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
-                style={{
-                  backgroundColor: '#64CCC5',
-                  color: '#132238',
-                  border: 'none',
-                  padding: '0.7rem 1.5rem',
-                  borderRadius: '0.5rem',
-                  fontWeight: '600',
-                  cursor: 'pointer'
+                sx={{
+                  backgroundColor: '#B1EDE8',
+      color: '#132238',
+      border: 'none',
+      px: '1rem',
+      py: '0.7rem',
+      borderRadius: '0.5rem',
+      fontWeight: 600,
+      cursor: 'pointer',
+      '&:hover': {
+        backgroundColor: '#A0E1DB',
+      },
                 }}
               >
                 Save Changes
-              </button>
-            </section>
-          </article>
+              </Button>
+            </Box>
+          </Box>
         </form>
-      </section>
+      </Box>
       <Footer />
-    </main>
+    </Box>
   );
 };
 
