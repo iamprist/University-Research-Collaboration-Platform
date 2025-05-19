@@ -1,16 +1,21 @@
 // AddListing.jsx - Form for researchers to create a new research project listing
-import React, { useState, useEffect } from 'react';
+// This component allows researchers to submit new research project listings to the platform.
+// It collects research details, keywords, methodology, project details, and funding info.
+// All data is saved to Firestore and a confirmation message is sent to the user.
+
+import React, { useState } from 'react';
 import axios from 'axios';
 import Select from 'react-select';
 import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../../config/firebaseConfig';
-import { collection, addDoc, doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { logEvent } from '../../utils/logEvent';
 import { sendMessage, messageTypes } from '../../utils/sendMessage';
 import './ResearcherDashboard.css';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 
 // Fetch the user's public IP address for logging purposes
+// Used for audit logging when a new listing is created
 async function fetchUserIP() {
   try {
     const response = await axios.get('https://api.ipify.org?format=json');
@@ -21,6 +26,7 @@ async function fetchUserIP() {
 }
 
 // Research area options for the select dropdown
+// Used in the research area select field
 const researchAreaOptions = [
   { value: 'Animal and Veterinary Sciences', label: 'Animal and Veterinary Sciences' },
   { value: 'Anthropology', label: 'Anthropology' },
@@ -55,6 +61,7 @@ const researchAreaOptions = [
 ];
 
 // Keyword options for the select dropdown
+// Used in the keywords multi-select field
 const keywordOptions = [
   { value: 'PHYS', label: 'Physics' },
   { value: 'CHEM', label: 'Chemistry' },
@@ -92,6 +99,7 @@ const keywordOptions = [
 ];
 
 // Methodology options for the select dropdown
+// Used in the methodology select field
 const methodologyOptions = [
   { value: 'Quantitative', label: 'Quantitative' },
   { value: 'Qualitative', label: 'Qualitative' },
@@ -105,32 +113,8 @@ const methodologyOptions = [
   { value: 'Other', label: 'Other (please specify)' },
 ];
 
-// Department options for the select dropdown
-const departmentOptions = [
-  { value: 'Physics', label: 'Physics' },
-  { value: 'Chemistry', label: 'Chemistry' },
-  { value: 'Biology', label: 'Biology' },
-  { value: 'Computer Science', label: 'Computer Science' },
-  { value: 'Mathematics', label: 'Mathematics' },
-  { value: 'Statistics', label: 'Statistics' },
-  { value: 'Engineering', label: 'Engineering' },
-  { value: 'Medicine', label: 'Medicine' },
-  { value: 'Nursing', label: 'Nursing' },
-  { value: 'Pharmacy', label: 'Pharmacy' },
-  { value: 'Law', label: 'Law' },
-  { value: 'Business', label: 'Business' },
-  { value: 'Economics', label: 'Economics' },
-  { value: 'Political Science', label: 'Political Science' },
-  { value: 'Psychology', label: 'Psychology' },
-  { value: 'Sociology', label: 'Sociology' },
-  { value: 'Anthropology', label: 'Anthropology' },
-  { value: 'Education', label: 'Education' },
-  { value: 'Environmental Science', label: 'Environmental Science' },
-  { value: 'History', label: 'History' },
-  { value: 'Other', label: 'Other (please specify)' },
-];
-
 function AddListing() {
+  // Navigation hook for redirecting after submission
   const navigate = useNavigate();
   // State variables for all form fields and UI state
   const [title, setTitle] = useState('');
@@ -141,56 +125,23 @@ function AddListing() {
   const [customKeyword, setCustomKeyword] = useState('');
   const [methodology, setMethodology] = useState('');
   const [customMethodology, setCustomMethodology] = useState('');
-  const [department, setDepartment] = useState('');
-  const [customDepartment, setCustomDepartment] = useState('');
   const [collaboratorNeeds, setCollaboratorNeeds] = useState('');
   const [status, setStatus] = useState('Active');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [publicationLink, setPublicationLink] = useState('');
   const [fundingInfo, setFundingInfo] = useState('');
-  const [universities, setUniversities] = useState([]);
-  const [selectedUniversity, setSelectedUniversity] = useState(null);
-  const [selectedCountry, setSelectedCountry] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const countries = ['South Africa', 'United States', 'United Kingdom', 'Canada', 'Kenya', 'Nigeria'];
 
   // Get today's date and max date for date pickers
+  // Used to restrict date input fields
   const today = new Date().toISOString().split('T')[0];
   const maxDate = new Date();
   maxDate.setFullYear(maxDate.getFullYear() + 5);
   const maxDateFormatted = maxDate.toISOString().split('T')[0];
 
-  // Fetch universities for the selected country, using cache if available
-  useEffect(() => {
-    const fetchUniversities = async () => {
-      try {
-        const docRef = doc(db, 'universityCache', selectedCountry);
-        const cachedDoc = await getDoc(docRef);
-
-        if (cachedDoc.exists()) {
-          setUniversities(cachedDoc.data().universities);
-        } else {
-          const response = await axios.get('http://universities.hipolabs.com/search?name=middle');
-          const filtered = response.data
-            .filter((uni) => uni.country === selectedCountry)
-            .map((uni) => ({ label: uni.name, value: uni.name }))
-            .sort((a, b) => a.label.localeCompare(b.label));
-
-          setUniversities(filtered);
-          await setDoc(docRef, { universities: filtered });
-        }
-      } catch (error) {
-        console.error("Error fetching universities:", error);
-      }
-    };
-
-    if (selectedCountry) {
-      fetchUniversities();
-    }
-  }, [selectedCountry]);
-
   // Handle form submission for creating a new research listing
+  // Validates input, prepares data, saves to Firestore, sends confirmation, logs event, and redirects
   const handleSubmit = async (e) => {
     e.preventDefault();
     const userId = auth.currentUser?.uid;
@@ -207,7 +158,6 @@ function AddListing() {
     // Prepare data for saving, handling custom fields
     const keywordsToSave = keywords.map(k => k.value === 'Other' ? customKeyword : k.label).filter(Boolean);
     const methodologyToSave = methodology === 'Other' ? customMethodology : methodology;
-    const departmentToSave = department === 'Other' ? customDepartment : department;
     const researchAreaToSave = researchArea === 'Other' ? customResearchArea : researchArea;
 
     try {
@@ -218,8 +168,6 @@ function AddListing() {
         researchArea: researchAreaToSave,
         keywords: keywordsToSave,
         methodology: methodologyToSave,
-        institution: selectedUniversity?.value || "",
-        department: departmentToSave,
         collaboratorNeeds,
         status,
         startDate,
@@ -263,10 +211,12 @@ function AddListing() {
   };
 
   // Render the form UI
+  // The form is divided into Research Details and Project Details sections
   return (
     <main className="researcher-dashboard">
       <header className="researcher-header">
          {/* Back button to go to previous page */}
+         {/* Uses MUI ArrowBackIosIcon for navigation */}
          <button 
               className="back-button"
               onClick={() => navigate(-1)}
@@ -288,6 +238,7 @@ function AddListing() {
       <section className="dashboard-content">
         <form onSubmit={handleSubmit} className="add-listing-form">
           {/* Research Details Section */}
+          {/* Collects title, area, summary, keywords, and methodology */}
           <fieldset className="form-section">
             <legend className="section-title">Research Details</legend>
             <section className="form-row">
@@ -394,64 +345,8 @@ function AddListing() {
             </section>
           </fieldset>
 
-          {/* Institution Information Section */}
-          <fieldset className="form-section">
-            <legend className="section-title">Institution Information</legend>
-            <section className="form-row">
-              <section className="form-group">
-                <label className="form-label">Country</label>
-                <select
-                  className="form-control"
-                  value={selectedCountry}
-                  onChange={e => setSelectedCountry(e.target.value)}
-                >
-                  <option value="">Select a country</option>
-                  {countries.map((country, idx) => (
-                    <option key={idx} value={country}>{country}</option>
-                  ))}
-                </select>
-              </section>
-              <section className="form-group">
-                <label className="form-label">University</label>
-                <Select
-                  options={universities}
-                  value={selectedUniversity}
-                  onChange={setSelectedUniversity}
-                  placeholder="Search for your university..."
-                  isClearable
-                  className="react-select-container"
-                  classNamePrefix="react-select"
-                />
-              </section>
-              <section className="form-group">
-                <label className="form-label">Department</label>
-                <Select
-                  options={departmentOptions}
-                  value={departmentOptions.find(o => o.value === department) || null}
-                  onChange={selected => setDepartment(selected ? selected.value : '')}
-                  placeholder="Select department..."
-                  isClearable
-                  className="react-select-container"
-                  classNamePrefix="react-select"
-                />
-                {/* Show custom input if 'Other' is selected */}
-                {department === 'Other' && (
-                  <section className="form-group">
-                    <label className="form-label">Please specify:</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={customDepartment}
-                      onChange={e => setCustomDepartment(e.target.value)}
-                      required
-                    />
-                  </section>
-                )}
-              </section>
-            </section>
-          </fieldset>
-
           {/* Project Details Section */}
+          {/* Collects collaborator needs, status, dates, publication link, and funding info */}
           <fieldset className="form-section">
             <legend className="section-title">Project Details</legend>
             <section className="form-group">
@@ -541,6 +436,7 @@ function AddListing() {
           </fieldset>
 
           {/* Submit button */}
+          {/* Disabled while submitting to prevent duplicate submissions */}
           <section className="form-actions">
             <button 
               type="submit" 
@@ -556,4 +452,5 @@ function AddListing() {
   );
 }
 
+// Export the AddListing component as default
 export default AddListing;

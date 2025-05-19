@@ -626,14 +626,14 @@ const ResearcherDashboard = () => {
                     </Button>
                     <Button
                       variant="contained"
-                      onClick={() => navigate(`/chat/${item.id}`)}
+                      onClick={() => navigate(`/collaboration/${item.id}`)}
                       sx={{
                         bgcolor: '#B1EDE8',
                         color: '#132238',
                         '&:hover': { bgcolor: '#9dd8d3' }
                       }}
                     >
-                      Chat
+                      Collaboration Room
                     </Button>
                   </Box>
                 </Paper>
@@ -682,14 +682,14 @@ const ResearcherDashboard = () => {
                     </Button>
                     <Button
                       variant="contained"
-                      onClick={() => navigate(`/chat/${listing.id}`)}
+                      onClick={() => navigate(`/collaboration/${listing.id}`)}
                       sx={{
                         bgcolor: '#B1EDE8',
                         color: '#132238',
                         '&:hover': { bgcolor: '#9dd8d3' }
                       }}
                     >
-                      Chat
+                      Collaboration Room
                     </Button>
                   </Box>
                 </Paper>

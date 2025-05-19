@@ -152,11 +152,7 @@ export default function ReviewerRecommendations() {
   }, [auth, db]);
 
   const handleExpand = (projectId) => {
-    if (expandedProject === projectId) {
-      setExpandedProject(null);
-    } else {
-      setExpandedProject(projectId);
-    }
+    setExpandedProject(expandedProject === projectId ? null : projectId);
   };
 
   // Loading state UI
@@ -191,15 +187,16 @@ export default function ReviewerRecommendations() {
   }
 
   // No expertise tags UI
-  if (!expertiseTags.length)
+  if (!expertiseTags.length) {
     return (
       <Paper sx={{ bgcolor: "#fff", color: "#132238", p: 3, borderRadius: 3, my: 3, textAlign: "center", border: "1px solid #e0e0e0" }}>
         <Typography>You have no expertise tags set in your profile, so no recommendations can be made.</Typography>
       </Paper>
     );
+  }
 
   // No recommendations UI
-  if (recommendations.length === 0)
+  if (recommendations.length === 0) {
     return (
       <Paper sx={{ bgcolor: "#fff", color: "#132238", p: 3, borderRadius: 3, my: 3, textAlign: "center", border: "1px solid #e0e0e0" }}>
         <Typography>
@@ -208,6 +205,7 @@ export default function ReviewerRecommendations() {
         </Typography>
       </Paper>
     );
+  }
 
   // Render recommendations UI
   return (

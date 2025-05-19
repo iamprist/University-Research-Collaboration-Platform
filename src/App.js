@@ -27,6 +27,8 @@ import AddListing from "./pages/Researcher/AddListing";
 import CollaboratePage from "./pages/Researcher/CollaboratePage";
 import ChatRoom from "./pages/Researcher/ChatRoom";
 import FriendsSystem from './components/FriendsSystem';
+import CollaborationDashboard from "./pages/Researcher/CollaborationDashboard";
+
 
 import { auth, db } from "./config/firebaseConfig";
 import { useEffect } from "react";
@@ -176,7 +178,7 @@ function App() {
       />
       <Route path="/chat/:chatId" element={<ChatRoom />} />
         <Route path= "/friends" element= {<FriendsSystem />}/>
-
+  <Route path="/collaboration/:chatId" element={<CollaborationDashboard/>} />
       {/* Catch-all: redirect unknown routes to home */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
@@ -185,3 +187,4 @@ function App() {
 }
 
 export default App;
+      
