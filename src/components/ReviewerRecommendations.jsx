@@ -151,166 +151,146 @@ export default function ResearchProjectDisplay() {
   }, [auth, db]);
 
   const handleExpand = (projectId) => {
-    setExpandedProject(expandedProject === projectId ? null : projectId);
+    if (expandedProject === projectId) {
+      setExpandedProject(null);
+    } else {
+      setExpandedProject(projectId);
+    }
   };
 
-  if (loading) {
-    return (
-      <section
-        aria-busy="true"
-        style={{ padding: "40px", textAlign: "center" }}
-      >
-        <progress className="spinner-border text-primary" />
-        <p style={{ marginTop: "15px" }}>Loading recommendations...</p>
-      </section>
-    );
-  }
+  if (loading) return (
+    <div className="text-center" style={{ padding: '40px' }}>
+      <div className="spinner-border text-primary" role="status">
+      </div>
+      <p style={{ marginTop: '15px' }}>Loading recommendations...</p>
+    </div>
+  );
 
-  if (error) {
-    return (
-      <aside
-        role="alert"
-        style={{ maxWidth: "600px", margin: "20px auto", color: "#842029", backgroundColor: "#f8d7da", padding: "20px", borderRadius: "4px" }}
-      >
-        {error}
-      </aside>
-    );
-  }
+  if (error) return (
+    <div className="alert alert-danger" style={{ maxWidth: '600px', margin: '20px auto' }}>
+      {error}
+    </div>
+  );
 
-  if (!expertiseTags.length) {
+  if (!expertiseTags.length)
     return (
-      <section
-        aria-live="polite"
-        style={{ padding: "40px", textAlign: "center" }}
-      >
+      <div className="container py-4 text-center">
         <p>You have no expertise tags set in your profile, so no recommendations can be made.</p>
-      </section>
+      </div>
     );
-  }
 
-  if (recommendations.length === 0) {
+  if (recommendations.length === 0)
     return (
-      <section
-        aria-live="polite"
-        style={{ padding: "40px", textAlign: "center" }}
-      >
+      <div className="container py-4 text-center">
         <p>
-          No research listings matched your expertise tags:{" "}
-          <strong>{expertiseTags.join(", ")}</strong>.
+          No research listings matched your expertise tags: <b>{expertiseTags.join(", ")}</b>.
         </p>
-      </section>
+      </div>
     );
-  }
 
-  return (
-    <>
-      <Helmet>
-        <link
-          href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap"
-          rel="stylesheet"
-        />
-      </Helmet>
+return (
+  <>
+    <Helmet>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap"
+        rel="stylesheet"
+      />
+    </Helmet>
 
-      <main
-        style={{
-          backgroundColor: "white",
-          color: "black",
-          fontFamily: '"Open Sans", sans-serif',
-          padding: "20px",
-          minHeight: "100vh",
-        }}
-      >
-        <section>
-          <header>
-            <h2
-              style={{
-                fontWeight: 700,
-                marginBottom: "30px",
-                textAlign: "center",
-                fontSize: "28px",
-                color: "black",
-              }}
-            >
-              Recommended Research Projects
-            </h2>
-          </header>
+    <div
+      style={{
+        backgroundColor: 'white',
+        color: 'black',
+        fontFamily: '"Open Sans", sans-serif',
+        padding: '20px',
+        minHeight: '100vh',
+      }}
+    >
+      <div className="container">
+        <h2
+          style={{
+            fontWeight: 700,
+            marginBottom: '30px',
+            textAlign: 'center',
+            fontSize: '28px',
+            color: 'black',
+          }}
+        >
+          Recommended Research Projects
+        </h2>
 
-          <section
-            aria-label="Your expertise tags"
-            style={{ textAlign: "center", marginBottom: "30px" }}
-          >
-            <p style={{ fontSize: "16px", marginBottom: "20px" }}>
-              <strong>Your expertise tags:</strong>
-            </p>
-            <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+        <div className="row" style={{ marginBottom: '30px' }}>
+          <div className="col-md-12 text-center">
+            <p style={{ fontSize: '16px', marginBottom: '20px', color: 'black' }}>
+              <strong>Your expertise tags:</strong>{' '}
               {expertiseTags.map((tag) => (
-                <li
+                <span
                   key={tag}
                   style={{
-                    display: "inline-block",
-                    backgroundColor: "#e0e0e0",
-                    padding: "5px 10px",
-                    borderRadius: "15px",
-                    margin: "5px",
-                    fontSize: "14px",
+                    display: 'inline-block',
+                    backgroundColor: '#e0e0e0',
+                    padding: '5px 10px',
+                    borderRadius: '15px',
+                    margin: '5px',
+                    fontSize: '14px',
                     fontWeight: 600,
-                    color: "black",
+                    color: 'black',
                   }}
                 >
                   {tagAliases[tag.toUpperCase()] || tag}
-                </li>
+                </span>
               ))}
-            </ul>
-          </section>
+            </p>
+          </div>
+        </div>
 
-          <section aria-label="Project recommendations">
-            {recommendations.map((project) => (
-              <article
-                key={project.id}
+        <div className="row">
+          {recommendations.map((project) => (
+            <div key={project.id} className="col-md-12" style={{ marginBottom: '30px' }}>
+              <div
                 style={{
-                  border: "1px solid #ccc",
-                  borderRadius: "8px",
-                  padding: "20px",
-                  boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
-                  backgroundColor: "white",
-                  color: "black",
-                  transition: "all 0.3s ease",
-                  marginBottom: "30px",
+                  border: '1px solid #ccc',
+                  borderRadius: '8px',
+                  padding: '20px',
+                  boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+                  backgroundColor: 'white',
+                  color: 'black',
+                  transition: 'all 0.3s ease',
                 }}
               >
-                <header>
-                  <h3
+                <h3
+                  style={{
+                    fontSize: '20px',
+                    fontWeight: 700,
+                    marginBottom: '15px',
+                    color: 'black',
+                  }}
+                >
+                  {project.title}
+                </h3>
+
+                <div style={{ marginBottom: '15px' }}>
+                  <span
                     style={{
-                      fontSize: "20px",
-                      fontWeight: 700,
-                      marginBottom: "15px",
-                      color: "black",
+                      backgroundColor: '#3498db',
+                      color: 'white',
+                      padding: '3px 10px',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      display: 'inline-block',
+                      marginBottom: '10px',
                     }}
                   >
-                    {project.title}
-                  </h3>
-                  <p style={{ marginBottom: "15px" }}>
-                    <mark
-                      style={{
-                        backgroundColor: "#3498db",
-                        color: "white",
-                        padding: "3px 10px",
-                        borderRadius: "4px",
-                        fontSize: "14px",
-                        display: "inline-block",
-                      }}
-                    >
-                      {project.researchArea}
-                    </mark>
-                  </p>
-                </header>
+                    {project.researchArea}
+                  </span>
+                </div>
 
                 <p
                   style={{
-                    fontSize: "15px",
-                    lineHeight: "1.6",
-                    marginBottom: "15px",
-                    color: "black",
+                    fontSize: '15px',
+                    lineHeight: '1.6',
+                    marginBottom: '15px',
+                    color: 'black',
                   }}
                 >
                   {project.summary.length > 150
@@ -318,67 +298,68 @@ export default function ResearchProjectDisplay() {
                     : project.summary}
                 </p>
 
-                <dl style={{ marginBottom: "15px" }}>
-                  <dt>
-                    <strong style={{ color: "#7f8c8d" }}>Researcher:</strong>
-                  </dt>
-                  <dd style={{ marginLeft: 0 }}>{project.postedByName}</dd>
-                  <dt>
-                    <strong style={{ color: "#7f8c8d" }}>Institution:</strong>
-                  </dt>
-                  <dd style={{ marginLeft: 0 }}>{project.institution}</dd>
-                </dl>
+                <div style={{ marginBottom: '15px' }}>
+                  <p style={{ marginBottom: '5px', color: 'black' }}>
+                    <strong style={{ color: '#7f8c8d' }}>Researcher:</strong> {project.postedByName}
+                  </p>
+                  <p style={{ marginBottom: '5px', color: 'black' }}>
+                    <strong style={{ color: '#7f8c8d' }}>Institution:</strong> {project.institution}
+                  </p>
+                </div>
 
                 <button
                   onClick={() => handleExpand(project.id)}
                   style={{
-                    backgroundColor: "#3498db",
-                    color: "white",
-                    border: "none",
-                    padding: "8px 15px",
-                    borderRadius: "4px",
-                    cursor: "pointer",
-                    fontSize: "14px",
+                    backgroundColor: '#3498db',
+                    color: 'white',
+                    border: 'none',
+                    padding: '8px 15px',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '14px',
                     fontWeight: 600,
-                    width: "100%",
-                    transition: "background-color 0.3s",
+                    width: '100%',
+                    transition: 'background-color 0.3s',
                   }}
-                  onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "#2980b9")}
-                  onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "#3498db")}
+                  onMouseOver={(e) => (e.target.style.backgroundColor = '#2980b9')}
+                  onMouseOut={(e) => (e.target.style.backgroundColor = '#3498db')}
                 >
-                  {expandedProject === project.id ? "Show Less" : "View Details"}
+                  {expandedProject === project.id ? 'Show Less' : 'View Details'}
                 </button>
 
                 {expandedProject === project.id && (
-                  <section
-                    aria-label="Project details"
+                  <div
                     style={{
-                      marginTop: "20px",
-                      paddingTop: "15px",
-                      borderTop: "1px solid #ccc",
-                      color: "black",
+                      marginTop: '20px',
+                      paddingTop: '15px',
+                      borderTop: '1px solid #ccc',
+                      color: 'black',
                     }}
                   >
-                    <dl>
-                      <dt><strong>Methodology:</strong></dt>
-                      <dd>{project.methodology}</dd>
-                      <dt><strong>Collaboration Needs:</strong></dt>
-                      <dd>{project.collaborationNeeds}</dd>
-                      <dt><strong>Estimated Completion:</strong></dt>
-                      <dd>{project.estimatedCompletion}</dd>
-                    </dl>
+                    <p>
+                      <strong>Methodology:</strong> {project.methodology}
+                    </p>
+                    <p>
+                      <strong>Collaboration Needs:</strong> {project.collaborationNeeds}
+                    </p>
+                    <p>
+                      <strong>Estimated Completion:</strong> {project.estimatedCompletion}
+                    </p>
                     <p>
                       <a href={project.relatedPublicationLink} target="_blank" rel="noopener noreferrer">
                         Related Publication
                       </a>
                     </p>
-                  </section>
+                  </div>
                 )}
-              </article>
-            ))}
-          </section>
-        </section>
-      </main>
-    </>
-  );
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  </>
+);
+
+
 }
