@@ -32,13 +32,7 @@ const researchAreas = [
   'Geography', 'Philosophy', 'Linguistics', 'Communication', 'Other'
 ];
 
-const titles = [
-  'Mr', 'Mrs', 'Ms', 'Miss', 'Mx', 'Dr', 'Prof', 'Professor', 'Rev',
-  'Father', 'Sister', 'Brother', 'Imam', 'Rabbi', 'Sheikh', 'Eng',
-  'Engr', 'Hon', 'Capt', 'Major', 'Colonel', 'Lt', 'Lt. Col',
-  'Sir', 'Dame', 'Judge', 'Attorney', 'Principal', 'Dean',
-  'Chancellor', 'President', 'CEO', 'Chairperson'
-];
+
 
 // Researcher titles for dropdown
 const titles = [
