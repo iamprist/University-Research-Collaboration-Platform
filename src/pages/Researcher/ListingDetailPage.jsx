@@ -1,32 +1,35 @@
-import { useParams } from 'react-router-dom';
+// ListingDetailPage.jsx - Displays detailed information about a research listing
+import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../config/firebaseConfig';
 import { useEffect, useState } from 'react';
-import './ListingDetailPage.css'; 
-import { useNavigate } from "react-router-dom";
-
+import './ListingDetailPage.css';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
-import '../../pages/Researcher/ResearcherDashboard.css'; // Import your CSS file
+import { Box, Typography, Button, IconButton, CircularProgress } from '@mui/material';
 
 const ListingDetailPage = () => {
+  // Get listing ID from URL params
   const { id } = useParams();
-  const navigate = useNavigate(); 
+  const navigate = useNavigate();
+  // State for listing data
   const [listing, setListing] = useState(null);
+  // Loading state
   const [loading, setLoading] = useState(true);
+  // State for lead researcher info
   const [researcher, setResearcher] = useState(null);
 
+  // Fetch listing and researcher info on mount or when id changes
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch listing
         const docRef = doc(db, "research-listings", id);
         const docSnap = await getDoc(docRef);
-        
+
         if (docSnap.exists()) {
           const listingData = { id: docSnap.id, ...docSnap.data() };
           setListing(listingData);
 
-          // Fetch researcher info
+          // Fetch lead researcher info if available
           if (listingData.userId) {
             const researcherDoc = await getDoc(doc(db, "users", listingData.userId));
             if (researcherDoc.exists()) {
@@ -44,97 +47,126 @@ const ListingDetailPage = () => {
     fetchData();
   }, [id]);
 
+  // Show loading spinner while fetching data
   if (loading) return (
-    <div className="loading-container">
-      <div className="loading-spinner"></div>
-      <p>Loading listing details...</p>
-    </div>
+    <Box className="loading-container">
+      <CircularProgress sx={{ color: '#64CCC5', mb: 2 }} />
+      <Typography>Loading listing details...</Typography>
+    </Box>
   );
 
+  // Show not found message if listing doesn't exist
   if (!listing) return (
-    <div className="not-found">
-      <h2>Listing not found</h2>
-      <p>The requested research listing could not be found.</p>
-    </div>
+    <Box className="not-found">
+      <Typography variant="h4">Listing not found</Typography>
+      <Typography>The requested research listing could not be found.</Typography>
+    </Box>
   );
 
+  // Render listing details UI
   return (
-    <div className="listing-container">
-        <button 
-            className="back-button"
-            onClick={() => navigate(-1)}
-            style={{ 
-              color: 'var(--white)',
-              marginRight: '1.5rem' // Add spacing between arrow and title
-            }}
-          >
-            <ArrowBackIosIcon />
-          </button>
-      <div className="listing-header">
-        <h1>{listing.title}</h1>
-        {researcher && (
-          <div className="researcher-info">
-            <h3>Lead Researcher</h3>
-            <p>{researcher.title} {researcher.name}</p>
-            <p>{researcher.email}</p>
-          </div>
-        )}
-      </div>
-
-      <div className="listing-details">
-        <section className="detail-section">
-          <h2>Project Summary</h2>
-          <p>{listing.summary}</p>
-        </section>
-
-        <div className="detail-grid">
-          <section className="detail-card">
-            <h3>Department</h3>
-            <p>{listing.department || 'Not specified'}</p>
-          </section>
-
-          <section className="detail-card">
-            <h3>Methodology</h3>
-            <p>{listing.methodology || 'Not specified'}</p>
-          </section>
-
-          <section className="detail-card">
-            <h3>Collaboration Needs</h3>
-            <p>{listing.collaboratorNeeds || 'Not specified'}</p>
-          </section>
-
-          {listing.researchArea && (
-            <section className="detail-card">
-              <h3>Research Area</h3>
-              <p>{listing.researchArea}</p>
-            </section>
+    <Box sx={{ minHeight: '100vh', bgcolor: '#f5f7fa' }}>
+      {/* Header styled like CollaboratePage */}
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          bgcolor: 'var(--dark-blue)',
+          color: '#B1EDE8',
+          p: 3,
+          borderBottom: '2px solid #2a3a57',
+          mb: 3
+        }}
+      >
+        <IconButton
+          onClick={() => navigate(-1)}
+          sx={{ color: '#FFFFFF', mr: 2 }}
+        >
+          <ArrowBackIosIcon />
+        </IconButton>
+        <Box sx={{ flex: 1 }}>
+          <Typography variant="h4" sx={{ fontWeight: 600, color: '#FFFFFF', mb: 0.5 }}>
+            {listing.title}
+          </Typography>
+          {researcher && (
+            <Box>
+              <Typography variant="subtitle1" sx={{ color: '#B1EDE8', fontWeight: 500 }}>
+                Lead Researcher: {researcher.title} {researcher.name}
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#B1EDE8' }}>
+                {researcher.email}
+              </Typography>
+            </Box>
           )}
+        </Box>
+        <Button
+          variant="contained"
+          onClick={() => navigate('/researcher-dashboard')}
+          sx={{
+            ml: 'auto',
+            bgcolor: '#B1EDE8',
+            color: '#132238',
+            '&:hover': { bgcolor: '#9dd8d3' }
+          }}
+        >
+          Back to Dashboard
+        </Button>
+      </Box>
 
-          {listing.status && (
-            <section className="detail-card">
-              <h3>Project Status</h3>
-              <p>{listing.status}</p>
-            </section>
+      {/* Details */}
+      <Box className="listing-container">
+        <Box className="listing-details">
+          <Box className="detail-section">
+            <Typography variant="h5" sx={{ color: '#1A2E40', borderBottom: '2px solid #64CCC5', pb: '0.5rem', mb: '1rem' }}>
+              Project Summary
+            </Typography>
+            <Typography>{listing.summary}</Typography>
+          </Box>
+
+          <Box className="detail-grid">
+            <Box className="detail-card">
+              <Typography variant="subtitle1" sx={{ color: '#132238', fontWeight: 600 }}>Department</Typography>
+              <Typography>{listing.department || 'Not specified'}</Typography>
+            </Box>
+            <Box className="detail-card">
+              <Typography variant="subtitle1" sx={{ color: '#132238', fontWeight: 600 }}>Methodology</Typography>
+              <Typography>{listing.methodology || 'Not specified'}</Typography>
+            </Box>
+            <Box className="detail-card">
+              <Typography variant="subtitle1" sx={{ color: '#132238', fontWeight: 600 }}>Collaboration Needs</Typography>
+              <Typography>{listing.collaboratorNeeds || 'Not specified'}</Typography>
+            </Box>
+            {listing.researchArea && (
+              <Box className="detail-card">
+                <Typography variant="subtitle1" sx={{ color: '#132238', fontWeight: 600 }}>Research Area</Typography>
+                <Typography>{listing.researchArea}</Typography>
+              </Box>
+            )}
+            {listing.status && (
+              <Box className="detail-card">
+                <Typography variant="subtitle1" sx={{ color: '#132238', fontWeight: 600 }}>Project Status</Typography>
+                <Typography>{listing.status}</Typography>
+              </Box>
+            )}
+            {listing.endDate && (
+              <Box className="detail-card">
+                <Typography variant="subtitle1" sx={{ color: '#132238', fontWeight: 600 }}>Estimated Completion</Typography>
+                <Typography>{new Date(listing.endDate).toLocaleDateString()}</Typography>
+              </Box>
+            )}
+          </Box>
+
+          {listing.publicationLink && (
+            <Box className="external-links">
+              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>Related Publications</Typography>
+              <a href={listing.publicationLink} target="_blank" rel="noopener noreferrer">
+                View Publication
+              </a>
+            </Box>
           )}
-
-          {listing.endDate && (
-            <section className="detail-card">
-              <h3>Estimated Completion</h3>
-              <p>{new Date(listing.endDate).toLocaleDateString()}</p>
-            </section>
-          )}
-        </div>
-
-        {listing.publicationLink && (
-          <section className="external-links">
-            <h3>Related Publications</h3>
-            <a href={listing.publicationLink} target="_blank" rel="noopener noreferrer">
-              View Publication
-            </a>
-          </section>
-        )}
-      </div>
-    </div>
+        </Box>
+      </Box>
+    </Box>
   );
 };
 

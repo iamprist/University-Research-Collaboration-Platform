@@ -196,7 +196,7 @@ export default function ReviewerPage() {
           }}
         >
           <img
-            src={currentUser?.photoURL || 'https://via.placeholder.com/40?text=👤'}
+            src={currentUser?.photoURL || 'https://via.placeholder.com/40'}
             alt="Profile"
             className="rounded-circle"
             style={{
@@ -223,7 +223,7 @@ export default function ReviewerPage() {
 
         <section className="text-center mb-4">
           <img
-            src={currentUser?.photoURL || 'https://via.placeholder.com/70?text=👤'}
+            src={currentUser?.photoURL || 'https://via.placeholder.com/70'}
             alt="Profile"
             className="rounded-circle mb-2"
             style={{
@@ -308,7 +308,7 @@ export default function ReviewerPage() {
           <>
             <header className="text-center my-4">
               <h2>Reviewer Dashboard</h2>
-              <p>👋 Hi {currentUser?.displayName || 'Reviewer'}</p>
+              <p>Hi {currentUser?.displayName || 'Reviewer'}</p>
               <p>
                 Welcome back! Ready to read, review, and recommend
                 cutting-edge research?

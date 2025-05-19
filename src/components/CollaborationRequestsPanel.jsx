@@ -1,3 +1,4 @@
+// CollaborationRequestsPanel.jsx - Shows and manages incoming collaboration requests for the current researcher
 import { useState, useEffect } from 'react';
 import { db, auth } from '../config/firebaseConfig';
 import { collection, query, where, onSnapshot, updateDoc, doc, addDoc, arrayUnion , getDoc} from 'firebase/firestore';
@@ -5,9 +6,11 @@ import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 const CollaborationRequestsPanel = () => {
+  // State for pending requests and loading status
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Listen for pending collaboration requests for the current user
   useEffect(() => {
     const user = auth.currentUser;
     if (!user) return;
@@ -30,6 +33,7 @@ const CollaborationRequestsPanel = () => {
     return () => unsubscribe();
   }, []);
 
+  // Handle accepting or rejecting a request
   const handleResponse = async (requestId, response) => {
     try {
       const requestRef = doc(db, 'collaboration-requests', requestId);
@@ -42,7 +46,7 @@ const CollaborationRequestsPanel = () => {
       });
 
       if (response === 'accepted') {
-        // Create collaboration
+        // Create collaboration document
         await addDoc(collection(db, 'collaborations'), {
           listingId: requestData.listingId,
           researcherId: requestData.researcherId,
@@ -51,7 +55,7 @@ const CollaborationRequestsPanel = () => {
           status: 'active'
         });
 
-        // Update listing collaborators
+        // Add collaborator to the listing
         await updateDoc(doc(db, 'research-listings', requestData.listingId), {
           collaborators: arrayUnion(requestData.requesterId)
         });
@@ -61,7 +65,7 @@ const CollaborationRequestsPanel = () => {
         toast.info(`Request from ${requestData.requesterName} rejected`);
       }
 
-      // Remove from local state
+      // Remove the request from local state
       setRequests(prev => prev.filter(req => req.id !== requestId));
     } catch (error) {
       console.error('Error handling request:', error);
@@ -69,6 +73,7 @@ const CollaborationRequestsPanel = () => {
     }
   };
 
+  // Inline styles for the panel and buttons
   const styles = {
     panel: {
       backgroundColor: '#1A2E40',
@@ -107,6 +112,7 @@ const CollaborationRequestsPanel = () => {
 
   if (loading) return <p>Loading requests...</p>;
 
+  // Render the panel with pending requests and action buttons
   return (
     <section style={styles.panel}>
       <h3>Collaboration Requests</h3>

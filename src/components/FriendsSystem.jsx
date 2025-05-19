@@ -1,3 +1,4 @@
+// FriendsSystem.jsx - Manages friend requests, searching users, and displaying friends list
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { db, auth } from '../config/firebaseConfig';
@@ -17,8 +18,9 @@ import { toast } from 'react-toastify';
 import './FriendsSystem.css';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 
-
+// Main component for the friends system
 const FriendsSystem = () => {
+  // State variables for friends, requests, search, and UI
   const [friends, setFriends] = useState([]);
   const [pendingReceived, setPendingReceived] = useState([]);
   const [pendingSent, setPendingSent] = useState([]);
@@ -29,6 +31,7 @@ const FriendsSystem = () => {
   const navigate = useNavigate();
   const currentUser = auth.currentUser;
 
+  // Listen for changes in the friends collection for the current user
   useEffect(() => {
     if (!currentUser) return;
 
@@ -42,6 +45,7 @@ const FriendsSystem = () => {
       const sent = [];
       const accepted = [];
 
+      // Categorize friend documents by status
       snapshot.forEach((docSnap) => {
         const data = docSnap.data();
         const otherUserId = data.users.find((u) => u !== currentUser.uid);
@@ -65,6 +69,7 @@ const FriendsSystem = () => {
     return () => unsubscribe();
   }, [currentUser]);
 
+  // Search for users by name, excluding current friends and pending requests
   const handleSearch = async () => {
     if (!searchTerm.trim()) {
       setSearchResults([]);
@@ -91,6 +96,7 @@ const FriendsSystem = () => {
     }
   };
 
+  // Send a friend request to another user
   const sendFriendRequest = async (userId) => {
     try {
       setSendingRequest(userId);
@@ -110,6 +116,7 @@ const FriendsSystem = () => {
     }
   };
 
+  // Accept or decline a received friend request
   const respondToRequest = async (docId, userId, accept) => {
     try {
       if (accept) {
@@ -128,8 +135,10 @@ const FriendsSystem = () => {
     }
   };
 
+  // Render the friends system UI
   return (
     <section className="friends-system">
+        {/* Back button to navigate to previous page */}
         <button 
               className="back-button"
               onClick={() => navigate(-1)}
@@ -142,6 +151,7 @@ const FriendsSystem = () => {
         </button>
       <h2>Friends</h2>
 
+      {/* Search bar for finding researchers */}
       <section className="search-section">
         <input
           type="text"
@@ -154,6 +164,7 @@ const FriendsSystem = () => {
           {loading ? 'Searching...' : 'Search'}
         </button>
       </section>
+      {/* Display search results if any */}
       {searchResults.length > 0 && (
         <section className="search-results">
           <h3>Search Results</h3>
@@ -185,6 +196,7 @@ const FriendsSystem = () => {
           })}
         </section>
       )}
+      {/* Section for received friend requests */}
       <section className="requests-section">
         <h3>Friend Requests</h3>
         {pendingReceived.length > 0 ? (
@@ -203,6 +215,7 @@ const FriendsSystem = () => {
         )}
       </section>
 
+      {/* Section for displaying current friends */}
       <section className="friends-list">
         <h3>Your Friends ({friends.length})</h3>
         {friends.length > 0 ? (
@@ -217,9 +230,11 @@ const FriendsSystem = () => {
   );
 };
 
+// Card component for displaying user info and request actions
 const FriendCard = ({ userId, requestDocId, onRespond }) => {
   const [userData, setUserData] = useState(null);
 
+  // Fetch user data for the card
   useEffect(() => {
     const fetchUser = async () => {
       const userDoc = await getDoc(doc(db, 'users', userId));

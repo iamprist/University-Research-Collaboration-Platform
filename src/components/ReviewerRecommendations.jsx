@@ -1,8 +1,10 @@
+// ReviewerRecommendations.jsx - Recommends research projects to reviewers based on their expertise tags
 import React, { useEffect, useState } from "react";
 import { getFirestore, collection, doc, getDoc, getDocs } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { Helmet } from "react-helmet";
 
+// Mapping of tag aliases to canonical names
 const tagAliases = {
   PHYS: "Physics",
   CHEM: "Chemistry",
@@ -39,6 +41,7 @@ const tagAliases = {
   Other: "Other (please specify)",
 };
 
+// Normalize a single tag to its canonical form
 function normalizeTag(tag) {
   const t = tag.trim().toLowerCase();
   for (const [alias, canonical] of Object.entries(tagAliases)) {
@@ -47,21 +50,25 @@ function normalizeTag(tag) {
   return t;
 }
 
+// Normalize an array of tags
 function normalizeTags(tags) {
   if (!Array.isArray(tags)) return [];
   return tags.map(normalizeTag);
 }
 
 export default function ResearchProjectDisplay() {
+  // State for loading, error, expertise tags, recommendations, and expanded project
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [expertiseTags, setExpertiseTags] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
   const [expandedProject, setExpandedProject] = useState(null);
 
+  // Firebase auth and Firestore instances
   const auth = getAuth();
   const db = getFirestore();
 
+  // Fetch recommendations on mount
   useEffect(() => {
     async function fetchRecommendations() {
       setLoading(true);
@@ -150,10 +157,12 @@ export default function ResearchProjectDisplay() {
     fetchRecommendations();
   }, [auth, db]);
 
+  // Toggle expanded/collapsed state for a project
   const handleExpand = (projectId) => {
     setExpandedProject(expandedProject === projectId ? null : projectId);
   };
 
+  // Loading state UI
   if (loading) {
     return (
       <section
@@ -166,6 +175,7 @@ export default function ResearchProjectDisplay() {
     );
   }
 
+  // Error state UI
   if (error) {
     return (
       <aside
@@ -177,6 +187,7 @@ export default function ResearchProjectDisplay() {
     );
   }
 
+  // No expertise tags UI
   if (!expertiseTags.length) {
     return (
       <section
@@ -188,6 +199,7 @@ export default function ResearchProjectDisplay() {
     );
   }
 
+  // No recommendations UI
   if (recommendations.length === 0) {
     return (
       <section
@@ -202,6 +214,7 @@ export default function ResearchProjectDisplay() {
     );
   }
 
+  // Render recommendations UI
   return (
     <>
       <Helmet>
