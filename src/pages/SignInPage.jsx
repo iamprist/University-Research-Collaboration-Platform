@@ -1,4 +1,4 @@
-import React, {useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { auth, provider, db } from "../config/firebaseConfig";
 import { signInWithPopup } from "firebase/auth";
 import { setDoc, doc, getDocs, collection, addDoc, serverTimestamp } from "firebase/firestore";
@@ -6,31 +6,46 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import './TermsAndConditions.css';
-import Footer from "../components/Footer"; // Import the Footer component
-import "../pages/Researcher/ResearcherDashboard.css"; // Import your CSS file
+import Footer from "../components/Footer";
+import "../pages/Researcher/ResearcherDashboard.css";
+import axios from "axios";
 
 // Add this above function SignInPage
-const logEvent = async ({ userId, role, userName, action, details }) => {
+const logEvent = async ({ userId, role, userName, action, details, ip, target }) => {
   try {
-    await addDoc(collection(db, "eventLogs"), {
+    await addDoc(collection(db, "logs"), {
       userId,
       role,
       userName,
       action,
       details,
+      ip,
+      target,
       timestamp: serverTimestamp(),
     });
-    // You can also add analytics or logging here if needed
   } catch (error) {
     console.error("Error logging event:", error);
   }
 };
 
 function SignInPage() {
+  const [ipAddress, setIpAddress] = useState("");
   const navigate = useNavigate();
 
+  useEffect(() => {
+    // Fetch the user's IP address
+    const fetchIpAddress = async () => {
+      try {
+        const response = await axios.get("https://api.ipify.org?format=json");
+        setIpAddress(response.data.ip);
+      } catch (error) {
+        console.error("Error fetching IP address:", error);
+      }
+    };
+    fetchIpAddress();
+  }, []);
+
   // Add enhanced animations via dynamic <style>
-  
   useEffect(() => {
     const style = document.createElement("style");
     style.textContent = `
@@ -80,14 +95,15 @@ function SignInPage() {
     return () => document.head.removeChild(style);
   }, []);
 
+  // --- Sign-in logic from the provided code ---
   const handleSignIn = async (role) => {
     try {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
-      
+
       if (role === "admin") {
-        const newEmailsSnapshot = await getDocs(collection(db, "newEmails"));
-        const isAuthorizedInNewEmails = newEmailsSnapshot.docs.some(
+        const newAdminSnapshot = await getDocs(collection(db, "newAdmin"));
+        const isAuthorizedInNewAdmin = newAdminSnapshot.docs.some(
           (doc) => doc.data().email.toLowerCase() === user.email.toLowerCase()
         );
         const usersSnapshot = await getDocs(collection(db, "users"));
@@ -96,8 +112,8 @@ function SignInPage() {
             doc.data().email.toLowerCase() === user.email.toLowerCase() &&
             doc.data().role === "admin"
         );
-        
-        if (!isAuthorizedInNewEmails && !isAuthorizedInUsers) {
+
+        if (!isAuthorizedInNewAdmin && !isAuthorizedInUsers) {
           const modal = document.createElement("section");
           modal.setAttribute("role", "dialog");
           modal.setAttribute("aria-modal", "true");
@@ -141,24 +157,26 @@ function SignInPage() {
           return;
         }
       }
-      
+
       const token = await user.getIdToken();
       localStorage.setItem("authToken", token);
-      
+
       await setDoc(doc(db, "users", user.uid), {
         name: user.displayName,
         email: user.email,
         role,
       });
-      
+
       await logEvent({
         userId: user.uid,
         role,
         userName: user.displayName || "N/A",
         action: "Login",
         details: "User logged in",
+        ip: ipAddress,
+        target: "Sign In Page",
       });
-      
+
       if (role === "researcher") navigate("/researcher-dashboard");
       else if (role === "reviewer") navigate("/reviewer");
       else if (role === "admin") navigate("/admin");
@@ -185,7 +203,6 @@ function SignInPage() {
       backdropFilter: "blur(12px)",
       border: "1px solid rgba(255, 255, 255, 0.3)",
       boxShadow: "0 4px 6px 0 rgba(18, 34, 56, 0.2)",
-      // boxShadow: "0 4px 6px rgba(18, 34, 56, 0.1)",
       borderRadius: "1.5rem",
       padding: "2.5rem",
       maxWidth: "400px",
@@ -238,56 +255,54 @@ function SignInPage() {
     },
   };
 
-   return (
+  return (
     <main role="main" style={styles.container}>
       <header className="researcher-header">
         <nav className="header-actions" aria-label="Navigation actions">
-          <button 
+          <button
             className="back-button"
             onClick={() => navigate(-1)}
-            style={{ 
+            style={{
               color: 'var(--white)',
-              marginRight: '1.5rem' // Add spacing between arrow and title
+              marginRight: '1.5rem'
             }}
           >
             <ArrowBackIosIcon />
-          </button>      
-
-          </nav>
-
+          </button>
+        </nav>
         <section className="header-title" aria-label="Header title section"
-              style={{
-                textAlign: 'left',
-                width: '100%',
-                padding: '0 4rem'
-              }}
-            >
+          style={{
+            textAlign: 'left',
+            width: '100%',
+            padding: '0 4rem'
+          }}
+        >
           <h1>Welcome to Innerk Hub</h1>
           <p>Empowering Researchers to Connect, Collaborate, and Innovate</p>
         </section>
         {/* Right side - Home button */}
-  <section className="header-right-actions">
-    <button
-      className="home-button"
-      onClick={() => navigate("/")}
-      style={{
-        color: 'var(--white)',
-        padding: '0.5rem 1rem',
-        borderRadius: '4px',
-        border: '1px solid var(--white)',
-        background: 'transparent',
-        cursor: 'pointer'
-      }}
-    >
-      Home
-    </button>
-  </section>
+        <section className="header-right-actions">
+          <button
+            className="home-button"
+            onClick={() => navigate("/")}
+            style={{
+              color: 'var(--white)',
+              padding: '0.5rem 1rem',
+              borderRadius: '4px',
+              border: '1px solid var(--white)',
+              background: 'transparent',
+              cursor: 'pointer'
+            }}
+          >
+            Home
+          </button>
+        </section>
       </header>
 
       {/* Sign-In Section */}
-      <section 
+      <section
         aria-label="Sign in options"
-        style={styles.card} 
+        style={styles.card}
         className="card"
       >
         {["researcher", "reviewer", "admin"].map((role) => (
@@ -309,7 +324,7 @@ function SignInPage() {
               src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
               alt=""
               aria-hidden="true"
-              style={{ 
+              style={{
                 height: "1.5rem",
                 transition: "filter 0.3s ease"
               }}
@@ -319,7 +334,7 @@ function SignInPage() {
         ))}
       </section>
 
-      <Footer/>
+      <Footer />
     </main>
   );
 }
