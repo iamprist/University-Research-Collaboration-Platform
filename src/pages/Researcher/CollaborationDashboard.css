@@ -18,7 +18,7 @@
   flex-direction: column;
   overflow: hidden;
   border: 1px solid #e2e8f0;
-  height: 100%; /* Fill available vertical space */
+  height: 110%; /* Fill available vertical space */
 }
 
 .right-panel {
