@@ -1,0 +1,113 @@
+.dashboard-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  height: 100vh;
+  padding: 20px;
+  background-color: #f8fafc;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.chat-panel {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+              0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  height: 100%; /* Fill available vertical space */
+}
+
+.right-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  height: 100%; /* Fill available vertical space */
+  overflow: hidden;
+}
+
+.milestones-panel,
+.funding-panel {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+              0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  padding: 24px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #e2e8f0;
+  flex: 1;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.panel-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+.panel-content {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+/* Scrollbar styling */
+.panel-content::-webkit-scrollbar {
+  width: 6px;
+}
+.panel-content::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 3px;
+}
+
+/* Responsive for smaller screens */
+@media (max-width: 1200px) {
+  .dashboard-container {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
+
+  .right-panel {
+    flex-direction: row;
+    height: auto;
+  }
+
+  .milestones-panel,
+  .funding-panel {
+    height: auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-container {
+    padding: 12px;
+    grid-template-columns: 1fr;
+  }
+
+  .right-panel {
+    flex-direction: column;
+  }
+
+  .panel-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}
