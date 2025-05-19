@@ -1,235 +1,282 @@
-import React, { useEffect, useState } from 'react';
-import { doc, getDoc, deleteDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
-import { db, auth } from '../../config/firebaseConfig';
-import { useAuth } from './authContext';
-import { useNavigate } from 'react-router-dom';
-import ReviewerRecommendations from '../../components/ReviewerRecommendations';
-import axios from 'axios';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { db, auth, storage } from '../../config/firebaseConfig';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import Select from 'react-select';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import './ReviewerStyles.css';
 
-// Main ReviewerPage component
-export default function ReviewerPage() {
-  // track reviewer status, reason, loading spinner
-  const [status, setStatus] = useState('');       // approved, in_progress, rejected, not_found
-  const [reason, setReason] = useState('');       // rejection reason if any
-  const [loading, setLoading] = useState(true);   // show spinner while loading
-  const { currentUser } = useAuth();              // logged-in user info
-  const [ipAddress, setIpAddress] = useState(''); // fetched from public API
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const navigate = useNavigate();                 // for redirects
+export default function ReviewerForm() {
+  const navigate = useNavigate();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [user, setUser] = useState(null);
+  const [errors, setErrors] = useState({});
+  const [formData, setFormData] = useState({
+    name: '',
+    institution: '',
+    expertiseTags: [],
+    yearsExperience: '',
+    cvFile: null,
+    publications: '',
+    acceptedTerms: false,
+  });
 
-  // Fetch IP for logging
+  const [institutionSelect, setInstitutionSelect] = useState('');
+  
+  const institutionList = [
+    'University of Cape Town',
+    'University of the Witwatersrand',
+    'Stellenbosch University',
+    'University of Pretoria',
+    'University of KwaZulu-Natal',
+    'University of Johannesburg',
+    'University of the Western Cape',
+    'North-West University',
+    'University of South Africa (UNISA)',
+    'Harvard University',
+    'University of Oxford',
+    'Massachusetts Institute of Technology',
+    'University of Toronto',
+    'Australian National University',
+  ];
+
   useEffect(() => {
-    async function fetchIp() {
+    const saved = sessionStorage.getItem('reviewerFormData');
+    if (saved) {
       try {
-        const res = await axios.get('https://api.ipify.org?format=json');
-        setIpAddress(res.data.ip);
-      } catch (err) {
-        console.error('Could not fetch IP:', err);
-      }
-    }
-    fetchIp();
-  }, []);
-
-  // Log events to Firestore
-  const logEvent = async ({ userId, role, userName, action, details, ip, target }) => {
-    try {
-      await addDoc(collection(db, 'logs'), {
-        userId,
-        role,
-        userName,
-        action,
-        details,
-        ip,
-        target,
-        timestamp: serverTimestamp(),
-      });
-    } catch (err) {
-      console.error('Error logging event:', err);
-    }
-  };
-
-  // Save auth token once user is set
-  useEffect(() => {
-    async function saveToken() {
-      if (currentUser) {
-        const token = await currentUser.getIdToken();
-        localStorage.setItem('authToken', token);
-      }
-    }
-    saveToken();
-  }, [currentUser]);
-
-  // Load reviewer application status
-  useEffect(() => {
-    let isMounted = true;
-    async function fetchStatus() {
-      try {
-        const token = localStorage.getItem('authToken');
-        if (!token) return navigate('/signin');
-        if (!currentUser?.uid) return;
-
-        const docRef = doc(db, 'reviewers', currentUser.uid);
-        const docSnap = await getDoc(docRef);
-        if (isMounted) {
-          if (docSnap.exists()) {
-            const data = docSnap.data();
-            setStatus(data.status || 'in_progress');
-            setReason(data.rejectionReason || '');
-          } else {
-            setStatus('not_found');
-          }
+        const { cvFile, ...rest } = JSON.parse(saved);
+        setFormData(prev => ({ ...prev, ...rest }));
+        if (rest.institution && institutionList.includes(rest.institution)) {
+          setInstitutionSelect(rest.institution);
+        } else if (rest.institution) {
+          setInstitutionSelect('Other');
         }
       } catch (err) {
-        console.error('Error fetching status:', err);
-      } finally {
-        if (isMounted) setLoading(false);
+        console.error('Failed to load saved data:', err);
       }
     }
-    fetchStatus();
-    return () => { isMounted = false; };
-  }, [currentUser, navigate]);
-
-  // Log when user closes tab/browser
-  useEffect(() => {
-    const handleTabClose = async () => {
-      if (auth.currentUser) {
-        await logEvent({
-          userId: auth.currentUser.uid,
-          role: 'Reviewer',
-          userName: auth.currentUser.displayName || 'N/A',
-          action: 'Logout',
-          details: 'Closed browser/tab',
-        });
-      }
-    };
-    window.addEventListener('beforeunload', handleTabClose);
-    return () => window.removeEventListener('beforeunload', handleTabClose);
-  }, []);
-
-  // Revoke reviewer application
-  const handleRevoke = async () => {
-    try {
-      if (!currentUser?.uid) throw new Error('Not authenticated');
-      const docRef = doc(db, 'reviewers', currentUser.uid);
-      await deleteDoc(docRef);
-      setStatus('not_found');
-    } catch (err) {
-      console.error('Error revoking application:', err);
-    }
-  };
-
-  // Logout and redirect
-  const handleLogout = async () => {
-    try {
-      const user = auth.currentUser;
-      if (user) {
-        await logEvent({
-          userId: user.uid,
-          role: 'Reviewer',
-          userName: user.displayName || 'N/A',
-          action: 'Logout',
-          details: 'Clicked logout',
-          ip: ipAddress,
-          target: 'Dashboard',
-        });
-        await auth.signOut();
+    const unsub = auth.onAuthStateChanged(current => {
+      setUser(current);
+      if (!current) {
+        toast.warn('Please sign in first');
         navigate('/signin');
       }
+    });
+    return unsub;
+  }, [navigate]);
+
+  const expertiseOptions = [
+    { value: 'PHYS', label: 'Physics' },
+    { value: 'CHEM', label: 'Chemistry' },
+    { value: 'BIO', label: 'Biology' },
+    { value: 'CS', label: 'Computer Science' },
+    { value: 'AI', label: 'Artificial Intelligence' },
+    { value: 'MED', label: 'Medicine' },
+    { value: 'LAW', label: 'Law' },
+    { value: 'BUS', label: 'Business Administration' },
+    { value: 'FIN', label: 'Finance' },
+    { value: 'MKT', label: 'Marketing' },
+    { value: 'HRM', label: 'Human Resources' },
+  ];
+
+  const saveFormDataToSession = () => {
+    const { cvFile, ...saveData } = formData;
+    sessionStorage.setItem('reviewerFormData', JSON.stringify(saveData));
+  };
+
+  const validateForm = () => {
+    const errs = {};
+    if (!formData.name.trim()) errs.name = 'Full name is required';
+    if (!formData.institution.trim()) errs.institution = 'Institution is required';
+    if (formData.expertiseTags.length === 0) errs.expertise = 'Select at least one expertise';
+    if (!formData.yearsExperience || isNaN(formData.yearsExperience)) errs.experience = 'Valid years required';
+    if (!formData.cvFile) errs.cv = 'Upload your CV';
+    if (!formData.acceptedTerms) errs.terms = 'You must accept terms';
+    return errs;
+  };
+
+  const handleSubmit = async e => {
+    e.preventDefault();
+    const errs = validateForm();
+    if (Object.keys(errs).length) {
+      setErrors(errs);
+      toast.error('Please fix errors');
+      return;
+    }
+    if (formData.cvFile.size > 5 * 1024 * 1024) {
+      toast.error('CV must be under 5MB');
+      return;
+    }
+    if (formData.cvFile.type !== 'application/pdf') {
+      toast.error('Only PDF allowed');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const storageRef = ref(storage, `reviewer-cvs/${user.uid}/${Date.now()}_${formData.cvFile.name}`);
+      await uploadBytes(storageRef, formData.cvFile);
+      const cvUrl = await getDownloadURL(storageRef);
+      const pubs = formData.publications.split(/[\n,]+/).map(l => l.trim()).filter(l => l);
+      await setDoc(doc(db, 'reviewers', user.uid), {
+        name: formData.name.trim(),
+        institution: formData.institution.trim(),
+        expertiseTags: formData.expertiseTags,
+        yearsExperience: parseInt(formData.yearsExperience, 10),
+        cvUrl,
+        publications: pubs,
+        status: 'in_progress',
+        userId: user.uid,
+        email: user.email,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+      toast.success('Application submitted!');
+      sessionStorage.removeItem('reviewerFormData');
+      navigate('/reviewer');
     } catch (err) {
-      console.error('Error during logout:', err);
+      console.error('Submission error:', err);
+      toast.error(err.message || 'Submission failed');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  // Toggle sidebar visibility
-  const toggleSidebar = () => setSidebarOpen(open => !open);
-
-  // Styles for status badges
-  const statusStyles = {
-    approved: { backgroundColor: '#D1FAE5', borderLeft: '4px solid #10B981', color: '#065F46' },
-    inProgress: { backgroundColor: '#FEF3C7', borderLeft: '4px solid #F59E0B', color: '#92400E' },
-    rejected: { backgroundColor: '#FECACA', borderLeft: '4px solid #EF4444', color: '#991B1B' },
-  };
-
-  // Render badge based on status
-  const renderStatusBadge = () => {
-    switch (status) {
-      case 'approved':
-        return <p role="status" className="p-2 rounded" style={statusStyles.approved}>✅ Approved</p>;
-      case 'in_progress':
-        return <p role="status" className="p-2 rounded" style={statusStyles.inProgress}>⏳ Under Review</p>;
-      case 'rejected':
-        return <p role="status" className="p-2 rounded" style={statusStyles.rejected}>❌ Rejected</p>;
-      case 'not_found':
-        return <p role="status" className="p-2 rounded text-muted">👤 No application found</p>;
-      default:
-        return null;
-    }
-  };
-
-  // Render layout: navbar, sidebar, main content
   return (
-    <main style={{ backgroundColor: '#fff', color: '#000', minHeight: '100vh', paddingTop: '70px' }}>
-      <nav className="navbar navbar-light bg-light fixed-top px-4 py-3" style={{ borderBottom: '1px solid #000' }}>
-        <h1 className="navbar-brand fw-bold fs-4 text-dark">Innerk Hub</h1>
-        <button className="btn btn-outline-light p-0" onClick={toggleSidebar} aria-label="Toggle sidebar" style={{ borderRadius: '50%', width: '40px', height: '40px' }}>
-          <img src={currentUser?.photoURL || 'https://via.placeholder.com/40?text=👤'} alt="Profile" className="rounded-circle" style={{ width: '40px', height: '40px', objectFit: 'cover' }} />
+    <main className="reviewer-application-container" role="region" aria-labelledby="form-heading">
+      <h2 id="form-heading">Reviewer Application</h2>
+      <form onSubmit={handleSubmit} noValidate>
+        {/* Grid for primary fields */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          <fieldset className="form-group">
+            <legend>Full Name *</legend>
+            <input
+              type="text"
+              id="name"
+              value={formData.name}
+              onChange={e => setFormData({ ...formData, name: e.target.value })}
+              aria-invalid={!!errors.name}
+              aria-describedby={errors.name ? 'name-error' : undefined}
+            />
+            {errors.name && <p id="name-error" className="error-message">{errors.name}</p>}
+          </fieldset>
+
+          <fieldset className="form-group">
+            <legend>Institution *</legend>
+            <select
+              id="institution-select"
+              value={institutionSelect}
+              onChange={e => {
+                const val = e.target.value;
+                setInstitutionSelect(val);
+                setFormData({ ...formData, institution: val === 'Other' ? '' : val });
+              }}
+              aria-invalid={!!errors.institution}
+              aria-describedby={errors.institution ? 'institution-error' : undefined}
+            >
+              <option value="">Select your university</option>
+              {institutionList.map(inst => <option key={inst} value={inst}>{inst}</option>)}
+              <option value="Other">Other</option>
+            </select>
+            {institutionSelect === 'Other' && (
+              <input
+                type="text"
+                id="institution"
+                placeholder="Enter your institution"
+                value={formData.institution}
+                onChange={e => setFormData({ ...formData, institution: e.target.value })}
+                aria-invalid={!!errors.institution}
+                aria-describedby={errors.institution ? 'institution-error' : undefined}
+              />
+            )}
+            {errors.institution && <p id="institution-error" className="error-message">{errors.institution}</p>}
+          </fieldset>
+
+          <fieldset className="form-group">
+            <legend>Areas of Expertise *</legend>
+            <Select
+              id="expertise"
+              isMulti
+              options={expertiseOptions}
+              onChange={sel => setFormData({ ...formData, expertiseTags: sel.map(o => o.value) })}
+              placeholder="Select your expertise..."
+              aria-invalid={!!errors.expertise}
+              aria-describedby={errors.expertise ? 'expertise-error' : undefined}
+            />
+            {errors.expertise && <p id="expertise-error" className="error-message">{errors.expertise}</p>}
+          </fieldset>
+
+          <fieldset className="form-group">
+            <legend>Years of Experience *</legend>
+            <input
+              type="number"
+              id="experience"
+              min="1"
+              value={formData.yearsExperience}
+              onChange={e => setFormData({ ...formData, yearsExperience: e.target.value })}
+              aria-invalid={!!errors.experience}
+              aria-describedby={errors.experience ? 'experience-error' : undefined}
+            />
+            {errors.experience && <p id="experience-error" className="error-message">{errors.experience}</p>}
+          </fieldset>
+        </div>
+
+        {/* Remaining fields full width */}
+        <fieldset className="form-group">
+          <legend>Upload CV (PDF, max 5MB) *</legend>
+          <input
+            type="file"
+            id="cv"
+            accept=".pdf"
+            onChange={e => setFormData({ ...formData, cvFile: e.target.files[0] })}
+            aria-invalid={!!errors.cv}
+            aria-describedby={errors.cv ? 'cv-error' : undefined}
+          />
+          {formData.cvFile && <output className="file-info">Selected: {formData.cvFile.name}</output>}
+          {errors.cv && <p id="cv-error" className="error-message">{errors.cv}</p>}
+        </fieldset>
+
+        <fieldset className="form-group">
+          <legend>Publication Links (optional)</legend>
+          <textarea
+            id="publications"
+            value={formData.publications}
+            onChange={e => setFormData({ ...formData, publications: e.target.value })}
+            placeholder="https://example.com/pub1, https://example.com/pub2"
+          />
+          <small className="hint">Separate with commas or new lines</small>
+        </fieldset>
+
+        <fieldset className="form-group terms">
+          <legend>
+            <input
+              type="checkbox"
+              id="terms"
+              checked={formData.acceptedTerms}
+              onChange={e => setFormData({ ...formData, acceptedTerms: e.target.checked })}
+              aria-invalid={!!errors.terms}
+              aria-describedby={errors.terms ? 'terms-error' : undefined}
+            />
+            I accept the {' '}
+            <Link to="/terms" onClick={saveFormDataToSession} aria-label="View Terms and Conditions">
+              Terms and Conditions</Link> *
+          </legend>
+          {errors.terms && <p id="terms-error" className="error-message">{errors.terms}</p>}
+        </fieldset>
+
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className={`submit-button ${isSubmitting ? 'submitting' : ''}`}
+          aria-busy={isSubmitting}
+        >
+          {isSubmitting ? (
+            <> <i className="spinner" role="status" aria-hidden="true"></i> Submitting... </>
+          ) : 'Submit Application'}
         </button>
-      </nav>
-
-      <aside className={`position-fixed top-0 end-0 h-100 bg-light shadow p-4 ${sidebarOpen ? 'd-block' : 'd-none'}`} style={{ width: '280px', zIndex: 1050 }}>
-        <button className="btn-close float-end" onClick={toggleSidebar} aria-label="Close"></button>
-        <figure className="text-center mb-4">
-          <img src={currentUser?.photoURL || 'https://via.placeholder.com/70?text=👤'} alt="Profile" className="rounded-circle mb-2" style={{ width: '70px', height: '70px', objectFit: 'cover', border: '2px solid #ccc' }} />
-          <figcaption>
-            <h2 className="mb-0 mt-2 fs-6">{currentUser?.displayName || 'N/A'}</h2>
-            <p className="text-muted fs-7">{currentUser?.email || 'N/A'}</p>
-          </figcaption>
-        </figure>
-        <section className="mb-4">
-          {renderStatusBadge()}
-          {status === 'rejected' && reason && <p className="text-danger mt-1">Reason: {reason}</p>}
-        </section>
-        <hr />
-        <nav aria-label="sidebar links">
-          <ul className="list-unstyled mb-4">
-            <li><a href="/about" className="text-decoration-none text-dark">About Us</a></li>
-            <li><a href="/terms" className="text-decoration-none text-dark">Terms & Conditions</a></li>
-          </ul>
-        </nav>
-        <section className="mt-auto">
-          {status === 'approved' && <button onClick={handleRevoke} className="btn btn-warning w-100 mb-2">🚫 Stop Being a Reviewer</button>}
-          {status !== 'approved' && status !== 'not_found' && <button onClick={handleRevoke} className="btn btn-warning w-100 mb-2">{status === 'rejected' ? '🗑️ Remove Rejected' : 'Revoke Application'}</button>}
-          <button onClick={handleLogout} className="btn btn-danger w-100">🔒 Logout</button>
-        </section>
-      </aside>
-
-      <section className="container pt-0 mt-5" style={{ backgroundColor: '#fff', color: '#000' }}>
-        <header className="text-center mb-4">
-          <h2>Reviewer Dashboard</h2>
-          <p>👋 Hi {currentUser?.displayName || 'Reviewer'}!</p>
-          <p>Ready to dig into some research?</p>
-        </header>
-        {loading ? (
-          <section className="text-center text-muted">
-            <p>Loading your status...</p>
-            <div className="spinner-border text-dark" role="status" />
-          </section>
-        ) : (
-          <section>
-            {status === 'approved' && <ReviewerRecommendations />}
-            {status === 'not_found' && (
-              <section className="text-center mt-4">
-                <p className="text-muted mb-3">You haven’t applied yet.</p>
-                <button className="btn btn-success" onClick={() => navigate('/reviewer-form')}>📝 Apply Now</button>
-              </section>
-            )}
-            {status === 'in_progress' && <p className="text-warning text-center mt-4">⏳ Your application is under review.</p>}
-            {status === 'rejected' && (
-              <section className="text-danger text-center mt-4"><p>😢 Your application was rejected.</p><p>Reason: {reason || 'No reason provided.'}</p></section>
-            )}
-          </section>
-        )}
-      </section>
+      </form>
     </main>
   );
 }
