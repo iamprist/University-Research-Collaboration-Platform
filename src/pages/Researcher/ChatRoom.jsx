@@ -1,3 +1,4 @@
+// ChatRoom.jsx - Researcher chat room with messaging, file sharing, milestones, and funding management
 import { useState, useEffect, useRef } from 'react';
 import { doc, getDoc, updateDoc, setDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -12,22 +13,33 @@ import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import { Box, Typography, IconButton, Button, CircularProgress, TextField } from '@mui/material';
 
 export default function ChatRoom() {
+  // Get chatId from URL params
   const { chatId } = useParams();
+  // State for chat messages
   const [messages, setMessages] = useState([]);
+  // State for new message input
   const [newMessage, setNewMessage] = useState('');
+  // Loading and error status
   const [status, setStatus] = useState({ loading: true, error: null });
+  // User data cache (userId -> name)
   const [userData, setUserData] = useState({});
+  // Chat room name
   const [chatName, setChatName] = useState('Chat Room');
+  // File attachment state
   const [attachment, setAttachment] = useState(null);
   const [attachmentType, setAttachmentType] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
+  // Media viewer state
   const [showMediaViewer, setShowMediaViewer] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState(null);
+  // Tab state (all, images, docs, milestones, funding)
   const [activeTab, setActiveTab] = useState('all');
+  // Refs for scrolling and file input
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
 
+  // Funding and expenditure state
   const [funding, setFunding] = useState([]);
   const [expenditures, setExpenditures] = useState([]);
   const [showFundingForm, setShowFundingForm] = useState(false);
@@ -40,16 +52,15 @@ export default function ChatRoom() {
   const [showMilestoneForm, setShowMilestoneForm] = useState(false);
   const [milestoneInput, setMilestoneInput] = useState({ title: '', description: '' });
 
-  // Find project created date (from chat doc)
+  // Project created date
   const [projectCreated, setProjectCreated] = useState(null);
-
   // Research completion state
   const [researchComplete, setResearchComplete] = useState(false);
-
   // Total funding needed state
   const [totalNeededInput, setTotalNeededInput] = useState('');
   const [totalNeeded, setTotalNeeded] = useState(null);
 
+  // Filter messages by active tab
   const filteredMessages = messages.filter(msg => {
     if (activeTab === 'all') return true;
     if (activeTab === 'images') return msg.fileType?.startsWith('image/');
@@ -57,6 +68,7 @@ export default function ChatRoom() {
     return true;
   });
 
+  // Set up chat and listen for updates
   useEffect(() => {
     if (!chatId) {
       setStatus({ loading: false, error: 'No chat ID provided' });
@@ -144,6 +156,7 @@ export default function ChatRoom() {
     };
   }, [chatId, userData]);
 
+  // Handle file selection for attachments
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -163,6 +176,7 @@ export default function ChatRoom() {
     }
   };
 
+  // Remove file attachment
   const removeAttachment = () => {
     setAttachment(null);
     setPreviewUrl(null);
@@ -172,6 +186,7 @@ export default function ChatRoom() {
     }
   };
 
+  // Upload file to Firebase Storage
   const uploadFile = async () => {
     if (!attachment) return null;
 
@@ -192,6 +207,7 @@ export default function ChatRoom() {
     }
   };
 
+  // Send a new message (with or without attachment)
   const sendMessage = async (e) => {
     e.preventDefault();
     if ((!newMessage.trim() && !attachment) || !auth.currentUser) return;
@@ -250,16 +266,17 @@ export default function ChatRoom() {
     }
   };
 
+  // Open and close media viewer
   const openMediaViewer = (media) => {
     setSelectedMedia(media);
     setShowMediaViewer(true);
   };
-
   const closeMediaViewer = () => {
     setShowMediaViewer(false);
     setSelectedMedia(null);
   };
 
+  // Render preview for file/image attachment
   const renderAttachmentPreview = () => {
     if (!attachment) return null;
 
@@ -297,6 +314,7 @@ export default function ChatRoom() {
     }
   };
 
+  // Render message content (text, image, or document)
   const renderMessageContent = (msg) => {
     if (msg.fileUrl) {
       if (msg.fileType.startsWith('image/')) {
@@ -329,12 +347,12 @@ export default function ChatRoom() {
     return <Typography>{msg.text}</Typography>;
   };
 
-  // Funding state
+  // Funding/expenditure calculations
   const totalFunding = funding.reduce((sum, f) => sum + (f.amount || 0), 0);
   const totalSpent = expenditures.reduce((sum, e) => sum + (e.amount || 0), 0);
   const balance = totalFunding - totalSpent;
 
-  // Fetch funding/expenditure data from Firestore
+  // Fetch funding/expenditure/milestone data from Firestore
   useEffect(() => {
     if (!chatId) return;
     const chatRef = doc(db, 'chats', chatId);
@@ -351,12 +369,12 @@ export default function ChatRoom() {
     return () => unsubscribe();
   }, [chatId]);
 
-  // Find project finished date (when all milestones are done)
+  // Project finished date (if all milestones done)
   const projectFinished = milestones.length > 0 && milestones.every(m => m.done)
     ? Math.max(...milestones.map(m => m.doneAt ? new Date(m.doneAt).getTime() : 0))
     : null;
 
-  // Mark milestone as done/undone and store doneAt
+  // Mark milestone as done/undone
   const toggleMilestoneDone = async (id) => {
     const chatRef = doc(db, 'chats', chatId);
     const updated = milestones.map(m => {
@@ -444,7 +462,7 @@ export default function ChatRoom() {
     doc.save('milestones_report.pdf');
   };
 
-  // Add Milestone
+  // Add a new milestone
   const handleAddMilestone = async (e) => {
     e.preventDefault();
     if (!milestoneInput.title) return;
@@ -463,17 +481,17 @@ export default function ChatRoom() {
     setShowMilestoneForm(false);
   };
 
-  // Delete Milestone
+  // Delete a milestone
   const handleDeleteMilestone = async (id) => {
     const chatRef = doc(db, 'chats', chatId);
     const updated = milestones.filter(m => m.id !== id);
     await updateDoc(chatRef, { milestones: updated });
   };
 
-  // All milestones done
+  // Check if all milestones are done
   const allMilestonesDone = milestones.length > 0 && milestones.every(m => m.done);
 
-  // Add Funding
+  // Add new funding entry
   const handleAddFunding = async (e) => {
     e.preventDefault();
     if (!fundingInput.amount || !fundingInput.source) return;
@@ -491,7 +509,7 @@ export default function ChatRoom() {
     setShowFundingForm(false);
   };
 
-  // Add Expenditure
+  // Add new expenditure entry
   const handleAddExpenditure = async (e) => {
     e.preventDefault();
     if (!expenditureInput.amount || !expenditureInput.description) return;
@@ -509,7 +527,7 @@ export default function ChatRoom() {
     setShowExpenditureForm(false);
   };
 
-  // Export Funding as PDF
+  // Export funding and expenditures as PDF
   const handleExportFundingPDF = () => {
     const doc = new jsPDF();
     let y = 15;
@@ -634,6 +652,7 @@ export default function ChatRoom() {
     setTotalNeededInput('');
   };
 
+  // Show loading spinner while loading
   if (status.loading && messages.length === 0) {
     return (
       <Box className="loading-container">
@@ -643,6 +662,7 @@ export default function ChatRoom() {
     );
   }
 
+  // Show error if chat fails to load
   if (status.error) {
     return (
       <Box className="error-container">
@@ -654,6 +674,7 @@ export default function ChatRoom() {
     );
   }
 
+  // Render chat room UI, tabs, messages, milestones, and funding management
   return (
     <Box className="chat-app">
       {/* Header */}

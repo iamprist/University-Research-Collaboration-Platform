@@ -1,3 +1,4 @@
+// ResearcherDashboard.jsx - Main dashboard for researchers to manage listings, collaborations, and notifications
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../../config/firebaseConfig';
@@ -27,6 +28,7 @@ import {
 } from '@mui/material';
 import { Notifications, Menu as MenuIcon, Close } from '@mui/icons-material';
 
+// Notification dropdown for messages
 const MessageNotification = ({ messages, unreadCount, onMessageClick }) => {
   const [anchorEl, setAnchorEl] = useState(null);
 
@@ -109,14 +111,16 @@ const MessageNotification = ({ messages, unreadCount, onMessageClick }) => {
                 </Typography>
               </Paper>
             ))
-          )}
+          }
         </Box>
       </Menu>
     </Badge>
   );
 };
 
+// Main dashboard component
 const ResearcherDashboard = () => {
+  // State variables for listings, user, UI, and notifications
   const [allListings, setAllListings] = useState([]);
   const [myListings, setMyListings] = useState([]);
   const [userId, setUserId] = useState(null);
@@ -137,6 +141,7 @@ const ResearcherDashboard = () => {
   const [anchorEl, setAnchorEl] = useState(null);
   const navigate = useNavigate();
 
+  // Fetch user's public IP address for logging
   useEffect(() => {
     const fetchIpAddress = async () => {
       try {
@@ -149,6 +154,7 @@ const ResearcherDashboard = () => {
     fetchIpAddress();
   }, []);
 
+  // Check authentication and set userId
   useEffect(() => {
     const token = localStorage.getItem('authToken');
     if (!token) {
@@ -165,6 +171,7 @@ const ResearcherDashboard = () => {
     return () => unsubscribe();
   }, [navigate]);
 
+  // Fetch user profile and name
   useEffect(() => {
     if (!userId) return;
     
@@ -184,6 +191,7 @@ const ResearcherDashboard = () => {
     fetchUserProfile();
   }, [userId, navigate]);
 
+  // Listen for messages and collaborations
   useEffect(() => {
     if (!userId) return;
     
@@ -222,6 +230,7 @@ const ResearcherDashboard = () => {
     };
   }, [userId]);
 
+  // Fetch all research listings for search
   useEffect(() => {
     if (!userId || !hasProfile) return;
     
@@ -251,6 +260,7 @@ const ResearcherDashboard = () => {
     fetchListings();
   }, [userId, hasProfile]);
 
+  // Fetch only the current user's listings
   useEffect(() => {
     if (!userId || !hasProfile) return;
     
@@ -267,10 +277,12 @@ const ResearcherDashboard = () => {
     fetchMyListings();
   }, [userId, hasProfile]);
 
+  // Update filtered listings when myListings changes
   useEffect(() => {
     setFilteredListings(myListings);
   }, [myListings]);
 
+  // Search handler for research listings
   const handleSearch = () => {
     if (!searchTerm.trim()) {
       setSearchResults([]);
@@ -294,6 +306,7 @@ const ResearcherDashboard = () => {
     setShowNoResults(filtered.length === 0);
   };
 
+  // Mark a message as read in Firestore
   const markMessageAsRead = async (messageId) => {
     try {
       await updateDoc(doc(db, 'users', userId, 'messages', messageId), {
@@ -304,6 +317,7 @@ const ResearcherDashboard = () => {
     }
   };
 
+  // Handle clicking a notification message
   const handleMessageClick = (message) => {
     markMessageAsRead(message.id);
     switch(message.type) {
@@ -320,6 +334,7 @@ const ResearcherDashboard = () => {
     }
   };
 
+  // View requester profile for collaboration requests
   const handleViewRequesterProfile = async (request) => {
     try {
       const profileDoc = await getDoc(doc(db, 'users', request.requesterId));
@@ -332,6 +347,7 @@ const ResearcherDashboard = () => {
     }
   };
 
+  // Accept a collaboration request
   const handleAcceptCollaboration = async () => {
     if (!selectedRequest) return;
 
@@ -364,6 +380,7 @@ const ResearcherDashboard = () => {
     }
   };
 
+  // Reject a collaboration request
   const handleRejectCollaboration = async () => {
     if (!selectedRequest) return;
 
@@ -382,6 +399,7 @@ const ResearcherDashboard = () => {
     }
   };
 
+  // Navigation handlers
   const handleAddListing = () => navigate('/researcher/add-listing');
   const handleCollaborate = () => navigate('/researcher/collaborate');
   const handleInputFocus = () => {
@@ -399,6 +417,7 @@ const ResearcherDashboard = () => {
     setDropdownVisible(false);
   };
 
+  // Log user events (e.g., logout)
   const logEvent = async ({ userId, role, userName, action, details, ip, target }) => {
     try {
       await addDoc(collection(db, "logs"), {
@@ -417,6 +436,7 @@ const ResearcherDashboard = () => {
   };
 
 
+  // Logout handler
   const handleLogout = async () => {
     try {
       const user = auth.currentUser;
@@ -438,6 +458,7 @@ const ResearcherDashboard = () => {
     }
   };
 
+  // Render dashboard UI: header, search, listings, collaborations, notifications, and contact form
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}

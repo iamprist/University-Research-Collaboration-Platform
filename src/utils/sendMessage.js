@@ -1,12 +1,14 @@
+// sendMessage.js - Utility for sending notifications/messages to users in Firestore
 import { db } from '../config/firebaseConfig';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 
+// Sends a message to a user's messages subcollection
 export const sendMessage = async (recipientId, messageData) => {
   try {
     await addDoc(collection(db, 'users', recipientId, 'messages'), {
       ...messageData,
-      read: false,
-      timestamp: serverTimestamp()
+      read: false, // Mark as unread by default
+      timestamp: serverTimestamp() // Add server timestamp
     });
     return true;
   } catch (error) {
@@ -15,6 +17,7 @@ export const sendMessage = async (recipientId, messageData) => {
   }
 };
 
+// Message type constants for different notification scenarios
 export const messageTypes = {
   COLLABORATION_REQUEST: 'collaboration-request',
   REVIEW_REQUEST: 'review-request',

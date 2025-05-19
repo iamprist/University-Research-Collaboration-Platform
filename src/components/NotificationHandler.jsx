@@ -1,3 +1,4 @@
+// NotificationHandler.jsx - Listens for new collaboration requests and shows toast notifications with accept/reject actions
 import { useEffect } from 'react';
 import { db, auth } from '../config/firebaseConfig';
 import { 
@@ -15,9 +16,11 @@ import 'react-toastify/dist/ReactToastify.css';
 
 const NotificationHandler = () => {
   useEffect(() => {
+    // Get current user
     const user = auth.currentUser;
     if (!user) return;
 
+    // Query for pending collaboration requests for this user
     const requestsRef = collection(db, 'collaboration-requests');
     const q = query(
       requestsRef,
@@ -25,6 +28,7 @@ const NotificationHandler = () => {
       where('status', '==', 'pending')
     );
 
+    // Listen for new requests and show toast notifications
     const unsubscribe = onSnapshot(q, (snapshot) => {
       snapshot.docChanges().forEach((change) => {
         if (change.type === 'added') {
@@ -76,6 +80,7 @@ const NotificationHandler = () => {
       });
     });
 
+    // Handle accept/reject actions for requests
     const handleResponse = async (requestId, response, requestData) => {
       try {
         const requestRef = doc(db, 'collaboration-requests', requestId);
@@ -108,6 +113,7 @@ const NotificationHandler = () => {
     return () => unsubscribe();
   }, []);
 
+  // This component does not render anything
   return null;
 };
 

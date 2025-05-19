@@ -1,3 +1,4 @@
+// ListingDetailPage.jsx - Displays detailed information about a research listing
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../config/firebaseConfig';
@@ -7,12 +8,17 @@ import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import { Box, Typography, Button, IconButton, CircularProgress } from '@mui/material';
 
 const ListingDetailPage = () => {
+  // Get listing ID from URL params
   const { id } = useParams();
   const navigate = useNavigate();
+  // State for listing data
   const [listing, setListing] = useState(null);
+  // Loading state
   const [loading, setLoading] = useState(true);
+  // State for lead researcher info
   const [researcher, setResearcher] = useState(null);
 
+  // Fetch listing and researcher info on mount or when id changes
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -23,6 +29,7 @@ const ListingDetailPage = () => {
           const listingData = { id: docSnap.id, ...docSnap.data() };
           setListing(listingData);
 
+          // Fetch lead researcher info if available
           if (listingData.userId) {
             const researcherDoc = await getDoc(doc(db, "users", listingData.userId));
             if (researcherDoc.exists()) {
@@ -40,6 +47,7 @@ const ListingDetailPage = () => {
     fetchData();
   }, [id]);
 
+  // Show loading spinner while fetching data
   if (loading) return (
     <Box className="loading-container">
       <CircularProgress sx={{ color: '#64CCC5', mb: 2 }} />
@@ -47,6 +55,7 @@ const ListingDetailPage = () => {
     </Box>
   );
 
+  // Show not found message if listing doesn't exist
   if (!listing) return (
     <Box className="not-found">
       <Typography variant="h4">Listing not found</Typography>
@@ -54,6 +63,7 @@ const ListingDetailPage = () => {
     </Box>
   );
 
+  // Render listing details UI
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#f5f7fa' }}>
       {/* Header styled like CollaboratePage */}

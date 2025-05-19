@@ -1,3 +1,4 @@
+// App.js - Main application entry point and route configuration
 // src/App.js
 import { Routes, Route, Navigate} from "react-router-dom";
 import SignInPage from "./pages/SignInPage";
@@ -35,14 +36,14 @@ import axios from "axios";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-
+// ProtectedRoute: Only allows access if authToken is present
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("authToken");
   return token ? children : <Navigate to="/signin" />;
 };
 
 function App() {
-  // Fetch IP for logging
+  // Fetch IP for logging user login events
   const fetchIpAddress = async () => {
     try {
       const { data } = await axios.get("https://api.ipify.org?format=json");
@@ -52,7 +53,7 @@ function App() {
     }
   };
 
-  // Log login events
+  // Log login events to Firestore on auth state change
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (user) {
@@ -73,21 +74,19 @@ function App() {
     return () => unsubscribe();
   }, []);
 
-
-
   return (
-
     <>
+    {/* Handles real-time notifications and toast messages */}
     <NotificationHandler />
     <ToastContainer position="bottom-right" />
     
-  
+    {/* Application routes */}
     <Routes>
-      {/* Public */}
+      {/* Public routes */}
       <Route path="/" element={<LandingPage />} />
       <Route path="/signin" element={<SignInPage />} />
        <Route path="/learn-more" element={<LearnMore />} />
-      {/* Admin */}
+      {/* Admin routes */}
       <Route
         path="/admin"
         element={
@@ -111,7 +110,7 @@ function App() {
  <Route path="/terms" element={<TermsAndConditions />} />
         
 
-      {/* Reviewer */}
+      {/* Reviewer routes */}
       <Route
         path="/reviewer"
         element={
@@ -124,7 +123,8 @@ function App() {
       <Route path="/apply" element={<ReviewerForm />} />
       <Route path="/terms" element={<TermsAndConditions />} />
 
-      {/* Researcher */}
+      {/* Researcher routes */}
+      {/* Dashboard, profile, edit profile, add listing, listing details, collaborate, chat, friends */}
       <Route
         path="/researcher-dashboard"
         element={
@@ -177,10 +177,8 @@ function App() {
       <Route path="/chat/:chatId" element={<ChatRoom />} />
         <Route path= "/friends" element= {<FriendsSystem />}/>
 
-      {/* Catch-all redirect */}
+      {/* Catch-all: redirect unknown routes to home */}
       <Route path="*" element={<Navigate to="/" replace />} />
-    
-      
     </Routes>
    </>
   );

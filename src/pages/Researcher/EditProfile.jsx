@@ -1,3 +1,4 @@
+// EditProfile.jsx - Allows researchers to edit and update their profile information
 import React, { useState, useEffect } from 'react';
 import { db, auth, storage } from '../../config/firebaseConfig';
 import { getDoc, doc, setDoc } from 'firebase/firestore';
@@ -47,7 +48,9 @@ const universities = [
 
 const EditProfile = () => {
   const navigate = useNavigate();
+  // State for menu anchor (dropdown menu)
   const [menuAnchorEl, setMenuAnchorEl] = useState(null);
+  // State for user profile fields
   const [profile, setProfile] = useState({
     title: '',
     name: '',
@@ -56,6 +59,7 @@ const EditProfile = () => {
     biography: '',
     profilePicture: null
   });
+  // State for user ID
   const [userId, setUserId] = useState(null);
 
   // Check authentication status on component mount
@@ -82,7 +86,7 @@ const EditProfile = () => {
     checkAuthToken();
   }, [navigate]);
 
-  // Fetch user profile when userId changes
+  // Fetch user profile from Firestore when userId changes
   useEffect(() => {
     const fetchProfile = async () => {
       if (!userId) return;
@@ -113,7 +117,7 @@ const EditProfile = () => {
     fetchProfile();
   }, [userId]);
 
-  // Handle form input changes
+  // Handle form input changes (including file upload)
   const handleChange = (e) => {
     const { name, value, files } = e.target;
     if (name === 'profilePicture') {
@@ -123,7 +127,7 @@ const EditProfile = () => {
     }
   };
 
-  // Handle form submission
+  // Handle form submission to update profile
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!userId) {
@@ -160,7 +164,7 @@ const EditProfile = () => {
 
   return (
     <Box component="main" sx={{ minHeight: '100vh', bgcolor: '#f5f7fa' }}>
-      {/* HEADER */}
+      {/* HEADER: Navigation and menu */}
       <Box
         component="header"
         className="researcher-header"
@@ -194,6 +198,7 @@ const EditProfile = () => {
             Update your research profile information
           </Typography>
         </Box>
+        {/* Dropdown menu for navigation */}
         <Box className="dropdown-menu-container" sx={{ position: 'relative' }}>
           <Button
             className="menu-toggle-btn"
@@ -234,6 +239,7 @@ const EditProfile = () => {
               horizontal: 'right',
             }}
           >
+            {/* Menu navigation options */}
             <MenuItem
               onClick={() => {
                 setMenuAnchorEl(null);
@@ -302,7 +308,7 @@ const EditProfile = () => {
         </Box>
       </Box>
 
-      {/* FORM */}
+      {/* FORM: Edit profile fields */}
       <Box sx={{ maxWidth: '700px', margin: '2rem auto', px: '1.5rem' }}>
         <form onSubmit={handleSubmit}>
           <Box
@@ -357,53 +363,51 @@ const EditProfile = () => {
               )}
             </Box>
 
-           
+            {/* Title Dropdown */}
+            <Box sx={{ mb: '1.5rem' }}>
+              <InputLabel
+                htmlFor="title"
+                sx={{ display: 'block', mb: '0.5rem', color: '#64CCC5', fontWeight: 600 }}
+              >
+                Title
+              </InputLabel>
+              <FormControl fullWidth>
+                <Select
+                  id="title"
+                  name="title"
+                  value={profile.title || ''}
+                  onChange={handleChange}
+                  sx={{
+                    width: '100%',
+                    bgcolor: '#132238',
+                    border: '1.5px solid #64CCC5',
+                    borderRadius: '0.5rem',
+                    color: '#FFFFFF',
+                    py: '0.7rem',
+                    '& .MuiSelect-icon': { color: '#64CCC5' },
+                  }}
+                  MenuProps={{
+                    PaperProps: {
+                      sx: {
+                        bgcolor: '#132238',
+                        color: '#FFFFFF',
+                      },
+                    },
+                  }}
+                >
+                  <MenuItem value="">
+                    <em>-- Select Title --</em>
+                  </MenuItem>
+                  {titles.map((t) => (
+                    <MenuItem key={t} value={t}>
+                      {t}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
 
-{/* Title */}
-<Box sx={{ mb: '1.5rem' }}>
-  <InputLabel
-    htmlFor="title"
-    sx={{ display: 'block', mb: '0.5rem', color: '#64CCC5', fontWeight: 600 }}
-  >
-    Title
-  </InputLabel>
-  <FormControl fullWidth>
-    <Select
-      id="title"
-      name="title"
-      value={profile.title || ''}
-      onChange={handleChange}
-      sx={{
-        width: '100%',
-        bgcolor: '#132238',
-        border: '1.5px solid #64CCC5',
-        borderRadius: '0.5rem',
-        color: '#FFFFFF',
-        py: '0.7rem',
-        '& .MuiSelect-icon': { color: '#64CCC5' },
-      }}
-      MenuProps={{
-        PaperProps: {
-          sx: {
-            bgcolor: '#132238',
-            color: '#FFFFFF',
-          },
-        },
-      }}
-    >
-      <MenuItem value="">
-        <em>-- Select Title --</em>
-      </MenuItem>
-      {titles.map((t) => (
-        <MenuItem key={t} value={t}>
-          {t}
-        </MenuItem>
-      ))}
-    </Select>
-  </FormControl>
-</Box>
-
- {/* Email */}
+            {/* Email Field */}
             <Box sx={{ mb: '1.5rem' }}>
               <InputLabel
                 htmlFor="email"
@@ -435,49 +439,49 @@ const EditProfile = () => {
             </Box>
 
             {/* Research Area Dropdown */}
-<Box sx={{ mb: '1.5rem' }}>
-  <InputLabel
-    htmlFor="researchArea"
-    sx={{ display: 'block', mb: '0.5rem', color: '#64CCC5', fontWeight: 600 }}
-  >
-    Research Area
-  </InputLabel>
-  <FormControl fullWidth>
-    <Select
-      id="researchArea"
-      name="researchArea"
-      value={profile.researchArea || ''}
-      onChange={handleChange}
-      sx={{
-        bgcolor: '#132238',
-        border: '1.5px solid #64CCC5',
-        borderRadius: '0.5rem',
-        color: '#FFFFFF',
-        py: '0.7rem',
-        '& .MuiSelect-icon': { color: '#64CCC5' },
-      }}
-      MenuProps={{
-        PaperProps: {
-          sx: {
-            bgcolor: '#132238',
-            color: '#FFFFFF',
-          },
-        },
-      }}
-    >
-      <MenuItem value="">
-        <em>-- Select Research Area --</em>
-      </MenuItem>
-      {researchAreas.map((area) => (
-        <MenuItem key={area} value={area}>
-          {area}
-        </MenuItem>
-      ))}
-    </Select>
-  </FormControl>
-</Box>
-           
-            {/* Biography */}
+            <Box sx={{ mb: '1.5rem' }}>
+              <InputLabel
+                htmlFor="researchArea"
+                sx={{ display: 'block', mb: '0.5rem', color: '#64CCC5', fontWeight: 600 }}
+              >
+                Research Area
+              </InputLabel>
+              <FormControl fullWidth>
+                <Select
+                  id="researchArea"
+                  name="researchArea"
+                  value={profile.researchArea || ''}
+                  onChange={handleChange}
+                  sx={{
+                    bgcolor: '#132238',
+                    border: '1.5px solid #64CCC5',
+                    borderRadius: '0.5rem',
+                    color: '#FFFFFF',
+                    py: '0.7rem',
+                    '& .MuiSelect-icon': { color: '#64CCC5' },
+                  }}
+                  MenuProps={{
+                    PaperProps: {
+                      sx: {
+                        bgcolor: '#132238',
+                        color: '#FFFFFF',
+                      },
+                    },
+                  }}
+                >
+                  <MenuItem value="">
+                    <em>-- Select Research Area --</em>
+                  </MenuItem>
+                  {researchAreas.map((area) => (
+                    <MenuItem key={area} value={area}>
+                      {area}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
+
+            {/* Biography Field */}
             <Box sx={{ mb: '1.5rem' }}>
               <InputLabel
                 htmlFor="biography"
@@ -508,7 +512,7 @@ const EditProfile = () => {
               />
             </Box>
 
-            {/* Actions */}
+            {/* Actions: Cancel and Save buttons */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
               <Button
                 type="button"
@@ -533,16 +537,16 @@ const EditProfile = () => {
                 type="submit"
                 sx={{
                   backgroundColor: '#B1EDE8',
-      color: '#132238',
-      border: 'none',
-      px: '1rem',
-      py: '0.7rem',
-      borderRadius: '0.5rem',
-      fontWeight: 600,
-      cursor: 'pointer',
-      '&:hover': {
-        backgroundColor: '#A0E1DB',
-      },
+                  color: '#132238',
+                  border: 'none',
+                  px: '1rem',
+                  py: '0.7rem',
+                  borderRadius: '0.5rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  '&:hover': {
+                    backgroundColor: '#A0E1DB',
+                  },
                 }}
               >
                 Save Changes
@@ -551,6 +555,7 @@ const EditProfile = () => {
           </Box>
         </form>
       </Box>
+      {/* Footer component */}
       <Footer />
     </Box>
   );
