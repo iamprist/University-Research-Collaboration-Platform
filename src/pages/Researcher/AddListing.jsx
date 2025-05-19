@@ -8,6 +8,8 @@ import { logEvent } from '../../utils/logEvent';
 import { sendMessage, messageTypes } from '../../utils/sendMessage';
 import './ResearcherDashboard.css';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
+import { Box, Typography, IconButton, Button } from '@mui/material';
+
 async function fetchUserIP() {
   try {
     const response = await axios.get('https://api.ipify.org?format=json');
@@ -17,7 +19,6 @@ async function fetchUserIP() {
   }
 }
 
-// Research area options (30+)
 const researchAreaOptions = [
   { value: 'Animal and Veterinary Sciences', label: 'Animal and Veterinary Sciences' },
   { value: 'Anthropology', label: 'Anthropology' },
@@ -51,7 +52,6 @@ const researchAreaOptions = [
   { value: 'Other', label: 'Other (please specify)' },
 ];
 
-// Keywords (32+)
 const keywordOptions = [
   { value: 'PHYS', label: 'Physics' },
   { value: 'CHEM', label: 'Chemistry' },
@@ -88,7 +88,6 @@ const keywordOptions = [
   { value: 'Other', label: 'Other (please specify)' },
 ];
 
-// Methodology
 const methodologyOptions = [
   { value: 'Quantitative', label: 'Quantitative' },
   { value: 'Qualitative', label: 'Qualitative' },
@@ -102,7 +101,6 @@ const methodologyOptions = [
   { value: 'Other', label: 'Other (please specify)' },
 ];
 
-// Departments (20+)
 const departmentOptions = [
   { value: 'Physics', label: 'Physics' },
   { value: 'Chemistry', label: 'Chemistry' },
@@ -210,7 +208,6 @@ function AddListing() {
 
       const docRef = await addDoc(collection(db, "research-listings"), newListing);
 
-      // Send success notification to the researcher
       await sendMessage(userId, {
         title: 'Project Upload Successful',
         content: `Your project "${title}" has been successfully uploaded and is now live on the platform.`,
@@ -238,32 +235,37 @@ function AddListing() {
   };
 
   return (
-    <main className="researcher-dashboard">
-      <header className="researcher-header">
-         <button 
-              className="back-button"
-              onClick={() => navigate(-1)}
-              style={{ 
-                color: 'var(--white)',
-                marginRight: '1.5rem'
-              }}
-            >
-            <ArrowBackIosIcon />
-        </button>
-        <section className="header-title">
-          <h1>New Research</h1>
-          <p>Fill out the form below to create a new research listing.</p>
-        </section>
-        <section className="header-actions">
-        </section>
-      </header>
+    <Box component="main" className="researcher-dashboard">
+      <Box component="header" className="researcher-header">
+        <IconButton
+          className="back-button"
+          onClick={() => navigate(-1)}
+          sx={{
+            color: 'var(--white)',
+            marginRight: '1.5rem'
+          }}
+        >
+          <ArrowBackIosIcon />
+        </IconButton>
+        <Box component="section" className="header-title">
+          <Typography component="h1" variant="h4">New Research</Typography>
+          <Typography component="p">Fill out the form below to create a new research listing.</Typography>
+        </Box>
+        <Box component="section" className="header-actions"></Box>
+      </Box>
 
-      <section className="dashboard-content">
-        <form onSubmit={handleSubmit} className="add-listing-form">
-          <fieldset className="form-section">
-            <legend className="section-title">Research Details</legend>
-            <div className="form-row">
-              <div className="form-group">
+      <Box component="section" className="dashboard-content">
+        <Box
+          component="form"
+          onSubmit={handleSubmit}
+          className="add-listing-form"
+        >
+          <Box component="fieldset" className="form-section">
+            <Box component="legend" className="section-title">
+              Research Details
+            </Box>
+            <Box className="form-row">
+              <Box className="form-group">
                 <label className="form-label">Research Title</label>
                 <input
                   type="text"
@@ -272,8 +274,8 @@ function AddListing() {
                   onChange={e => setTitle(e.target.value)}
                   required
                 />
-              </div>
-              <div className="form-group">
+              </Box>
+              <Box className="form-group">
                 <label className="form-label">Research Area</label>
                 <Select
                   options={researchAreaOptions}
@@ -285,7 +287,7 @@ function AddListing() {
                   classNamePrefix="react-select"
                 />
                 {researchArea === 'Other' && (
-                  <div className="form-group">
+                  <Box className="form-group">
                     <label className="form-label">Please specify:</label>
                     <input
                       type="text"
@@ -294,12 +296,12 @@ function AddListing() {
                       onChange={e => setCustomResearchArea(e.target.value)}
                       required
                     />
-                  </div>
+                  </Box>
                 )}
-              </div>
-            </div>
+              </Box>
+            </Box>
 
-            <div className="form-group">
+            <Box className="form-group">
               <label className="form-label">Abstract/Summary</label>
               <textarea
                 rows="4"
@@ -308,10 +310,10 @@ function AddListing() {
                 onChange={e => setSummary(e.target.value)}
                 required
               />
-            </div>
+            </Box>
 
-            <div className="form-row">
-              <div className="form-group">
+            <Box className="form-row">
+              <Box className="form-group">
                 <label className="form-label">Keywords</label>
                 <Select
                   isMulti
@@ -324,7 +326,7 @@ function AddListing() {
                   classNamePrefix="react-select"
                 />
                 {keywords.some(k => k.value === 'Other') && (
-                  <div className="form-group">
+                  <Box className="form-group">
                     <label className="form-label">Please specify:</label>
                     <input
                       type="text"
@@ -333,10 +335,10 @@ function AddListing() {
                       onChange={e => setCustomKeyword(e.target.value)}
                       required
                     />
-                  </div>
+                  </Box>
                 )}
-              </div>
-              <div className="form-group">
+              </Box>
+              <Box className="form-group">
                 <label className="form-label">Methodology</label>
                 <Select
                   options={methodologyOptions}
@@ -348,7 +350,7 @@ function AddListing() {
                   classNamePrefix="react-select"
                 />
                 {methodology === 'Other' && (
-                  <div className="form-group">
+                  <Box className="form-group">
                     <label className="form-label">Please specify:</label>
                     <input
                       type="text"
@@ -357,16 +359,18 @@ function AddListing() {
                       onChange={e => setCustomMethodology(e.target.value)}
                       required
                     />
-                  </div>
+                  </Box>
                 )}
-              </div>
-            </div>
-          </fieldset>
+              </Box>
+            </Box>
+          </Box>
 
-          <fieldset className="form-section">
-            <legend className="section-title">Institution Information</legend>
-            <div className="form-row">
-              <div className="form-group">
+          <Box component="fieldset" className="form-section">
+            <Box component="legend" className="section-title">
+              Institution Information
+            </Box>
+            <Box className="form-row">
+              <Box className="form-group">
                 <label className="form-label">Country</label>
                 <select
                   className="form-control"
@@ -378,8 +382,8 @@ function AddListing() {
                     <option key={idx} value={country}>{country}</option>
                   ))}
                 </select>
-              </div>
-              <div className="form-group">
+              </Box>
+              <Box className="form-group">
                 <label className="form-label">University</label>
                 <Select
                   options={universities}
@@ -390,8 +394,8 @@ function AddListing() {
                   className="react-select-container"
                   classNamePrefix="react-select"
                 />
-              </div>
-              <div className="form-group">
+              </Box>
+              <Box className="form-group">
                 <label className="form-label">Department</label>
                 <Select
                   options={departmentOptions}
@@ -403,7 +407,7 @@ function AddListing() {
                   classNamePrefix="react-select"
                 />
                 {department === 'Other' && (
-                  <div className="form-group">
+                  <Box className="form-group">
                     <label className="form-label">Please specify:</label>
                     <input
                       type="text"
@@ -412,15 +416,17 @@ function AddListing() {
                       onChange={e => setCustomDepartment(e.target.value)}
                       required
                     />
-                  </div>
+                  </Box>
                 )}
-              </div>
-            </div>
-          </fieldset>
+              </Box>
+            </Box>
+          </Box>
 
-          <fieldset className="form-section">
-            <legend className="section-title">Project Details</legend>
-            <div className="form-group">
+          <Box component="fieldset" className="form-section">
+            <Box component="legend" className="section-title">
+              Project Details
+            </Box>
+            <Box className="form-group">
               <label className="form-label">Collaborator Needs</label>
               <textarea
                 rows="8"
@@ -430,10 +436,10 @@ function AddListing() {
                 placeholder="Describe the collaborator needs in detail..."
                 required
               />
-            </div>
+            </Box>
 
-            <div className="form-row">
-              <div className="form-group">
+            <Box className="form-row">
+              <Box className="form-group">
                 <label className="form-label">Project Status</label>
                 <select
                   className="form-control"
@@ -443,8 +449,8 @@ function AddListing() {
                   <option value="Active">Active</option>
                   <option value="Completed">Completed</option>
                 </select>
-              </div>
-              <div className="form-group">
+              </Box>
+              <Box className="form-group">
                 <label className="form-label">End Date</label>
                 <input
                   type="date"
@@ -452,8 +458,8 @@ function AddListing() {
                   value={endDate}
                   onChange={e => setEndDate(e.target.value)}
                 />
-              </div>
-              <div className="form-group">
+              </Box>
+              <Box className="form-group">
                 <label className="form-label">Links to Publications</label>
                 <input
                   type="url"
@@ -461,12 +467,12 @@ function AddListing() {
                   value={publicationLink}
                   onChange={e => setPublicationLink(e.target.value)}
                 />
-              </div>
-            </div>
+              </Box>
+            </Box>
 
-            <div className="form-group">
+            <Box className="form-group">
               <label className="form-label">Funding Information</label>
-              <div className="radio-group">
+              <Box className="radio-group">
                 <label className="radio-option">
                   <input
                     type="radio"
@@ -489,22 +495,23 @@ function AddListing() {
                   />
                   <span>Looking for Funding</span>
                 </label>
-              </div>
-            </div>
-          </fieldset>
+              </Box>
+            </Box>
+          </Box>
 
-          <div className="form-actions">
-            <button 
-              type="submit" 
+          <Box className="form-actions">
+            <Button
+              type="submit"
               className="submit-btn"
               disabled={isSubmitting}
+              variant="contained"
             >
               {isSubmitting ? 'Creating...' : 'Create Listing'}
-            </button>
-          </div>
-        </form>
-      </section>
-    </main>
+            </Button>
+          </Box>
+        </Box>
+      </Box>
+    </Box>
   );
 }
 
