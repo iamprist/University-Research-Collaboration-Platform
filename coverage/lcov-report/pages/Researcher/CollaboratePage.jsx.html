@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">34.06% </span>
+                <span class="strong">33.69% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>31/91</span>
+                <span class='fraction'>31/92</span>
             </div>
         
             
@@ -37,16 +37,16 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">14.28% </span>
+                <span class="strong">13.63% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>3/21</span>
+                <span class='fraction'>3/22</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">37.8% </span>
+                <span class="strong">37.34% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>31/82</span>
+                <span class='fraction'>31/83</span>
             </div>
         
             
@@ -380,7 +380,16 @@
 <a name='L315'></a><a href='#L315'>315</a>
 <a name='L316'></a><a href='#L316'>316</a>
 <a name='L317'></a><a href='#L317'>317</a>
-<a name='L318'></a><a href='#L318'>318</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L318'></a><a href='#L318'>318</a>
+<a name='L319'></a><a href='#L319'>319</a>
+<a name='L320'></a><a href='#L320'>320</a>
+<a name='L321'></a><a href='#L321'>321</a>
+<a name='L322'></a><a href='#L322'>322</a>
+<a name='L323'></a><a href='#L323'>323</a>
+<a name='L324'></a><a href='#L324'>324</a>
+<a name='L325'></a><a href='#L325'>325</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -598,6 +607,16 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -669,11 +688,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -713,7 +727,9 @@ import {
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './ResearcherDashboard.css';
+import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import { sendMessage, messageTypes } from '../../utils/sendMessage';
+import Footer from '../../components/Footer';
 &nbsp;
 const CollaboratePage = () =&gt; {
   const navigate = useNavigate();
@@ -913,6 +929,16 @@ const CollaboratePage = () =&gt; {
   return (
     &lt;main&gt;
       &lt;header className="researcher-header"&gt;
+         &lt;button 
+            className="back-button"
+            onClick={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >navigate(-1)}</span>
+            style={{ 
+              color: 'var(--white)',
+              marginRight: '1.5rem' // Add spacing between arrow and title
+            }}
+          &gt;
+            &lt;ArrowBackIosIcon /&gt;
+          &lt;/button&gt;
         &lt;section className="header-title"&gt;
           &lt;h1&gt;Collaborate with Other Researchers&lt;/h1&gt;
           &lt;p&gt;Find projects to join and collaborate on&lt;/p&gt;
@@ -928,7 +954,7 @@ const CollaboratePage = () =&gt; {
       &lt;/header&gt;
 &nbsp;
       &lt;section className="collaborate-main"&gt;
-        &lt;div style={{ textAlign: 'center', marginBottom: '1rem' }}&gt;
+        &lt;section style={{ textAlign: 'center', marginBottom: '1rem' }}&gt;
           &lt;label style={{ color: '#132238', cursor: 'pointer' }}&gt;
             &lt;input 
               type="checkbox" 
@@ -938,12 +964,12 @@ const CollaboratePage = () =&gt; {
             /&gt;
             Show Friends Only
           &lt;/label&gt;
-        &lt;/div&gt;
+        &lt;/section&gt;
 &nbsp;
         {loading ? (
-          &lt;div style={{ textAlign: 'center', color: '#132238' }}&gt;
+          &lt;section style={{ textAlign: 'center', color: '#132238' }}&gt;
             &lt;p&gt;Loading available projects...&lt;/p&gt;
-          &lt;/div&gt;
+          &lt;/section&gt;
         ) : (
           &lt;section&gt;
             &lt;h3 style={{ color: '#132238', marginBottom: '1.5rem', textAlign: 'center' }}&gt;Available Projects&lt;/h3&gt;
@@ -958,8 +984,8 @@ const CollaboratePage = () =&gt; {
 <span class="cstat-no" title="statement not covered" >                return (</span>
                   &lt;article key={listing.id} className="collaborate-card"&gt;
                     &lt;h4&gt;{listing.title}&lt;/h4&gt;
-                    &lt;div className="byline"&gt;By: {listing.researcherName}&lt;/div&gt;
-                    &lt;div className="summary"&gt;{listing.summary}&lt;/div&gt;
+                    &lt;section className="byline"&gt;By: {listing.researcherName}&lt;/section&gt;
+                    &lt;section className="summary"&gt;{listing.summary}&lt;/section&gt;
                     {!hasPending &amp;&amp; (
                       &lt;textarea
                         placeholder="Add a message to the researcher (optional)"
@@ -1003,12 +1029,7 @@ const CollaboratePage = () =&gt; {
         )}
       &lt;/section&gt;
 &nbsp;
-      &lt;footer className="collaborate-footer"&gt;
-        &lt;a href="/contact"&gt;Contact&lt;/a&gt;
-        &lt;a href="/privacy-policy"&gt;Privacy Policy&lt;/a&gt;
-        &lt;a href="/terms-of-service"&gt;Terms of Service&lt;/a&gt;
-        &lt;p&gt;&amp;copy; 2025 Innerk Hub&lt;/p&gt;
-      &lt;/footer&gt;
+      &lt;Footer /&gt;
     &lt;/main&gt;
   );
 };
@@ -1021,7 +1042,7 @@ export default CollaboratePage;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-05-17T21:36:11.611Z
+                at 2025-05-19T08:15:02.952Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

@@ -8,6 +8,7 @@ import { logEvent } from '../../utils/logEvent';
 import { sendMessage, messageTypes } from '../../utils/sendMessage';
 import './ResearcherDashboard.css';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
+
 async function fetchUserIP() {
   try {
     const response = await axios.get('https://api.ipify.org?format=json');
@@ -141,6 +142,7 @@ function AddListing() {
   const [customDepartment, setCustomDepartment] = useState('');
   const [collaboratorNeeds, setCollaboratorNeeds] = useState('');
   const [status, setStatus] = useState('Active');
+  const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [publicationLink, setPublicationLink] = useState('');
   const [fundingInfo, setFundingInfo] = useState('');
@@ -149,6 +151,13 @@ function AddListing() {
   const [selectedCountry, setSelectedCountry] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const countries = ['South Africa', 'United States', 'United Kingdom', 'Canada', 'Kenya', 'Nigeria'];
+
+  // Get today's date in YYYY-MM-DD format for date input min/max attributes
+  const today = new Date().toISOString().split('T')[0];
+  // Set max date to 5 years from now
+  const maxDate = new Date();
+  maxDate.setFullYear(maxDate.getFullYear() + 5);
+  const maxDateFormatted = maxDate.toISOString().split('T')[0];
 
   useEffect(() => {
     const fetchUniversities = async () => {
@@ -183,6 +192,12 @@ function AddListing() {
     const userId = auth.currentUser?.uid;
     if (!userId) return alert("User not logged in");
 
+    // Validate dates
+    if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+      alert("End date must be after start date");
+      return;
+    }
+
     setIsSubmitting(true);
 
     const keywordsToSave = keywords.map(k => k.value === 'Other' ? customKeyword : k.label).filter(Boolean);
@@ -201,6 +216,7 @@ function AddListing() {
         department: departmentToSave,
         collaboratorNeeds,
         status,
+        startDate,
         endDate,
         publicationLink,
         fundingInfo,
@@ -262,8 +278,8 @@ function AddListing() {
         <form onSubmit={handleSubmit} className="add-listing-form">
           <fieldset className="form-section">
             <legend className="section-title">Research Details</legend>
-            <div className="form-row">
-              <div className="form-group">
+            <section className="form-row">
+              <section className="form-group">
                 <label className="form-label">Research Title</label>
                 <input
                   type="text"
@@ -272,8 +288,8 @@ function AddListing() {
                   onChange={e => setTitle(e.target.value)}
                   required
                 />
-              </div>
-              <div className="form-group">
+              </section>
+              <section className="form-group">
                 <label className="form-label">Research Area</label>
                 <Select
                   options={researchAreaOptions}
@@ -285,7 +301,7 @@ function AddListing() {
                   classNamePrefix="react-select"
                 />
                 {researchArea === 'Other' && (
-                  <div className="form-group">
+                  <section className="form-group">
                     <label className="form-label">Please specify:</label>
                     <input
                       type="text"
@@ -294,12 +310,12 @@ function AddListing() {
                       onChange={e => setCustomResearchArea(e.target.value)}
                       required
                     />
-                  </div>
+                  </section>
                 )}
-              </div>
-            </div>
+              </section>
+            </section>
 
-            <div className="form-group">
+            <section className="form-group">
               <label className="form-label">Abstract/Summary</label>
               <textarea
                 rows="4"
@@ -308,10 +324,10 @@ function AddListing() {
                 onChange={e => setSummary(e.target.value)}
                 required
               />
-            </div>
+            </section>
 
-            <div className="form-row">
-              <div className="form-group">
+            <section className="form-row">
+              <section className="form-group">
                 <label className="form-label">Keywords</label>
                 <Select
                   isMulti
@@ -324,7 +340,7 @@ function AddListing() {
                   classNamePrefix="react-select"
                 />
                 {keywords.some(k => k.value === 'Other') && (
-                  <div className="form-group">
+                  <section className="form-group">
                     <label className="form-label">Please specify:</label>
                     <input
                       type="text"
@@ -333,10 +349,10 @@ function AddListing() {
                       onChange={e => setCustomKeyword(e.target.value)}
                       required
                     />
-                  </div>
+                  </section>
                 )}
-              </div>
-              <div className="form-group">
+              </section>
+              <section className="form-group">
                 <label className="form-label">Methodology</label>
                 <Select
                   options={methodologyOptions}
@@ -348,7 +364,7 @@ function AddListing() {
                   classNamePrefix="react-select"
                 />
                 {methodology === 'Other' && (
-                  <div className="form-group">
+                  <section className="form-group">
                     <label className="form-label">Please specify:</label>
                     <input
                       type="text"
@@ -357,16 +373,16 @@ function AddListing() {
                       onChange={e => setCustomMethodology(e.target.value)}
                       required
                     />
-                  </div>
+                  </section>
                 )}
-              </div>
-            </div>
+              </section>
+            </section>
           </fieldset>
 
           <fieldset className="form-section">
             <legend className="section-title">Institution Information</legend>
-            <div className="form-row">
-              <div className="form-group">
+            <section className="form-row">
+              <section className="form-group">
                 <label className="form-label">Country</label>
                 <select
                   className="form-control"
@@ -378,8 +394,8 @@ function AddListing() {
                     <option key={idx} value={country}>{country}</option>
                   ))}
                 </select>
-              </div>
-              <div className="form-group">
+              </section>
+              <section className="form-group">
                 <label className="form-label">University</label>
                 <Select
                   options={universities}
@@ -390,8 +406,8 @@ function AddListing() {
                   className="react-select-container"
                   classNamePrefix="react-select"
                 />
-              </div>
-              <div className="form-group">
+              </section>
+              <section className="form-group">
                 <label className="form-label">Department</label>
                 <Select
                   options={departmentOptions}
@@ -403,7 +419,7 @@ function AddListing() {
                   classNamePrefix="react-select"
                 />
                 {department === 'Other' && (
-                  <div className="form-group">
+                  <section className="form-group">
                     <label className="form-label">Please specify:</label>
                     <input
                       type="text"
@@ -412,15 +428,15 @@ function AddListing() {
                       onChange={e => setCustomDepartment(e.target.value)}
                       required
                     />
-                  </div>
+                  </section>
                 )}
-              </div>
-            </div>
+              </section>
+            </section>
           </fieldset>
 
           <fieldset className="form-section">
             <legend className="section-title">Project Details</legend>
-            <div className="form-group">
+            <section className="form-group">
               <label className="form-label">Collaborator Needs</label>
               <textarea
                 rows="8"
@@ -430,10 +446,10 @@ function AddListing() {
                 placeholder="Describe the collaborator needs in detail..."
                 required
               />
-            </div>
+            </section>
 
-            <div className="form-row">
-              <div className="form-group">
+            <section className="form-row">
+              <section className="form-group">
                 <label className="form-label">Project Status</label>
                 <select
                   className="form-control"
@@ -443,17 +459,30 @@ function AddListing() {
                   <option value="Active">Active</option>
                   <option value="Completed">Completed</option>
                 </select>
-              </div>
-              <div className="form-group">
+              </section>
+              <section className="form-group">
+                <label className="form-label">Start Date</label>
+                <input
+                  type="date"
+                  className="form-control"
+                  value={startDate}
+                  onChange={e => setStartDate(e.target.value)}
+                  min={today}
+                  max={maxDateFormatted}
+                />
+              </section>
+              <section className="form-group">
                 <label className="form-label">End Date</label>
                 <input
                   type="date"
                   className="form-control"
                   value={endDate}
                   onChange={e => setEndDate(e.target.value)}
+                  min={startDate || today}  // Ensure end date is not before start date
+                  max={maxDateFormatted}
                 />
-              </div>
-              <div className="form-group">
+              </section>
+              <section className="form-group">
                 <label className="form-label">Links to Publications</label>
                 <input
                   type="url"
@@ -461,12 +490,12 @@ function AddListing() {
                   value={publicationLink}
                   onChange={e => setPublicationLink(e.target.value)}
                 />
-              </div>
-            </div>
+              </section>
+            </section>
 
-            <div className="form-group">
+            <section className="form-group">
               <label className="form-label">Funding Information</label>
-              <div className="radio-group">
+              <section className="radio-group">
                 <label className="radio-option">
                   <input
                     type="radio"
@@ -489,11 +518,11 @@ function AddListing() {
                   />
                   <span>Looking for Funding</span>
                 </label>
-              </div>
-            </div>
+              </section>
+            </section>
           </fieldset>
 
-          <div className="form-actions">
+          <section className="form-actions">
             <button 
               type="submit" 
               className="submit-btn"
@@ -501,7 +530,7 @@ function AddListing() {
             >
               {isSubmitting ? 'Creating...' : 'Create Listing'}
             </button>
-          </div>
+          </section>
         </form>
       </section>
     </main>

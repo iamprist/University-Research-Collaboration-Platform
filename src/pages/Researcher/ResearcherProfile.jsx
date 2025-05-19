@@ -47,7 +47,7 @@ const ResearcherProfile = () => {
     checkAuthToken();
   }, [navigate]);
 
-  // Fetch profile data
+  // Fetch profile data when userId changes
   useEffect(() => {
     const fetchProfile = async () => {
       if (!userId) return;
@@ -58,7 +58,20 @@ const ResearcherProfile = () => {
         const userDoc = await getDoc(userDocRef);
 
         if (userDoc.exists()) {
-          setProfile(userDoc.data());
+          // Ensure all fields have proper fallback values
+          const profileData = userDoc.data();
+          setProfile({
+            title: profileData.title || '',
+            name: profileData.name || '',
+            email: profileData.email || '',
+            researchArea: profileData.researchArea || '',
+            biography: profileData.biography || '',
+            country: profileData.country || '',
+            university: profileData.university || '',
+            otherUniversity: profileData.otherUniversity || '',
+            otherCountry: profileData.otherCountry || '',
+            profilePicture: profileData.profilePicture || null
+          });
         } else {
           setError('Profile not found');
         }
@@ -73,6 +86,7 @@ const ResearcherProfile = () => {
     fetchProfile();
   }, [userId]);
 
+  // Display loading state
   if (loading) {
     return (
       <Box className="loading-container" sx={{ p: 6, textAlign: 'center' }}>
@@ -81,6 +95,7 @@ const ResearcherProfile = () => {
     );
   }
 
+  // Display error state
   if (error) {
     return (
       <Box className="error-container" sx={{ p: 6, textAlign: 'center' }}>
