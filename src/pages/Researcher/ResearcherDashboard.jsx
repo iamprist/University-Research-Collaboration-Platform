@@ -1,14 +1,15 @@
-// ResearcherDashboard.jsx - Main dashboard for researchers to manage listings, collaborations, and notifications
-import React, { useState, useEffect, useRef } from 'react';
+// ResearcherDashboard.jsx - Frontend UI Component
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { db, auth } from '../../config/firebaseConfig';
-import { collection, getDocs, query, where, doc, getDoc, onSnapshot, orderBy, updateDoc, addDoc, serverTimestamp, arrayUnion } from 'firebase/firestore';
+import { auth } from '../../config/firebaseConfig';
 import './ResearcherDashboard.css';
-import axios from "axios";
 import CollaborationRequestsPanel from '../../components/CollaborationRequestsPanel';
 import Footer from '../../components/Footer';
 import ContactForm from '../../components/ContactForm';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
+import {
+  useResearcherDashboard
+} from './researcherDashboardLogic'; // Import backend logic
 
 // MUI Components
 import { 
@@ -28,7 +29,7 @@ import {
 } from '@mui/material';
 import { Notifications, Menu as MenuIcon, Close } from '@mui/icons-material';
 
-// Notification dropdown for messages
+// Notification dropdown component
 const MessageNotification = ({ messages, unreadCount, onMessageClick }) => {
   const [anchorEl, setAnchorEl] = useState(null);
 
@@ -111,7 +112,7 @@ const MessageNotification = ({ messages, unreadCount, onMessageClick }) => {
                 </Typography>
               </Paper>
             ))
-          }
+          )}
         </Box>
       </Menu>
     </Badge>
@@ -120,345 +121,44 @@ const MessageNotification = ({ messages, unreadCount, onMessageClick }) => {
 
 // Main dashboard component
 const ResearcherDashboard = () => {
-  // State variables for listings, user, UI, and notifications
-  const [allListings, setAllListings] = useState([]);
-  const [myListings, setMyListings] = useState([]);
-  const [userId, setUserId] = useState(null);
-  const [hasProfile, setHasProfile] = useState(false);
-  const [collabListings, setCollabListings] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
-  const [dropdownVisible, setDropdownVisible] = useState(false);
-  const [showNoResults, setShowNoResults] = useState(false);
-  const dropdownTimeout = useRef(null);
-  const [showErrorModal, setShowErrorModal] = useState(false);
-  const [filteredListings, setFilteredListings] = useState([]);
-  const [userName, setUserName] = useState('');
-  const [messages, setMessages] = useState([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [showContactForm, setShowContactForm] = useState(false);
-  const [ipAddress, setIpAddress] = useState("");
-  const [anchorEl, setAnchorEl] = useState(null);
+  // Get all state and handlers from our custom hook
+  const {
+    // State
+    allListings,
+    myListings,
+    userId,
+    hasProfile,
+    collabListings,
+    searchTerm,
+    searchResults,
+    dropdownVisible,
+    showNoResults,
+    showErrorModal,
+    filteredListings,
+    userName,
+    messages,
+    unreadCount,
+    showContactForm,
+    anchorEl,
+    ipAddress,
+    
+    // Handlers
+    handleSearch,
+    handleMessageClick,
+    handleAddListing,
+    handleCollaborate,
+    handleInputFocus,
+    handleInputChange,
+    handleClear,
+    handleLogout,
+    setSearchTerm,
+    setAnchorEl,
+    setShowContactForm,
+    setShowErrorModal
+  } = useResearcherDashboard();
+
   const navigate = useNavigate();
 
-  // Fetch user's public IP address for logging
-  useEffect(() => {
-    const fetchIpAddress = async () => {
-      try {
-        const response = await axios.get("https://api.ipify.org?format=json");
-        setIpAddress(response.data.ip);
-      } catch (error) {
-        console.error("Error fetching IP address:", error);
-      }
-    };
-    fetchIpAddress();
-  }, []);
-
-  // Check authentication and set userId
-  useEffect(() => {
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      navigate('/signin');
-      return;
-    }
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      if (user) setUserId(user.uid);
-      else {
-        localStorage.removeItem('authToken');
-        navigate('/signin');
-      }
-    });
-    return () => unsubscribe();
-  }, [navigate]);
-
-  // Fetch user profile and name
-  useEffect(() => {
-    if (!userId) return;
-    
-    const fetchUserProfile = async () => {
-      try {
-        const userDoc = await getDoc(doc(db, 'users', userId));
-        if (userDoc.exists()) {
-          setHasProfile(true);
-          setUserName(userDoc.data().name || 'Researcher');
-        } else {
-          navigate('/researcher-edit-profile');
-        }
-      } catch (err) {
-        setShowErrorModal(true);
-      }
-    };
-    fetchUserProfile();
-  }, [userId, navigate]);
-
-  // Listen for messages and collaborations
-  useEffect(() => {
-    if (!userId) return;
-    
-    const messagesRef = collection(db, 'users', userId, 'messages');
-    const messagesQuery = query(messagesRef, orderBy('timestamp', 'desc'));
-    
-    const unsubscribeMessages = onSnapshot(messagesQuery, (snapshot) => {
-      const messagesData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        timestamp: doc.data().timestamp?.toDate() || new Date()
-      }));
-      setMessages(messagesData);
-      setUnreadCount(messagesData.filter(msg => !msg.read).length);
-    });
-
-    const collabQuery = query(
-      collection(db, "collaborations"),
-      where("collaboratorId", "==", userId)
-    );
-    
-    const unsubscribeCollabs = onSnapshot(collabQuery, async (snapshot) => {
-      const collabs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      const listings = await Promise.all(
-        collabs.map(async collab => {
-          const listingDoc = await getDoc(doc(db, "research-listings", collab.listingId));
-          return listingDoc.exists() ? { id: listingDoc.id, ...listingDoc.data() } : null;
-        })
-      );
-      setCollabListings(listings.filter(Boolean));
-    });
-
-    return () => {
-      unsubscribeMessages();
-      unsubscribeCollabs();
-    };
-  }, [userId]);
-
-  // Fetch all research listings for search
-  useEffect(() => {
-    if (!userId || !hasProfile) return;
-    
-    const fetchListings = async () => {
-      try {
-        const q = query(collection(db, 'research-listings'));
-        const querySnapshot = await getDocs(q);
-        const data = await Promise.all(
-          querySnapshot.docs.map(async (docSnap) => {
-            const listing = { id: docSnap.id, ...docSnap.data() };
-            try {
-              const researcherDoc = await getDoc(doc(db, 'users', listing.userId));
-              return {
-                ...listing,
-                researcherName: researcherDoc.exists() ? researcherDoc.data().name : 'Unknown Researcher'
-              };
-            } catch {
-              return { ...listing, researcherName: 'Unknown Researcher' };
-            }
-          })
-        );
-        setAllListings(data);
-      } catch (error) {
-        console.error("Error fetching listings:", error);
-      }
-    };
-    fetchListings();
-  }, [userId, hasProfile]);
-
-  // Fetch only the current user's listings
-  useEffect(() => {
-    if (!userId || !hasProfile) return;
-    
-    const fetchMyListings = async () => {
-      try {
-        const q = query(collection(db, 'research-listings'), where('userId', '==', userId));
-        const querySnapshot = await getDocs(q);
-        const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setMyListings(data);
-      } catch (error) {
-        console.error("Error fetching user listings:", error);
-      }
-    };
-    fetchMyListings();
-  }, [userId, hasProfile]);
-
-  // Update filtered listings when myListings changes
-  useEffect(() => {
-    setFilteredListings(myListings);
-  }, [myListings]);
-
-  // Search handler for research listings
-  const handleSearch = () => {
-    if (!searchTerm.trim()) {
-      setSearchResults([]);
-      setDropdownVisible(false);
-      return;
-    }
-    
-    const searchTermLower = searchTerm.toLowerCase();
-    const filtered = allListings.filter(item => {
-      const title = item.title?.toLowerCase() || '';
-      const researcherName = item.researcherName?.toLowerCase() || '';
-      return title.includes(searchTermLower) || researcherName.includes(searchTermLower);
-    });
-    
-    setSearchResults(filtered);
-    setDropdownVisible(true);
-    clearTimeout(dropdownTimeout.current);
-    dropdownTimeout.current = setTimeout(() => {
-      setDropdownVisible(false);
-    }, 5000);
-    setShowNoResults(filtered.length === 0);
-  };
-
-  // Mark a message as read in Firestore
-  const markMessageAsRead = async (messageId) => {
-    try {
-      await updateDoc(doc(db, 'users', userId, 'messages', messageId), {
-        read: true
-      });
-    } catch (error) {
-      console.error("Error marking message as read:", error);
-    }
-  };
-
-  // Handle clicking a notification message
-  const handleMessageClick = (message) => {
-    markMessageAsRead(message.id);
-    switch(message.type) {
-      case 'collaboration-request':
-        setShowCollaborationRequests(true);
-        break;
-      case 'review-request':
-        navigate(`/review-requests/${message.relatedId}`);
-        break;
-      case 'upload-confirmation':
-        navigate(`/listing/${message.relatedId}`);
-        break;
-      default: break;
-    }
-  };
-
-  // View requester profile for collaboration requests
-  const handleViewRequesterProfile = async (request) => {
-    try {
-      const profileDoc = await getDoc(doc(db, 'users', request.requesterId));
-      if (profileDoc.exists()) {
-        setRequesterProfile(profileDoc.data());
-        setSelectedRequest(request);
-      }
-    } catch (error) {
-      console.error("Error fetching requester profile:", error);
-    }
-  };
-
-  // Accept a collaboration request
-  const handleAcceptCollaboration = async () => {
-    if (!selectedRequest) return;
-
-    try {
-      const requestRef = doc(db, 'collaboration-requests', selectedRequest.id);
-      await updateDoc(requestRef, { 
-        status: 'accepted',
-        respondedAt: new Date()
-      });
-
-      // Create collaboration
-      await addDoc(collection(db, 'collaborations'), {
-        listingId: selectedRequest.listingId,
-        researcherId: selectedRequest.researcherId,
-        collaboratorId: selectedRequest.requesterId,
-        joinedAt: new Date(),
-        status: 'active'
-      });
-
-      // Update listing collaborators
-      await updateDoc(doc(db, 'research-listings', selectedRequest.listingId), {
-        collaborators: arrayUnion(selectedRequest.requesterId)
-      });
-
-      // Close the profile view
-      setSelectedRequest(null);
-      setRequesterProfile(null);
-    } catch (error) {
-      console.error('Error accepting collaboration:', error);
-    }
-  };
-
-  // Reject a collaboration request
-  const handleRejectCollaboration = async () => {
-    if (!selectedRequest) return;
-
-    try {
-      const requestRef = doc(db, 'collaboration-requests', selectedRequest.id);
-      await updateDoc(requestRef, { 
-        status: 'rejected',
-        respondedAt: new Date()
-      });
-
-      // Close the profile view
-      setSelectedRequest(null);
-      setRequesterProfile(null);
-    } catch (error) {
-      console.error('Error rejecting collaboration:', error);
-    }
-  };
-
-  // Navigation handlers
-  const handleAddListing = () => navigate('/researcher/add-listing');
-  const handleCollaborate = () => navigate('/researcher/collaborate');
-  const handleInputFocus = () => {
-    setDropdownVisible(false);
-    clearTimeout(dropdownTimeout.current);
-  };
-  const handleInputChange = (e) => {
-    setSearchTerm(e.target.value);
-    setDropdownVisible(false);
-    clearTimeout(dropdownTimeout.current);
-  };
-  const handleClear = () => {
-    setSearchTerm('');
-    setSearchResults([]);
-    setDropdownVisible(false);
-  };
-
-  // Log user events (e.g., logout)
-  const logEvent = async ({ userId, role, userName, action, details, ip, target }) => {
-    try {
-      await addDoc(collection(db, "logs"), {
-        userId,
-        role,
-        userName,
-        action,
-        details,
-        ip,
-        target,
-        timestamp: serverTimestamp(),
-      });
-    } catch (error) {
-      console.error("Error logging event:", error);
-    }
-  };
-
-
-  // Logout handler
-  const handleLogout = async () => {
-    try {
-      const user = auth.currentUser;
-      if (user) {
-        await logEvent({
-          userId: user.uid,
-          role: "Researcher",
-          userName: user.displayName || "N/A",
-          action: "Logout",
-          details: "User logged out",
-          ip: ipAddress,
-          target: "Researcher Dashboard", 
-        });
-        await auth.signOut();
-        navigate("/signin");
-      }
-    } catch (error) {
-      console.error("Error during logout:", error);
-    }
-  };
-
-  // Render dashboard UI: header, search, listings, collaborations, notifications, and contact form
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
@@ -531,150 +231,151 @@ const ResearcherDashboard = () => {
 
       {/* Main Content */}
       <Box sx={{ flex: 1, p: 3 }}>
-{/* Updated Search Section with matching buttons */}
-<Box sx={{ maxWidth: 800, mx: 'auto', mb: 4 }}>
-  <Paper 
-    component="form"
-    onSubmit={(e) => { 
-      e.preventDefault();
-      handleSearch();
-    }}
-    sx={{ 
-      p: 1,
-      display: 'flex',
-      gap: 1,
-      bgcolor: 'background.paper',
-      position: 'relative'
-    }}
-  >
-    <TextField
-      fullWidth
-      variant="outlined"
-      placeholder="Search research by title or researcher name..."
-      value={searchTerm}
-      onChange={handleInputChange}
-      onFocus={handleInputFocus}
-      sx={{
-        '& .MuiOutlinedInput-root': {
-          borderRadius: '1.2rem',
-          borderColor: 'var(--dark-blue)'
-        }
-      }}
-    />
-    {/* Error Modal */}
-{showErrorModal && (
-  <Dialog
-    open={showErrorModal}
-    onClose={() => setShowErrorModal(false)}
-    PaperProps={{
-      sx: {
-        bgcolor: 'var(--dark-blue)',
-        color: 'var(--white)',
-        padding: '1.5rem'
-      }
-    }}
-  >
-    <DialogTitle>Profile Error</DialogTitle>
-    <DialogContent>
-      <Typography variant="body1">
-        Error loading profile. Please try again.
-      </Typography>
-      <Button 
-        onClick={() => setShowErrorModal(false)}
-        variant="contained"
-        sx={{ 
-          mt: 2,
-          bgcolor: 'var(--light-blue)',
-          color: 'var(--dark-blue)'
-        }}
-      >
-        Close
-      </Button>
-    </DialogContent>
-  </Dialog>
-)}
-    
-    {/* Clear Button */}
-    <Button 
-      type="button"
-      variant="contained"
-      onClick={handleClear}
-      sx={{
-        bgcolor: 'var(--light-blue)',
-        color: 'var(--dark-blue)',
-        borderRadius: '1.5rem',
-        minWidth: '100px',
-        px: 3,
-        '&:hover': { 
-          bgcolor: '#5AA9A3',
-          color: 'var(--white)'
-        }
-      }}
-    >
-      Clear
-    </Button>
-
-    {/* Search Button */}
-     <Button 
-      type="button"
-      variant="contained"
-      onClick={handleSearch}
-      sx={{
-        bgcolor: 'var(--light-blue)',
-        color: 'var(--dark-blue)',
-        borderRadius: '1.5rem',
-        minWidth: '100px',
-        px: 3,
-        '&:hover': { 
-          bgcolor: '#5AA9A3',
-          color: 'var(--white)'
-        }
-      }}
-    >
-      Search
-    </Button>
-
-    {/* Search Dropdown */}
-    {dropdownVisible && (
-      <Paper sx={{
-        position: 'absolute',
-        top: '110%',
-        left: 0,
-        right: 0,
-        zIndex: 999,
-        bgcolor: 'background.paper',
-        boxShadow: 3,
-        maxHeight: 300,
-        overflowY: 'auto'
-      }}>
-        {searchResults.length === 0 ? (
-      <Typography sx={{ p: 2 }}>
-        {showNoResults ? "No research listings found." : "Start typing to search"}
-      </Typography>
-    ) : 
-      searchResults.map(item => (
-          <Box 
-            key={item.id}
-            sx={{
-              p: 2,
-              cursor: 'pointer',
-              '&:hover': { bgcolor: 'action.hover' }
+        {/* Search Section */}
+        <Box sx={{ maxWidth: 800, mx: 'auto', mb: 4 }}>
+          <Paper 
+            component="form"
+            onSubmit={(e) => { 
+              e.preventDefault();
+              handleSearch();
             }}
-            onClick={() => navigate(`/listing/${item.id}`)}
+            sx={{ 
+              p: 1,
+              display: 'flex',
+              gap: 1,
+              bgcolor: 'background.paper',
+              position: 'relative'
+            }}
           >
-            <Typography variant="subtitle1">{item.title}</Typography>
-            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-              By: {item.researcherName}
-            </Typography>
-            <Typography variant="body2" sx={{ mt: 1 }}>
-              {item.summary}
-            </Typography>
-          </Box>
-        ))}
-      </Paper>
-    )}
-  </Paper>
-</Box>
+            <TextField
+              fullWidth
+              variant="outlined"
+              placeholder="Search research by title or researcher name..."
+              value={searchTerm}
+              onChange={handleInputChange}
+              onFocus={handleInputFocus}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '1.2rem',
+                  borderColor: 'var(--dark-blue)'
+                }
+              }}
+            />
+            
+            {/* Error Modal */}
+            {showErrorModal && (
+              <Dialog
+                open={showErrorModal}
+                onClose={() => setShowErrorModal(false)}
+                PaperProps={{
+                  sx: {
+                    bgcolor: 'var(--dark-blue)',
+                    color: 'var(--white)',
+                    padding: '1.5rem'
+                  }
+                }}
+              >
+                <DialogTitle>Profile Error</DialogTitle>
+                <DialogContent>
+                  <Typography variant="body1">
+                    Error loading profile. Please try again.
+                  </Typography>
+                  <Button 
+                    onClick={() => setShowErrorModal(false)}
+                    variant="contained"
+                    sx={{ 
+                      mt: 2,
+                      bgcolor: 'var(--light-blue)',
+                      color: 'var(--dark-blue)'
+                    }}
+                  >
+                    Close
+                  </Button>
+                </DialogContent>
+              </Dialog>
+            )}
+            
+            {/* Clear Button */}
+            <Button 
+              type="button"
+              variant="contained"
+              onClick={handleClear}
+              sx={{
+                bgcolor: 'var(--light-blue)',
+                color: 'var(--dark-blue)',
+                borderRadius: '1.5rem',
+                minWidth: '100px',
+                px: 3,
+                '&:hover': { 
+                  bgcolor: '#5AA9A3',
+                  color: 'var(--white)'
+                }
+              }}
+            >
+              Clear
+            </Button>
+
+            {/* Search Button */}
+            <Button 
+              type="button"
+              variant="contained"
+              onClick={handleSearch}
+              sx={{
+                bgcolor: 'var(--light-blue)',
+                color: 'var(--dark-blue)',
+                borderRadius: '1.5rem',
+                minWidth: '100px',
+                px: 3,
+                '&:hover': { 
+                  bgcolor: '#5AA9A3',
+                  color: 'var(--white)'
+                }
+              }}
+            >
+              Search
+            </Button>
+
+            {/* Search Dropdown */}
+            {dropdownVisible && (
+              <Paper sx={{
+                position: 'absolute',
+                top: '110%',
+                left: 0,
+                right: 0,
+                zIndex: 999,
+                bgcolor: 'background.paper',
+                boxShadow: 3,
+                maxHeight: 300,
+                overflowY: 'auto'
+              }}>
+                {searchResults.length === 0 ? (
+                  <Typography sx={{ p: 2 }}>
+                    {showNoResults ? "No research listings found." : "Start typing to search"}
+                  </Typography>
+                ) : 
+                  searchResults.map(item => (
+                    <Box 
+                      key={item.id}
+                      sx={{
+                        p: 2,
+                        cursor: 'pointer',
+                        '&:hover': { bgcolor: 'action.hover' }
+                      }}
+                      onClick={() => navigate(`/listing/${item.id}`)}
+                    >
+                      <Typography variant="subtitle1">{item.title}</Typography>
+                      <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                        By: {item.researcherName}
+                      </Typography>
+                      <Typography variant="body2" sx={{ mt: 1 }}>
+                        {item.summary}
+                      </Typography>
+                    </Box>
+                  ))}
+              </Paper>
+            )}
+          </Paper>
+        </Box>
 
         {/* Listings Grid */}
         <Box sx={{ maxWidth: 1200, mx: 'auto' }}>
@@ -725,12 +426,15 @@ const ResearcherDashboard = () => {
             ))}
           </Grid>
         </Box>
-           <Box sx={{ mt: 6, maxWidth: 1200, mx: 'auto' }}>
-  <Typography variant="h4" sx={{ mb: 3, fontSize: '1.7rem' }}>Collaboration Requests</Typography>
-  <Paper sx={{ p: 3, color: '#FFFFFF', bgcolor: '#132238', borderRadius: 2 }}>
-    <CollaborationRequestsPanel userId={userId} />
-  </Paper>
-</Box> 
+
+        {/* Collaboration Requests */}
+        <Box sx={{ mt: 6, maxWidth: 1200, mx: 'auto' }}>
+          <Typography variant="h4" sx={{ mb: 3, fontSize: '1.7rem' }}>Collaboration Requests</Typography>
+          <Paper sx={{ p: 3, color: '#FFFFFF', bgcolor: '#132238', borderRadius: 2 }}>
+            <CollaborationRequestsPanel userId={userId} />
+          </Paper>
+        </Box> 
+
         {/* Collaborations Section */}
         <Box sx={{ mt: 6, maxWidth: 1200, mx: 'auto' }}>
           <Typography variant="h4" sx={{ mb: 3, fontSize: '1.7rem'}}>Your Collaborations</Typography>
@@ -758,7 +462,6 @@ const ResearcherDashboard = () => {
                       onClick={() => navigate(`/listing/${listing.id}`)}
                       sx={{
                         bgcolor: '#2a3a57',
-                        
                         '&:hover': { bgcolor: '#3a4a67' }
                       }}
                     >
