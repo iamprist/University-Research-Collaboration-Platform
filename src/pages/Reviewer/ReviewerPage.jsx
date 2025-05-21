@@ -13,25 +13,6 @@ import { useNavigate } from 'react-router-dom'
 import ReviewerRecommendations from '../../components/ReviewerRecommendations'
 import axios from 'axios'
 
-// MUI imports
-import {
-  Box,
-  AppBar,
-  Toolbar,
-  Typography,
-  IconButton,
-  Avatar,
-  Drawer,
-  Button,
-  List,
-  ListItem,
-  ListItemText,
-  Divider,
-  CircularProgress,
-  Paper,
-} from '@mui/material'
-import CloseIcon from '@mui/icons-material/Close'
-
 export default function ReviewerPage() {
   const [status, setStatus] = useState('')
   const [reason, setReason] = useState('')
@@ -135,269 +116,238 @@ export default function ReviewerPage() {
     navigate('/signin')
   }
 
-  // Badge color logic for Paper
-  const badgeProps = (() => {
-    if (status === 'approved') {
-      return {
-        bgcolor: '#132238',
-        color: '#B1EDE8',
-        borderLeft: '4px solid #10B981'
-      }
+  const statusStyles = {
+    approved: {
+      backgroundColor: '#D1FAE5',
+      borderLeft: '4px solid #10B981',
+      color: '#065F46'
+    },
+    in_progress: {
+      backgroundColor: '#FEF3C7',
+      borderLeft: '4px solid #F59E0B',
+      color: '#92400E'
+    },
+    rejected: {
+      backgroundColor: '#FECACA',
+      borderLeft: '4px solid #EF4444',
+      color: '#991B1B'
     }
-    if (status === 'in_progress') {
-      return {
-        bgcolor: '#2a3a57',
-        color: '#F59E0B',
-        borderLeft: '4px solid #F59E0B'
-      }
-    }
-    if (status === 'rejected') {
-      return {
-        bgcolor: '#3a4a63',
-        color: '#FECACA',
-        borderLeft: '4px solid #EF4444'
-      }
-    }
-    return {
-      bgcolor: '#1a2a42',
-      color: '#B1EDE8'
-    }
-  })()
+  }
+
+  const renderBadge = () => {
+    if (status === 'approved')
+      return (
+        <section
+          style={statusStyles.approved}
+          className="p-2 rounded"
+        >
+          Approved Reviewer
+        </section>
+      )
+    if (status === 'in_progress')
+      return (
+        <section
+          style={statusStyles.in_progress}
+          className="p-2 rounded"
+        >
+          Application Under Review
+        </section>
+      )
+    if (status === 'rejected')
+      return (
+        <section
+          style={statusStyles.rejected}
+          className="p-2 rounded"
+        >
+          Application Rejected
+        </section>
+      )
+    return (
+      <section className="p-2 rounded text-muted">
+        {currentUser?.displayName || 'Reviewer'} – you are not a
+        reviewer. Apply below.
+      </section>
+    )
+  }
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: '#f5f7fa' }}>
-      {/* HEADER */}
-      <AppBar position="fixed" color="default" elevation={1} sx={{ bgcolor: '#132238', borderBottom: '2px solid #64CCC5' }}>
-        <Toolbar sx={{ justifyContent: 'space-between' }}>
-          <Typography variant="h5" fontWeight={700} sx={{ color: '#B1EDE8' }}>
-            Innerk Hub
-          </Typography>
-          <IconButton
-            edge="end"
-            color="inherit"
-            onClick={toggleSidebar}
-            aria-label="Toggle profile sidebar"
-            sx={{ p: 0 }}
-          >
-            <Avatar
-              src={currentUser?.photoURL || 'https://via.placeholder.com/40'}
-              alt="Profile"
-              sx={{ width: 40, height: 40, bgcolor: '#B1EDE8', color: '#132238' }}
-            />
-          </IconButton>
-        </Toolbar>
-      </AppBar>
-
-      {/* SIDEBAR */}
-      <Drawer
-        anchor="right"
-        open={sidebarOpen}
-        onClose={toggleSidebar}
-        PaperProps={{ sx: { width: 280, p: 3, bgcolor: '#132238', color: '#B1EDE8' } }}
+    <main
+      style={{
+        backgroundColor: '#FFFFFF',
+        color: '#000000',
+        minHeight: '100vh',
+        paddingTop: '70px' /* offset for the fixed navbar */
+      }}
+    >
+      <header
+        className="navbar navbar-light bg-light fixed-top px-4 py-3"
+        style={{ borderBottom: '1px solid #000' }}
       >
-        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-          <IconButton
-            onClick={toggleSidebar}
-            sx={{ alignSelf: 'flex-end', mb: 2, color: '#B1EDE8' }}
-            aria-label="Close sidebar"
-          >
-            <CloseIcon />
-          </IconButton>
-          <Box sx={{ textAlign: 'center', mb: 3 }}>
-            <Avatar
-              src={currentUser?.photoURL || 'https://via.placeholder.com/70'}
-              alt="Profile"
-              sx={{
-                width: 70,
-                height: 70,
-                mx: 'auto',
-                mb: 1,
-                border: '2px solid #B1EDE8',
-                bgcolor: '#1a2a42',
-                color: '#B1EDE8'
-              }}
-            />
-            <Typography variant="h6" sx={{ mt: 1, color: '#B1EDE8' }}>
-              {currentUser?.displayName || 'N/A'}
-            </Typography>
-            <Typography variant="body2" sx={{ color: '#B1EDE8', opacity: 0.7 }}>
-              {currentUser?.email || 'N/A'}
-            </Typography>
-          </Box>
-          <Paper
-            elevation={0}
-            sx={{
-              p: 2,
-              mb: 2,
-              bgcolor: badgeProps.bgcolor,
-              color: badgeProps.color,
-              borderLeft: badgeProps.borderLeft || undefined,
-              borderRadius: 2,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-            }}
-          >
-            <Typography sx={{ color: badgeProps.color }}>
-              {status === 'approved'
-                ? 'Approved Reviewer'
-                : status === 'in_progress'
-                ? 'Application Under Review'
-                : status === 'rejected'
-                ? 'Application Rejected'
-                : `${currentUser?.displayName || 'Reviewer'} – you are not a reviewer. Apply below.`}
-            </Typography>
-            {status === 'rejected' && reason && (
-              <Typography variant="caption" color="#EF4444" display="block" mt={1}>
-                Reason: {reason}
-              </Typography>
-            )}
-          </Paper>
-          <Divider sx={{ my: 2, bgcolor: '#B1EDE8', opacity: 0.2 }} />
-          <List>
-            <ListItem button component="a" href="/about" sx={{ color: '#B1EDE8' }}>
-              <ListItemText primary="About Us" />
-            </ListItem>
-            <ListItem button component="a" href="/terms" sx={{ color: '#B1EDE8' }}>
-              <ListItemText primary="Terms & Conditions" />
-            </ListItem>
-          </List>
-          <Box sx={{ mt: 'auto' }}>
-            {status === 'approved' && (
-              <Button
-                onClick={handleRevoke}
-                variant="contained"
-                fullWidth
-                sx={{
-                  mb: 1,
-                  bgcolor: '#F59E0B',
-                  color: '#132238',
-                  fontWeight: 700,
-                  '&:hover': { bgcolor: '#d97706' }
-                }}
-              >
-                Stop Being a Reviewer
-              </Button>
-            )}
-            {status !== 'approved' && status !== 'not_found' && (
-              <Button
-                onClick={handleRevoke}
-                variant="contained"
-                fullWidth
-                sx={{
-                  mb: 1,
-                  bgcolor: '#F59E0B',
-                  color: '#132238',
-                  fontWeight: 700,
-                  '&:hover': { bgcolor: '#d97706' }
-                }}
-              >
-                {status === 'rejected'
-                  ? 'Remove Rejected Application'
-                  : 'Revoke Application'}
-              </Button>
-            )}
-            <Button
-              onClick={handleLogout}
-              variant="contained"
-              fullWidth
-              sx={{
-                bgcolor: '#EF4444',
-                color: '#fff',
-                fontWeight: 700,
-                '&:hover': { bgcolor: '#b91c1c' }
-              }}
-            >
-              Logout
-            </Button>
-          </Box>
-        </Box>
-      </Drawer>
-
-      {/* MAIN CONTENT */}
-      <Box sx={{
-        maxWidth: '700px',
-        margin: '90px auto 0 auto',
-        px: '1.5rem',
-        pb: 6,
-      }}>
-        <Paper
-          sx={{
-            background: '#fff',
-            borderRadius: '1rem',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.10)',
-            p: { xs: '1.5rem', md: '2.5rem' },
-            color: '#132238',
-            mb: 4,
+        <h1 className="navbar-brand fw-bold fs-4">Innerk Hub</h1>
+        <button
+          className="btn btn-outline-light p-0"
+          onClick={toggleSidebar}
+          aria-label="Toggle profile sidebar"
+          style={{
+            borderRadius: '50%',
+            width: '40px',
+            height: '40px',
+            overflow: 'hidden'
           }}
         >
-          {loading ? (
-            <Box sx={{ textAlign: 'center', mt: 4 }}>
-              <Typography color="#132238" mb={2}>
-                Retrieving your reviewer status…
-              </Typography>
-              <CircularProgress sx={{ color: '#64CCC5' }} />
-            </Box>
-          ) : (
-            <>
-              <Box sx={{ textAlign: 'center', mb: 4 }}>
-                <Typography variant="h4" fontWeight={700} sx={{ color: '#132238', mb: 1 }}>
-                  Reviewer Dashboard
-                </Typography>
-                <Typography sx={{ color: '#132238', fontWeight: 500 }}>
-                  Hi {currentUser?.displayName || 'Reviewer'}
-                </Typography>
-                <Typography sx={{ mb: 2, color: '#132238', opacity: 0.8 }}>
-                  Welcome back! Ready to read, review, and recommend cutting-edge research?
-                </Typography>
-              </Box>
+          <img
+            src={currentUser?.photoURL || 'https://via.placeholder.com/40'}
+            alt="Profile"
+            className="rounded-circle"
+            style={{
+              width: '40px',
+              height: '40px',
+              objectFit: 'cover',
+              display: 'block'
+            }}
+          />
+        </button>
+      </header>
 
-              {status === 'approved' && <ReviewerRecommendations />}
+      <aside
+        className={`position-fixed top-0 end-0 h-100 bg-light shadow p-4 d-flex flex-column ${
+          sidebarOpen ? 'd-block' : 'd-none'
+        }`}
+        style={{ width: '280px', zIndex: 1050 }}
+      >
+        <button
+          className="btn-close align-self-end"
+          onClick={toggleSidebar}
+          aria-label="Close sidebar"
+        />
 
-              {status === 'not_found' && (
-                <Box sx={{ textAlign: 'center', mt: 4 }}>
-                  <Typography color="#132238" mb={2}>
-                    No reviewer profile found.
-                  </Typography>
-                  <Button
-                    variant="contained"
-                    sx={{
-                      bgcolor: '#64CCC5',
-                      color: '#132238',
-                      fontWeight: 700,
-                      borderRadius: '0.5rem',
-                      px: 4,
-                      py: 1.2,
-                      mt: 2,
-                      '&:hover': { bgcolor: '#3a4a63' }
-                    }}
-                    onClick={() => navigate('/reviewer-form')}
-                  >
-                    Apply Now
-                  </Button>
-                </Box>
-              )}
+        <section className="text-center mb-4">
+          <img
+            src={currentUser?.photoURL || 'https://via.placeholder.com/70'}
+            alt="Profile"
+            className="rounded-circle mb-2"
+            style={{
+              width: '70px',
+              height: '70px',
+              objectFit: 'cover',
+              border: '2px solid #ccc'
+            }}
+          />
+          <h2 className="h6 mb-0 mt-2">
+            {currentUser?.displayName || 'N/A'}
+          </h2>
+          <address className="text-muted">
+            {currentUser?.email || 'N/A'}
+          </address>
+        </section>
 
-              {status === 'in_progress' && (
-                <Box sx={{ textAlign: 'center', mt: 4 }}>
-                  <Typography sx={{ color: '#F59E0B', fontWeight: 600 }}>
-                    Your application is currently being reviewed.
-                  </Typography>
-                </Box>
-              )}
-
-              {status === 'rejected' && (
-                <Box sx={{ textAlign: 'center', mt: 4 }}>
-                  <Typography sx={{ color: '#EF4444', fontWeight: 600 }}>
-                    Your application was rejected.
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: '#EF4444' }}>
-                    Reason: {reason || 'No reason provided.'}
-                  </Typography>
-                </Box>
-              )}
-            </>
+        <section className="mb-4">
+          {renderBadge()}
+          {status === 'rejected' && reason && (
+            <small className="text-danger d-block mt-1">
+              Reason: {reason}
+            </small>
           )}
-        </Paper>
-      </Box>
-    </Box>
+        </section>
+
+        <hr />
+
+        <nav aria-label="Sidebar links" className="mb-4">
+          <ul className="list-unstyled">
+            <li>
+              <a href="/about" className="text-decoration-none text-dark">
+                About Us
+              </a>
+            </li>
+            <li>
+              <a href="/terms" className="text-decoration-none text-dark">
+                Terms &amp; Conditions
+              </a>
+            </li>
+          </ul>
+        </nav>
+
+        <section className="mt-auto">
+          {status === 'approved' && (
+            <button
+              onClick={handleRevoke}
+              className="btn btn-warning w-100 mb-2"
+            >
+              Stop Being a Reviewer
+            </button>
+          )}
+          {status !== 'approved' && status !== 'not_found' && (
+            <button
+              onClick={handleRevoke}
+              className="btn btn-warning w-100 mb-2"
+            >
+              {status === 'rejected'
+                ? 'Remove Rejected Application'
+                : 'Revoke Application'}
+            </button>
+          )}
+          <button
+            onClick={handleLogout}
+            className="btn btn-danger w-100"
+          >
+            Logout
+          </button>
+        </section>
+      </aside>
+
+      <section
+        className="container"
+        style={{ backgroundColor: 'white', color: 'black' }}
+      >
+        {loading ? (
+          <section className="text-center text-muted mt-4">
+            <p>Retrieving your reviewer status…</p>
+            <div className="spinner-border text-dark" role="status" />
+          </section>
+        ) : (
+          <>
+            <header className="text-center my-4">
+              <h2>Reviewer Dashboard</h2>
+              <p>Hi {currentUser?.displayName || 'Reviewer'}</p>
+              <p>
+                Welcome back! Ready to read, review, and recommend
+                cutting-edge research?
+              </p>
+            </header>
+
+            {status === 'approved' && (
+              <ReviewerRecommendations />
+            )}
+
+            {status === 'not_found' && (
+              <section className="text-center mt-4 text-muted">
+                <p>No reviewer profile found.</p>
+                <button
+                  className="btn btn-success"
+                  onClick={() => navigate('/reviewer-form')}
+                >
+                  Apply Now
+                </button>
+              </section>
+            )}
+
+            {status === 'in_progress' && (
+              <section className="text-center text-warning mt-4">
+                <p>Your application is currently being reviewed.</p>
+              </section>
+            )}
+
+            {status === 'rejected' && (
+              <section className="text-center text-danger mt-4">
+                <p>Your application was rejected.</p>
+                <small>
+                  Reason: {reason || 'No reason provided.'}
+                </small>
+              </section>
+            )}
+          </>
+        )}
+      </section>
+    </main>
   )
 }

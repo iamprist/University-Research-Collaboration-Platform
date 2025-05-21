@@ -1,149 +1,110 @@
 import React, { useEffect, useState } from "react";
-import { getFirestore, collection, doc, getDoc, getDocs } from "firebase/firestore";
+import { useNavigate } from "react-router-dom";
+import {
+  getFirestore,
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  addDoc,
+  deleteDoc,
+  serverTimestamp,
+  onSnapshot,
+  query,
+  where,
+} from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { Helmet } from "react-helmet";
-import { Box, Paper, Typography, Chip, Button, Collapse } from "@mui/material";
 
-// Mapping of tag aliases to canonical names
+// Mapping of shorthand tag codes to full, canonical names
 const tagAliases = {
   PHYS: "Physics",
   CHEM: "Chemistry",
   BIO: "Biology",
   CS: "Computer Science",
   AI: "Artificial Intelligence",
-  MED: "Medicine",
-  LAW: "Law",
-  BUS: "Business Administration",
-  FIN: "Finance",
-  MKT: "Marketing",
-  HRM: "Human Resources",
-  EDU: "Education",
-  PSY: "Psychology",
-  ENG: "Engineering",
-  ENV: "Environmental Science",
-  SOC: "Sociology",
-  POL: "Political Science",
-  ECO: "Economics",
-  PHIL: "Philosophy",
-  HIST: "History",
-  GEO: "Geography",
-  ART: "Art",
-  MATH: "Mathematics",
-  STAT: "Statistics",
-  ANTH: "Anthropology",
-  LING: "Linguistics",
-  COM: "Communication",
-  NUR: "Nursing",
-  PHAR: "Pharmacy",
-  AGRI: "Agriculture",
-  VET: "Veterinary Science",
-  ARCH: "Architecture",
+  // …other aliases…
   Other: "Other (please specify)",
 };
 
+// Convert one tag string into its canonical form (lowercase)
 function normalizeTag(tag) {
   const t = tag.trim().toLowerCase();
   for (const [alias, canonical] of Object.entries(tagAliases)) {
     if (alias.toLowerCase() === t) return canonical.toLowerCase();
   }
-  return t;
+  return t; // fallback to cleaned string if no alias match
 }
+
+// Apply normalizeTag to each element of an array
 function normalizeTags(tags) {
   if (!Array.isArray(tags)) return [];
   return tags.map(normalizeTag);
 }
 
-export default function ReviewerRecommendations() {
+export default function ResearchProjectDisplay() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [expertiseTags, setExpertiseTags] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
   const [expandedProject, setExpandedProject] = useState(null);
+  const [requestStatuses, setRequestStatuses] = useState({});
+  const [reviewExists, setReviewExists] = useState({});
 
   const auth = getAuth();
   const db = getFirestore();
+  const navigate = useNavigate();
 
+  // 1. Fetch recommendations
   useEffect(() => {
     async function fetchRecommendations() {
       setLoading(true);
       setError(null);
       try {
         const user = auth.currentUser;
-        if (!user) {
-          setError("User not logged in");
-          setLoading(false);
-          return;
-        }
+        if (!user) throw new Error("User not logged in");
 
-        const reviewerDocRef = doc(db, "reviewers", user.uid);
-        const reviewerDocSnap = await getDoc(reviewerDocRef);
-        if (!reviewerDocSnap.exists()) {
-          setError("Reviewer profile not found");
-          setLoading(false);
-          return;
-        }
+        const reviewerSnap = await getDoc(doc(db, "reviewers", user.uid));
+        if (!reviewerSnap.exists()) throw new Error("Reviewer profile not found");
 
-        const reviewerData = reviewerDocSnap.data();
-        if (!Array.isArray(reviewerData.expertiseTags) || reviewerData.expertiseTags.length === 0) {
-          setExpertiseTags([]);
-          setRecommendations([]);
-          setLoading(false);
-          return;
-        }
+        const tags = normalizeTags(reviewerSnap.data().expertiseTags || []);
+        setExpertiseTags(tags);
 
-        const normalizedExpertiseTags = normalizeTags(reviewerData.expertiseTags);
-        setExpertiseTags(normalizedExpertiseTags);
-
-        const researchListingsCol = collection(db, "research-listings");
-        const researchSnapshot = await getDocs(researchListingsCol);
+        const listingsSnap = await getDocs(collection(db, "research-listings"));
         const matches = [];
 
-        for (const docSnap of researchSnapshot.docs) {
-          const data = docSnap.data();
-          const userId = data.userId;
-
+        for (const snap of listingsSnap.docs) {
+          const data = snap.data();
           const keywords = normalizeTags(data.keywords || []);
-          const researchArea = data.researchArea ? normalizeTag(data.researchArea) : null;
+          const areaTag = data.researchArea ? normalizeTag(data.researchArea) : null;
+          const overlap =
+            tags.some((t) => keywords.includes(t)) ||
+            (areaTag && tags.includes(areaTag));
+          if (!overlap) continue;
 
-          const hasOverlap =
-            normalizedExpertiseTags.some((tag) => keywords.includes(tag)) ||
-            (researchArea && normalizedExpertiseTags.includes(researchArea));
+          const posterSnap = await getDoc(doc(db, "users", data.userId));
+          const posterData = posterSnap.exists() ? posterSnap.data() : {};
 
-          if (hasOverlap) {
-            const userDocRef = doc(db, "users", userId);
-            const userDocSnap = await getDoc(userDocRef);
-            let postedByName = "Unknown";
-            let postedByEmail = "N/A";
-
-            if (userDocSnap.exists()) {
-              const userData = userDocSnap.data();
-              postedByName = userData.name || "Unknown";
-              postedByEmail = userData.email || "N/A";
-            }
-
-            matches.push({
-              id: docSnap.id,
-              title: data.title || "Untitled",
-              summary: data.summary || "",
-              researchArea: data.researchArea || "",
-              keywords: data.keywords || [],
-              institution: data.institution || "",
-              department: data.department || "",
-              postedByName,
-              postedByEmail,
-              methodology: data.methodology || "Not Specified",
-              collaborationNeeds: data.collaborationNeeds || "Not Specified",
-              estimatedCompletion: data.estimatedCompletion || "N/A",
-              relatedPublicationLink: data.publicationLink || "#",
-            });
-          }
+          matches.push({
+            id: snap.id,
+            researcherId: data.userId,
+            title: data.title || "Untitled",
+            summary: data.summary || "",
+            researchArea: data.researchArea || "",
+            institution: data.institution || "",
+            postedByName: posterData.name || "Unknown",
+            methodology: data.methodology || "Not Specified",
+            collaborationNeeds: data.collaborationNeeds || "Not Specified",
+            estimatedCompletion: data.estimatedCompletion || "N/A",
+            publicationLink: data.publicationLink || "#",
+          });
         }
 
         setRecommendations(matches);
-        setLoading(false);
       } catch (e) {
         console.error("Error fetching recommendations:", e);
-        setError("Failed to fetch recommendations");
+        setError(e.message);
+      } finally {
         setLoading(false);
       }
     }
@@ -151,63 +112,146 @@ export default function ReviewerRecommendations() {
     fetchRecommendations();
   }, [auth, db]);
 
-  const handleExpand = (projectId) => {
-    setExpandedProject(expandedProject === projectId ? null : projectId);
+  // 2. Listen for outgoing reviewRequests
+  useEffect(() => {
+    const user = auth.currentUser;
+    if (!user) return;
+    const q = query(
+      collection(db, "reviewRequests"),
+      where("reviewerId", "==", user.uid)
+    );
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        const statuses = {};
+        snap.docs.forEach((d) => {
+          const { listingId, status } = d.data();
+          statuses[listingId] = status;
+        });
+        setRequestStatuses(statuses);
+      },
+      console.error
+    );
+    return () => unsub();
+  }, [auth, db]);
+
+  // 3. Listen for existing reviews
+  useEffect(() => {
+    const user = auth.currentUser;
+    if (!user) return;
+    const q = query(
+      collection(db, "reviews"),
+      where("reviewerId", "==", user.uid)
+    );
+    const unsub = onSnapshot(q, (snap) => {
+      const exists = {};
+      snap.docs.forEach((d) => {
+        const { listingId } = d.data();
+        exists[listingId] = true;
+      });
+      setReviewExists(exists);
+    });
+    return () => unsub();
+  }, [auth, db]);
+
+  const handleExpand = (id) =>
+    setExpandedProject((prev) => (prev === id ? null : id));
+
+  // 4. Send a new review request
+  const handleRequestReview = async (project) => {
+    try {
+      await addDoc(collection(db, "reviewRequests"), {
+        listingId: project.id,
+        reviewerId: auth.currentUser.uid,
+        researcherId: project.researcherId,
+        status: "pending",
+        requestedAt: serverTimestamp(),
+      });
+    } catch (err) {
+      console.error("Error sending review request:", err);
+      alert("Failed to send request.");
+    }
   };
 
-  // Loading state UI
+  // 5. Revoke a pending review request
+  const handleRevokeReview = async (projectId) => {
+    try {
+      const q = query(
+        collection(db, "reviewRequests"),
+        where("reviewerId", "==", auth.currentUser.uid),
+        where("listingId", "==", projectId),
+        where("status", "==", "pending")
+      );
+      const snap = await getDocs(q);
+      await Promise.all(
+        snap.docs.map((d) => deleteDoc(doc(db, "reviewRequests", d.id)))
+      );
+    } catch (err) {
+      console.error("Error revoking review request:", err);
+      alert("Failed to revoke request.");
+    }
+  };
+
+  // 6. Navigate to review form
+  const handleReview = (project) => {
+    navigate(`/review/${project.id}`, { state: { project } });
+  };
+
   if (loading) {
     return (
-      <Box sx={{ py: 6, textAlign: "center" }}>
-        <Box className="spinner-border text-primary" sx={{ mb: 2 }} />
-        <Typography sx={{ color: "#132238" }}>Loading recommendations...</Typography>
-      </Box>
+      <section aria-busy="true" style={{ padding: 40, textAlign: "center" }}>
+        <progress />
+        <p>Loading recommendations…</p>
+      </section>
     );
   }
 
-  // Error state UI
   if (error) {
     return (
-      <Paper
+      <aside
         role="alert"
-        sx={{
+        style={{
           maxWidth: 600,
-          mx: "auto",
-          my: 3,
+          margin: "20px auto",
           color: "#842029",
-          bgcolor: "#fff",
-          p: 3,
-          borderRadius: 2,
-          border: "1px solid #FECACA",
+          backgroundColor: "#f8d7da",
+          padding: 20,
+          borderRadius: 4,
         }}
       >
-        <Typography sx={{ color: "#EF4444" }}>{error}</Typography>
-      </Paper>
+        {error}
+      </aside>
     );
   }
 
-  // No expertise tags UI
   if (!expertiseTags.length) {
     return (
-      <Paper sx={{ bgcolor: "#fff", color: "#132238", p: 3, borderRadius: 3, my: 3, textAlign: "center", border: "1px solid #e0e0e0" }}>
-        <Typography>You have no expertise tags set in your profile, so no recommendations can be made.</Typography>
-      </Paper>
+      <section
+        aria-live="polite"
+        style={{ padding: 40, textAlign: "center" }}
+      >
+        <p>
+          You have no expertise tags set in your profile, so no recommendations
+          can be made.
+        </p>
+      </section>
     );
   }
 
-  // No recommendations UI
-  if (recommendations.length === 0) {
+  if (!recommendations.length) {
     return (
-      <Paper sx={{ bgcolor: "#fff", color: "#132238", p: 3, borderRadius: 3, my: 3, textAlign: "center", border: "1px solid #e0e0e0" }}>
-        <Typography>
+      <section
+        aria-live="polite"
+        style={{ padding: 40, textAlign: "center" }}
+      >
+        <p>
           No research listings matched your expertise tags:{" "}
-          <b>{expertiseTags.join(", ")}</b>.
-        </Typography>
-      </Paper>
+          <strong>{expertiseTags.join(", ")}</strong>.
+        </p>
+      </section>
     );
   }
 
-  // Render recommendations UI
   return (
     <>
       <Helmet>
@@ -216,128 +260,219 @@ export default function ReviewerRecommendations() {
           rel="stylesheet"
         />
       </Helmet>
-      <Box sx={{ fontFamily: '"Open Sans", sans-serif', minHeight: "100vh", p: 0 }}>
-        <Paper
-          sx={{
-            bgcolor: "#fff",
-            color: "#132238",
-            p: { xs: 2, md: 3 },
-            borderRadius: 3,
-            mb: 3,
-            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-            border: "1px solid #e0e0e0",
-          }}
+
+      <main
+        style={{
+          backgroundColor: "#fff",
+          color: "#000",
+          fontFamily: '"Open Sans", sans-serif',
+          padding: 20,
+        }}
+      >
+        <section
+          aria-label="Your expertise tags"
+          style={{ textAlign: "center", marginBottom: 30 }}
         >
-          <Typography variant="h5" sx={{ color: "#132238", fontWeight: 700, mb: 2, textAlign: "center" }}>
-            Recommended Research Projects
-          </Typography>
-          <Box sx={{ textAlign: "center", mb: 3 }}>
-            <Typography sx={{ color: "#132238", fontSize: 16, mb: 1 }}>
-              <b>Your expertise tags:</b>{" "}
-              {expertiseTags.map((tag) => (
-                <Chip
-                  key={tag}
-                  label={tagAliases[tag.toUpperCase()] || tag}
-                  sx={{
-                    bgcolor: "#e0e0e0",
-                    color: "#132238",
-                    fontWeight: 600,
-                    fontSize: 14,
-                    mx: 0.5,
-                    my: 0.5,
-                  }}
-                  size="small"
-                />
-              ))}
-            </Typography>
-          </Box>
-          <Box>
-            {recommendations.map((project) => (
-              <Paper
-                key={project.id}
-                sx={{
-                  bgcolor: "#f9fafb",
-                  color: "#132238",
-                  border: "1px solid #e0e0e0",
-                  borderRadius: 2,
-                  p: 3,
-                  mb: 3,
-                  boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
-                  transition: "all 0.3s",
+          <p style={{ fontSize: 16, marginBottom: 20 }}>
+            <strong>Your expertise tags:</strong>
+          </p>
+          <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+            {expertiseTags.map((tag) => (
+              <li
+                key={tag}
+                style={{
+                  display: "inline-block",
+                  backgroundColor: "#e0e0e0",
+                  padding: "5px 10px",
+                  borderRadius: 15,
+                  margin: 5,
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color: "#000",
                 }}
               >
-                <Typography variant="h6" sx={{ color: "#132238", fontWeight: 700, mb: 1 }}>
-                  {project.title}
-                </Typography>
-                <Box sx={{ mb: 1 }}>
-                  <Chip
-                    label={project.researchArea}
-                    sx={{
-                      bgcolor: "#3498db",
-                      color: "#fff",
-                      fontWeight: 600,
-                      fontSize: 14,
-                      mb: 1,
+                {tagAliases[tag.toUpperCase()] || tag}
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section aria-label="Project recommendations">
+          {recommendations.map((project) => {
+            const status = requestStatuses[project.id];
+            const reviewed = reviewExists[project.id];
+
+            return (
+              <article
+                key={project.id}
+                style={{
+                  border: "1px solid #ccc",
+                  borderRadius: 8,
+                  padding: 20,
+                  boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+                  backgroundColor: "#fff",
+                  marginBottom: 30,
+                }}
+              >
+                <header>
+                  <h3
+                    style={{
+                      fontSize: 20,
+                      fontWeight: 700,
+                      marginBottom: 15,
                     }}
-                    size="small"
-                  />
-                </Box>
-                <Typography sx={{ fontSize: 15, lineHeight: 1.6, mb: 2, color: "#132238" }}>
+                  >
+                    {project.title}
+                  </h3>
+                  <p style={{ marginBottom: 15 }}>
+                    <mark
+                      style={{
+                        backgroundColor: "#3498db",
+                        color: "#fff",
+                        padding: "3px 10px",
+                        borderRadius: 4,
+                        fontSize: 14,
+                      }}
+                    >
+                      {project.researchArea}
+                    </mark>
+                  </p>
+                </header>
+
+                <p style={{ fontSize: 15, lineHeight: 1.6, marginBottom: 15 }}>
                   {project.summary.length > 150
-                    ? `${project.summary.substring(0, 150)}...`
+                    ? `${project.summary.substring(0, 150)}…`
                     : project.summary}
-                </Typography>
-                <Box sx={{ mb: 2 }}>
-                  <Typography sx={{ mb: 0.5, color: "#132238" }}>
-                    <b style={{ color: "#132238" }}>Researcher:</b> {project.postedByName}
-                  </Typography>
-                  <Typography sx={{ mb: 0.5, color: "#132238" }}>
-                    <b style={{ color: "#132238" }}>Institution:</b> {project.institution}
-                  </Typography>
-                </Box>
-                <Button
-                  variant="contained"
-                  sx={{
-                bgcolor: 'var(--light-blue)',
-                color: 'var(--dark-blue)',
-                borderRadius: '1.5rem',
-                fontWeight: 600,
-                px: 3,
-                py: 1.2,
-                '&:hover': { bgcolor: '#5AA9A3', color: 'var(--white)' },
-                  }}
+                </p>
+
+                <dl style={{ marginBottom: 15 }}>
+                  <dt>
+                    <strong style={{ color: "#7f8c8d" }}>Researcher:</strong>
+                  </dt>
+                  <dd style={{ marginLeft: 0 }}>{project.postedByName}</dd>
+                  <dt>
+                    <strong style={{ color: "#7f8c8d" }}>Institution:</strong>
+                  </dt>
+                  <dd style={{ marginLeft: 0 }}>{project.institution}</dd>
+                </dl>
+
+                {status == null && (
+                  <button
+                    onClick={() => handleRequestReview(project)}
+                    style={{
+                      marginRight: 10,
+                      padding: "8px 15px",
+                      backgroundColor: "#27ae60",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: 4,
+                      cursor: "pointer",
+                      fontWeight: 600,
+                    }}
+                  >
+                    Request Review
+                  </button>
+                )}
+                {status === "pending" && (
+                  <button
+                    onClick={() => handleRevokeReview(project.id)}
+                    style={{
+                      marginRight: 10,
+                      padding: "8px 15px",
+                      backgroundColor: "#c0392b",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: 4,
+                      cursor: "pointer",
+                      fontWeight: 600,
+                    }}
+                  >
+                    Revoke Request
+                  </button>
+                )}
+                {status === "accepted" && (
+                  <button
+                    onClick={() => handleReview(project)}
+                    style={{
+                      marginRight: 10,
+                      padding: "8px 15px",
+                      backgroundColor: "#2980b9",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: 4,
+                      cursor: "pointer",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {reviewed ? "Update Review" : "Start Review"}
+                  </button>
+                )}
+                {status === "declined" && (
+                  <span
+                    style={{
+                      color: "red",
+                      fontWeight: 600,
+                      marginRight: 10,
+                    }}
+                  >
+                    Declined
+                  </span>
+                )}
+
+                <button
                   onClick={() => handleExpand(project.id)}
+                  style={{
+                    padding: "8px 15px",
+                    backgroundColor: "#3498db",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 4,
+                    cursor: "pointer",
+                    fontWeight: 600,
+                  }}
                 >
                   {expandedProject === project.id ? "Show Less" : "View Details"}
-                </Button>
-                <Collapse in={expandedProject === project.id}>
-                  <Box sx={{ mt: 2, pt: 2, borderTop: "1px solid #e0e0e0", color: "#132238" }}>
-                    <Typography sx={{ mb: 1 }}>
-                      <b>Methodology:</b> {project.methodology}
-                    </Typography>
-                    <Typography sx={{ mb: 1 }}>
-                      <b>Collaboration Needs:</b> {project.collaborationNeeds}
-                    </Typography>
-                    <Typography sx={{ mb: 1 }}>
-                      <b>Estimated Completion:</b> {project.estimatedCompletion}
-                    </Typography>
-                    <Typography sx={{ mb: 1 }}>
+                </button>
+
+                {expandedProject === project.id && (
+                  <section
+                    aria-label="Project details"
+                    style={{
+                      marginTop: 20,
+                      paddingTop: 15,
+                      borderTop: "1px solid #ccc",
+                    }}
+                  >
+                    <dl>
+                      <dt>
+                        <strong>Methodology:</strong>
+                      </dt>
+                      <dd>{project.methodology}</dd>
+                      <dt>
+                        <strong>Collaboration Needs:</strong>
+                      </dt>
+                      <dd>{project.collaborationNeeds}</dd>
+                      <dt>
+                        <strong>Estimated Completion:</strong>
+                      </dt>
+                      <dd>{project.estimatedCompletion}</dd>
+                    </dl>
+                    <p>
                       <a
-                        href={project.relatedPublicationLink}
+                        href={project.publicationLink}
                         target="_blank"
                         rel="noopener noreferrer"
-                        style={{ color: "#3498db", textDecoration: "underline" }}
                       >
                         Related Publication
                       </a>
-                    </Typography>
-                  </Box>
-                </Collapse>
-              </Paper>
-            ))}
-          </Box>
-        </Paper>
-      </Box>
+                    </p>
+                  </section>
+                )}
+              </article>
+            );
+          })}
+        </section>
+      </main>
     </>
   );
 }

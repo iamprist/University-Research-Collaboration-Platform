@@ -1,6 +1,6 @@
 // App.js - Main application entry point and route configuration
 // src/App.js
-import { Routes, Route, Navigate} from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import SignInPage from "./pages/SignInPage";
 import LandingPage from "./pages/LandingPage";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
@@ -12,9 +12,9 @@ import AdminPage from "./pages/Admin/AdminPage";
 import ViewLogs from "./pages/Admin/ViewLogs";
 
 // Reviewer
-
 import ReviewerPage from "./pages/Reviewer/ReviewerPage";
-import ReviewerForm from "./pages/Reviewer/ReviewerForm";
+import ReviewerForm from "./pages/Reviewer/ReviewerForm";      // reviewer signup/apply form
+import ReviewForm from "./components/ReviewForm";          // actual review submission form
 import TermsAndConditions from "./pages/TermsAndConditions";
 
 // Researcher
@@ -28,7 +28,6 @@ import CollaboratePage from "./pages/Researcher/CollaboratePage";
 import ChatRoom from "./pages/Researcher/ChatRoom";
 import FriendsSystem from './components/FriendsSystem';
 import CollaborationDashboard from "./pages/Researcher/CollaborationDashboard";
-
 
 import { auth, db } from "./config/firebaseConfig";
 import { useEffect } from "react";
@@ -78,113 +77,118 @@ function App() {
 
   return (
     <>
-    {/* Handles real-time notifications and toast messages */}
-    <NotificationHandler />
-    <ToastContainer position="bottom-right" />
-    
-    {/* Application routes */}
-    <Routes>
-      {/* Public routes */}
-      <Route path="/" element={<LandingPage />} />
-      <Route path="/signin" element={<SignInPage />} />
-       <Route path="/learn-more" element={<LearnMore />} />
-      {/* Admin routes */}
-      <Route
-        path="/admin"
-        element={
-          <ProtectedRoute>
-            <AdminPage />
-          </ProtectedRoute>
-        }
-      />
-     <Route
-        path="/logs"
-        element={
-          <ProtectedRoute>
-            <ViewLogs />
-          </ProtectedRoute>
-        }
-      />
+      {/* Handles real-time notifications and toast messages */}
+      <NotificationHandler />
+      <ToastContainer position="bottom-right" />
+      
+      {/* Application routes */}
+      <Routes>
+        {/* Public routes */}
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/signin" element={<SignInPage />} />
+        <Route path="/learn-more" element={<LearnMore />} />
 
-{/*footer content*/}
- <Route path="/privacy-policy" element={<PrivacyPolicy />} />
- <Route path="/about" element={<About />} />
- <Route path="/terms" element={<TermsAndConditions />} />
-        
+        {/* Admin routes */}
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute>
+              <AdminPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/logs"
+          element={
+            <ProtectedRoute>
+              <ViewLogs />
+            </ProtectedRoute>
+          }
+        />
 
-      {/* Reviewer routes */}
-      <Route
-        path="/reviewer"
-        element={
-          <ProtectedRoute>
-            <ReviewerPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route path="/reviewer-form" element={<ReviewerForm />} />
-      <Route path="/apply" element={<ReviewerForm />} />
-      <Route path="/terms" element={<TermsAndConditions />} />
+        {/* Footer / Legal */}
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/terms" element={<TermsAndConditions />} />
 
-      {/* Researcher routes */}
-      {/* Dashboard, profile, edit profile, add listing, listing details, collaborate, chat, friends */}
-      <Route
-        path="/researcher-dashboard"
-        element={
-          <ProtectedRoute>
-            <ResearcherDashboard />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/researcher-profile"
-        element={
-          <ProtectedRoute>
-            <ResearcherProfile />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/researcher-edit-profile"
-        element={
-          <ProtectedRoute>
-            <EditProfile />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/researcher/add-listing"
-        element={
-          <ProtectedRoute>
-            <AddListing />
-          </ProtectedRoute>
-        }
-      />
-<Route 
-  path="/listing/:id" 
-  element={
-    <ProtectedRoute>
-      <ListingDetailPage /> 
-    </ProtectedRoute>
-  }
-/>
+        {/* Reviewer routes */}
+        <Route
+          path="/reviewer"
+          element={
+            <ProtectedRoute>
+              <ReviewerPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/reviewer-form" element={<ReviewerForm />} />
+        <Route path="/apply" element={<ReviewerForm />} />
+        <Route
+          path="/review/:listingId"
+          element={
+            <ProtectedRoute>
+              <ReviewForm />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/researcher/collaborate"
-        element={
-          <ProtectedRoute>
-            <CollaboratePage />
-          </ProtectedRoute>
-        }
-      />
-      <Route path="/chat/:chatId" element={<ChatRoom />} />
-        <Route path= "/friends" element= {<FriendsSystem />}/>
-  <Route path="/collaboration/:chatId" element={<CollaborationDashboard/>} />
-      {/* Catch-all: redirect unknown routes to home */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
-   </>
+        {/* Researcher routes */}
+        <Route
+          path="/researcher-dashboard"
+          element={
+            <ProtectedRoute>
+              <ResearcherDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/researcher-profile"
+          element={
+            <ProtectedRoute>
+              <ResearcherProfile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/researcher-edit-profile"
+          element={
+            <ProtectedRoute>
+              <EditProfile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/researcher/add-listing"
+          element={
+            <ProtectedRoute>
+              <AddListing />
+            </ProtectedRoute>
+          }
+        />
+        <Route 
+          path="/listing/:id" 
+          element={
+            <ProtectedRoute>
+              <ListingDetailPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/researcher/collaborate"
+          element={
+            <ProtectedRoute>
+              <CollaboratePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/chat/:chatId" element={<ChatRoom />} />
+        <Route path="/friends" element={<FriendsSystem />} />
+        <Route path="/collaboration/:chatId" element={<CollaborationDashboard />} />
+
+        {/* Catch-all: redirect unknown routes to home */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
   );
 }
 
 export default App;
-      
