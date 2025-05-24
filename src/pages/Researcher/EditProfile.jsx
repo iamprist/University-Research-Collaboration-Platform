@@ -1,27 +1,13 @@
 // EditProfile.jsx - Allows researchers to edit and update their profile information
 import React, { useState, useEffect } from 'react';
-import { db, auth, storage } from '../../config/firebaseConfig';
-import { getDoc, doc, setDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import './ResearcherDashboard.css';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import MenuIcon from '@mui/icons-material/Menu';
 import Footer from '../../components/Footer';
-
-import {
-  Box,
-  Button,
-  IconButton,
-  Menu,
-  MenuItem,
-  Typography,
-  TextField,
-  Select,
-  InputLabel,
-  FormControl,
-  Avatar,
-} from '@mui/material';
+import { Box, Button, IconButton, Menu, MenuItem, Typography, TextField, Select, InputLabel, FormControl, Avatar } from '@mui/material';
+import { useEditProfileLogic } from './researcherEditProfileLogic';
+import { auth } from '../../config/firebaseConfig';
 
 const researchAreas = [
   'Physics', 'Chemistry', 'Biology', 'Computer Science', 'Mathematics',
@@ -32,8 +18,6 @@ const researchAreas = [
   'Geography', 'Philosophy', 'Linguistics', 'Communication', 'Other'
 ];
 
-
-
 // Researcher titles for dropdown
 const titles = [
   'Dr', 'Prof', 'Mr', 'Ms', 'Mrs', 'Mx', 'Other'
@@ -43,112 +27,31 @@ const EditProfile = () => {
   const navigate = useNavigate();
   // State for menu anchor (dropdown menu)
   const [menuAnchorEl, setMenuAnchorEl] = useState(null);
-  // State for user profile fields
-  const [profile, setProfile] = useState({
-    title: '',
-    name: '',
-    email: '',
-    researchArea: '',
-    biography: '',
-    profilePicture: null
-  });
-  // State for user ID
-  const [userId, setUserId] = useState(null);
 
+  // Use backend logic hook
+  const {
+    profile,
+    handleChange: logicHandleChange,
+    handleSubmit: logicHandleSubmit
+  } = useEditProfileLogic();
+
+  // Redirect to sign-in if not authenticated
   useEffect(() => {
-    const checkAuthToken = async () => {
-      const token = localStorage.getItem('authToken');
-      if (!token) {
-        navigate('/signin');
-        return;
-      }
-
-      const unsubscribe = auth.onAuthStateChanged((user) => {
-        if (user) {
-          setUserId(user.uid);
-        } else {
-          localStorage.removeItem('authToken');
-          navigate('/signin');
-        }
-      });
-
-      return () => unsubscribe();
-    };
-
-    checkAuthToken();
-  }, [navigate]);
-
-  // Fetch user profile from Firestore when userId changes
-  useEffect(() => {
-    const fetchProfile = async () => {
-      if (!userId) return;
-
-      try {
-        const userDocRef = doc(db, 'users', userId);
-        const userDoc = await getDoc(userDocRef);
-        if (userDoc.exists()) {
-          const data = userDoc.data();
-          setProfile({
-            title: data.title || '',
-            name: data.name || '',
-            email: data.email || '',
-            researchArea: data.researchArea || '',
-            biography: data.biography || '',
-            profilePicture: data.profilePicture || null
-          });
-        }
-      } catch (error) {
-        console.error('Error fetching profile:', error);
-      }
-    };
-
-    fetchProfile();
-  }, [userId]);
-
-  // Handle form input changes (including file upload)
-  const handleChange = (e) => {
-    const { name, value, files } = e.target;
-    if (name === 'profilePicture') {
-      setProfile({ ...profile, profilePicture: files[0] });
-    } else {
-      setProfile({ ...profile, [name]: value });
-    }
-  };
-
-  // Handle form submission to update profile
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!userId) {
-      console.error('User ID is not set.');
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      navigate('/signin');
       return;
     }
 
-    try {
-      let profileData = { ...profile };
-
-      // Handle profile picture upload if a new file is selected
-      if (profile.profilePicture instanceof File) {
-        const storageRef = ref(storage, `profilePictures/${userId}`);
-        await uploadBytes(storageRef, profile.profilePicture);
-        const downloadURL = await getDownloadURL(storageRef);
-        profileData.profilePicture = downloadURL;
-      } else if (typeof profile.profilePicture === 'undefined') {
-        profileData.profilePicture = null;
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (!user) {
+        localStorage.removeItem('authToken');
+        navigate('/signin');
       }
+    });
 
-      // Remove any undefined values (Firestore does not accept undefined)
-      Object.keys(profileData).forEach((key) => {
-        if (typeof profileData[key] === 'undefined') {
-          profileData[key] = null;
-        }
-      });
-
-      await setDoc(doc(db, 'users', userId), profileData);
-      navigate('/researcher-profile');
-    } catch (error) {
-      console.error('Error updating your profile:', error);
-    }
-  };
+    return () => unsubscribe();
+  }, [navigate]);
 
   return (
     <Box component="main" sx={{ minHeight: '100vh', bgcolor: '#f5f7fa' }}>
@@ -298,7 +201,7 @@ const EditProfile = () => {
 
       {/* FORM: Edit profile fields */}
       <Box sx={{ maxWidth: '700px', margin: '2rem auto', px: '1.5rem' }}>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={logicHandleSubmit}>
           <Box
             sx={{
               background: '#1A2E40',
@@ -333,7 +236,7 @@ const EditProfile = () => {
                   name="profilePicture"
                   accept="image/*"
                   hidden
-                  onChange={handleChange}
+                  onChange={logicHandleChange}
                 />
               </Button>
               {typeof profile.profilePicture === 'string' && (
@@ -364,7 +267,7 @@ const EditProfile = () => {
                   id="title"
                   name="title"
                   value={profile.title || ''}
-                  onChange={handleChange}
+                  onChange={logicHandleChange}
                   sx={{
                     width: '100%',
                     bgcolor: '#132238',
@@ -408,7 +311,7 @@ const EditProfile = () => {
                 name="email"
                 type="email"
                 value={profile.email || ''}
-                onChange={handleChange}
+                onChange={logicHandleChange}
                 required
                 fullWidth
                 variant="outlined"
@@ -439,7 +342,7 @@ const EditProfile = () => {
                   id="researchArea"
                   name="researchArea"
                   value={profile.researchArea || ''}
-                  onChange={handleChange}
+                  onChange={logicHandleChange}
                   sx={{
                     bgcolor: '#132238',
                     border: '1.5px solid #64CCC5',
@@ -481,7 +384,7 @@ const EditProfile = () => {
                 id="biography"
                 name="biography"
                 value={profile.biography || ''}
-                onChange={handleChange}
+                onChange={logicHandleChange}
                 multiline
                 minRows={6}
                 fullWidth
