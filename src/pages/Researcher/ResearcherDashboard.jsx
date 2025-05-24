@@ -149,7 +149,35 @@ const ResearcherDashboard = () => {
   const [ipAddress, setIpAddress] = useState("");
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedMessage, setSelectedMessage] = useState(null);
-  const navigate = useNavigate();
+  const navigate = useNavigate();const [reviewRequests, setReviewRequests] = useState([]);
+
+  useEffect(() => {
+  if (!userId) return;
+  const q = query(
+    collection(db, "reviewRequests"),
+    where("researcherId", "==", userId),
+    where("status", "==", "pending")
+  );
+  const unsub = onSnapshot(q, async (snapshot) => {
+    const requests = await Promise.all(snapshot.docs.map(async (docSnap) => {
+      const data = docSnap.data();
+      // Optionally fetch reviewer info
+      let reviewerName = "Unknown Reviewer";
+      try {
+        const reviewerDoc = await getDoc(doc(db, "users", data.reviewerId));
+        if (reviewerDoc.exists()) reviewerName = reviewerDoc.data().name || reviewerName;
+      } catch {}
+      return {
+        id: docSnap.id,
+        ...data,
+        reviewerName,
+      };
+    }));
+    setReviewRequests(requests);
+  });
+  return () => unsub();
+}, [userId, db]);
+
 
   useEffect(() => {
     const fetchIpAddress = async () => {
@@ -285,6 +313,19 @@ const ResearcherDashboard = () => {
     setFilteredListings(myListings);
   }, [myListings]);
 
+const handleAcceptReviewRequest = async (requestId) => {
+  await updateDoc(doc(db, "reviewRequests", requestId), {
+    status: "accepted",
+    respondedAt: serverTimestamp(),
+  });
+};
+
+const handleDeclineReviewRequest = async (requestId) => {
+  await updateDoc(doc(db, "reviewRequests", requestId), {
+    status: "declined",
+    respondedAt: serverTimestamp(),
+  });
+};
   const handleSearch = () => {
     if (!searchTerm.trim()) {
       setSearchResults([]);
@@ -707,6 +748,31 @@ const ResearcherDashboard = () => {
             ))}
           </section>
         </section>
+        <section style={{ maxWidth: 800, margin: '32px auto' }}>
+  <h2>Pending Review Requests</h2>
+  {reviewRequests.length === 0 ? (
+    <p>No pending review requests.</p>
+  ) : (
+    reviewRequests.map(req => (
+      <Paper key={req.id} sx={{ p: 2, mb: 2, bgcolor: '#1a2a42', color: '#B1EDE8' }}>
+        <Typography variant="subtitle1">
+          Reviewer: {req.reviewerName}
+        </Typography>
+        <Typography variant="body2">
+          Project ID: {req.listingId}
+        </Typography>
+        <Box sx={{ mt: 1, display: 'flex', gap: 1 }}>
+          <Button variant="contained" color="success" onClick={() => handleAcceptReviewRequest(req.id)}>
+            Accept
+          </Button>
+          <Button variant="contained" color="error" onClick={() => handleDeclineReviewRequest(req.id)}>
+            Decline
+          </Button>
+        </Box>
+      </Paper>
+    ))
+  )}
+</section>
 
         {/* Contact Form Dialog */}
         <Dialog
