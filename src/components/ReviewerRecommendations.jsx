@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { TextField, Button, Paper, Typography, Box } from '@mui/material'
 import { useNavigate } from "react-router-dom";
 import {
   getFirestore,
@@ -50,6 +51,12 @@ export default function ResearchProjectDisplay() {
   const [expandedProject, setExpandedProject] = useState(null);
   const [requestStatuses, setRequestStatuses] = useState({});
   const [reviewExists, setReviewExists] = useState({});
+   const [allListings, setAllListings] = useState([])
+  const [searchTerm, setSearchTerm] = useState('')
+  const [searchResults, setSearchResults] = useState([])
+  const [dropdownVisible, setDropdownVisible] = useState(false)
+  const [showNoResults, setShowNoResults] = useState(false)
+  const dropdownTimeout = React.useRef(null)
 
   const auth = getAuth();
   const db = getFirestore();
@@ -135,6 +142,70 @@ export default function ResearchProjectDisplay() {
     return () => unsub();
   }, [auth, db]);
 
+  // Fetch all research listings for search
+  useEffect(() => {
+    const fetchListings = async () => {
+      try {
+        const q = collection(db, 'research-listings')
+        const querySnapshot = await getDocs(q)
+        const data = await Promise.all(
+          querySnapshot.docs.map(async (docSnap) => {
+            const listing = { id: docSnap.id, ...docSnap.data() }
+            try {
+              const researcherDoc = await getDoc(doc(db, 'users', listing.userId))
+              return {
+                ...listing,
+                researcherName: researcherDoc.exists() ? researcherDoc.data().name : 'Unknown Researcher'
+              }
+            } catch {
+              return { ...listing, researcherName: 'Unknown Researcher' }
+            }
+          })
+        )
+        setAllListings(data)
+      } catch (error) {
+        console.error("Error fetching listings:", error)
+      }
+    }
+    fetchListings()
+  }, [db])
+
+  // Search logic
+  const handleSearch = () => {
+    if (!searchTerm.trim()) {
+      setSearchResults([])
+      setDropdownVisible(false)
+      return
+    }
+    const searchTermLower = searchTerm.toLowerCase()
+    const filtered = allListings.filter(item => {
+      const title = item.title?.toLowerCase() || ''
+      const researcherName = item.researcherName?.toLowerCase() || ''
+      return title.includes(searchTermLower) || researcherName.includes(searchTermLower)
+    })
+    setSearchResults(filtered)
+    setDropdownVisible(true)
+    clearTimeout(dropdownTimeout.current)
+    dropdownTimeout.current = setTimeout(() => {
+      setDropdownVisible(false)
+    }, 5000)
+    setShowNoResults(filtered.length === 0)
+  }
+
+  const handleInputFocus = () => {
+    setDropdownVisible(false)
+    clearTimeout(dropdownTimeout.current)
+  }
+  const handleInputChange = (e) => {
+    setSearchTerm(e.target.value)
+    setDropdownVisible(false)
+    clearTimeout(dropdownTimeout.current)
+  }
+  const handleClear = () => {
+    setSearchTerm('')
+    setSearchResults([])
+    setDropdownVisible(false)
+  }
   // 3. Listen for existing reviews
   useEffect(() => {
     const user = auth.currentUser;
@@ -269,6 +340,110 @@ export default function ResearchProjectDisplay() {
           padding: 20,
         }}
       >
+        <section
+        className="container"
+        style={{ backgroundColor: 'white', color: 'black' }}
+      >
+        {/* --- Search Bar Section --- */}
+        <Box sx={{ maxWidth: 800, mx: 'auto', mb: 4 }}>
+          <Paper 
+            component="form"
+            onSubmit={e => { e.preventDefault(); handleSearch() }}
+            sx={{ 
+              p: 1,
+              display: 'flex',
+              gap: 1,
+              bgcolor: 'background.paper',
+              position: 'relative'
+            }}
+          >
+            <TextField
+              fullWidth
+              variant="outlined"
+              placeholder="Search research by title or researcher name..."
+              value={searchTerm}
+              onChange={handleInputChange}
+              onFocus={handleInputFocus}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '1.2rem',
+                  borderColor: '#000'
+                }
+              }}
+            />
+            <Button 
+              type="button"
+              variant="contained"
+              onClick={handleClear}
+              sx={{
+                bgcolor: '#F59E0B',
+                color: '#fff',
+                borderRadius: '1.5rem',
+                minWidth: '100px',
+                px: 3,
+                '&:hover': { bgcolor: '#FBBF24' }
+              }}
+            >
+              Clear
+            </Button>
+            <Button 
+              type="button"
+              variant="contained"
+              onClick={handleSearch}
+              sx={{
+                bgcolor: '#10B981',
+                color: '#fff',
+                borderRadius: '1.5rem',
+                minWidth: '100px',
+                px: 3,
+                '&:hover': { bgcolor: '#059669' }
+              }}
+            >
+              Search
+            </Button>
+            {/* Search Dropdown */}
+            {dropdownVisible && (
+              <Paper sx={{
+                position: 'absolute',
+                top: '110%',
+                left: 0,
+                right: 0,
+                zIndex: 999,
+                bgcolor: 'background.paper',
+                boxShadow: 3,
+                maxHeight: 300,
+                overflowY: 'auto'
+              }}>
+                {searchResults.length === 0 ? (
+                  <Typography sx={{ p: 2 }}>
+                    {showNoResults ? "No research listings found." : "Start typing to search"}
+                  </Typography>
+                ) : 
+                  searchResults.map(item => (
+                    <Box 
+                      key={item.id}
+                      sx={{
+                        p: 2,
+                        cursor: 'pointer',
+                        '&:hover': { bgcolor: 'action.hover' }
+                      }}
+                      onClick={() => navigate(`/listing/${item.id}`)}
+                    >
+                      <Typography variant="subtitle1">{item.title}</Typography>
+                      <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                        By: {item.researcherName}
+                      </Typography>
+                      <Typography variant="body2" sx={{ mt: 1 }}>
+                        {item.summary}
+                      </Typography>
+                    </Box>
+                  ))}
+              </Paper>
+            )}
+          </Paper>
+        </Box>
+        </section>
+
         <section
           aria-label="Your expertise tags"
           style={{ textAlign: "center", marginBottom: 30 }}
