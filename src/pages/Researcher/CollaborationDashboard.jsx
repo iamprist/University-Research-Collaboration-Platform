@@ -9,50 +9,78 @@ export default function CollaborationDashboard() {
   const { chatId } = useParams();
   const [researchComplete, setResearchComplete] = useState(false);
   const [projectCreated, setProjectCreated] = useState(null);
+  const [activeTab, setActiveTab] = useState('milestones');
 
   return (
-    <div className="dashboard-container">
-      {/* Chat Panel */}
-      <div className="chat-panel">
-        <div className="panel-header">
-          <h2 className="panel-title">Project Chat</h2>
-        </div>
-        <div className="panel-content">
-          <ChatRoom 
-            chatId={chatId} 
-            compactView={true}
-            onProjectCreated={setProjectCreated}
-            onResearchComplete={setResearchComplete}
+    <main className="dashboard-container" aria-labelledby="dashboard-heading">
+      {/* Left Panel - Chat (50%) */}
+      <section 
+        className="chat-container"
+        aria-label="Chat room"
+      >
+        <ChatRoom
+          chatId={chatId}
+          onProjectCreated={setProjectCreated}
+          onResearchComplete={setResearchComplete}
+        />
+      </section>
+
+      {/* Right Panel - Collaboration Tools (50%) */}
+      <section 
+        className="collaboration-panel"
+        aria-label="Project collaboration tools"
+      >
+        <header className="panel-header">
+          <h2 id="dashboard-heading">Project Collaboration</h2>
+        </header>
+
+        <nav className="tabs" role="tablist" aria-label="Collaboration tabs">
+          <button
+            role="tab"
+            aria-selected={activeTab === 'milestones'}
+            aria-controls="milestones-tab"
+            onClick={() => setActiveTab('milestones')}
+            id="milestones-tab-button"
+            className={activeTab === 'milestones' ? 'active' : ''}
+          >
+            Milestones
+          </button>
+          <button
+            role="tab"
+            aria-selected={activeTab === 'funding'}
+            aria-controls="funding-tab"
+            onClick={() => setActiveTab('funding')}
+            id="funding-tab-button"
+            className={activeTab === 'funding' ? 'active' : ''}
+          >
+            Funding
+          </button>
+        </nav>
+
+        <article
+          id="milestones-tab"
+          className="tab-content"
+          role="tabpanel"
+          aria-labelledby="milestones-tab-button"
+          hidden={activeTab !== 'milestones'}
+        >
+          <MilestonesSection
+            chatId={chatId}
+            projectCreated={projectCreated}
+            researchComplete={researchComplete}
           />
-        </div>
-      </div>
-      
-      {/* Right Panel */}
-      <div className="right-panel">
-        {/* Milestones Panel */}
-        <div className="milestones-panel">
-          <div className="panel-header">
-            <h2 className="panel-title">Project Milestones</h2>
-          </div>
-          <div className="panel-content">
-            <MilestonesSection 
-              chatId={chatId}
-              projectCreated={projectCreated}
-              researchComplete={researchComplete}
-            />
-          </div>
-        </div>
-        
-        {/* Funding Panel */}
-        <div className="funding-panel">
-          <div className="panel-header">
-            <h2 className="panel-title">Budget & Funding</h2>
-          </div>
-          <div className="panel-content">
-            <FundingSection chatId={chatId} />
-          </div>
-        </div>
-      </div>
-    </div>
+        </article>
+
+        <article
+          id="funding-tab"
+          className="tab-content"
+          role="tabpanel"
+          aria-labelledby="funding-tab-button"
+          hidden={activeTab !== 'funding'}
+        >
+          <FundingSection chatId={chatId} />
+        </article>
+      </section>
+    </main>
   );
 }

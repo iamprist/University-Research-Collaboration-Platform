@@ -1,113 +1,111 @@
+:root {
+  --primary-blue: #364e68;
+  --dark-blue: #132238;
+  --light-blue: #64ccc5;
+  --accent-teal: #b1ede8;
+  --light-gray: #747c92;
+  --background: #fffcf9;
+  --white: #ffffff;
+}
+
 .dashboard-container {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
   height: 100vh;
   padding: 20px;
-  background-color: #f8fafc;
+  background-color: var(--background);
   box-sizing: border-box;
-  overflow: hidden;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
+/* Left Panel - Chat (50%) */
 .chat-panel {
-  background: white;
+  background: var(--white);
   border-radius: 16px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
               0 2px 4px -1px rgba(0, 0, 0, 0.06);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid #e2e8f0;
-  height: 110%; /* Fill available vertical space */
+  border: 1px solid var(--accent-teal);
+  height: 100%;
 }
 
+/* Right Panel - Collaboration Tools (50%) */
 .right-panel {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  height: 100%; /* Fill available vertical space */
+  height: 100%;
   overflow: hidden;
 }
 
-.milestones-panel,
-.funding-panel {
-  background: white;
+.collaboration-panel {
+  background: var(--white);
   border-radius: 16px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
               0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  padding: 24px;
-  overflow: hidden;
+  border: 1px solid var(--accent-teal);
+  height: 100%;
   display: flex;
   flex-direction: column;
-  border: 1px solid #e2e8f0;
-  flex: 1;
+  overflow: hidden;
 }
 
 .panel-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #e2e8f0;
+  padding: 1rem;
+  background-color: var(--primary-blue);
+  color: var(--white);
+  flex-shrink: 0;
 }
 
-.panel-title {
-  font-size: 18px;
+.panel-header h2 {
+  font-size: 1.1rem;
   font-weight: 600;
-  color: #1e293b;
   margin: 0;
 }
 
-.panel-content {
+.tabs {
+  display: flex;
+  border-bottom: 1px solid var(--accent-teal);
+  background-color: var(--white);
+  flex-shrink: 0;
+}
+
+.tabs button {
+  flex: 1;
+  padding: 0.75rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--light-gray);
+  transition: all 0.2s ease;
+  border-bottom: 2px solid transparent;
+}
+
+.tabs button[aria-selected='true'] {
+  color: var(--primary-blue);
+  border-bottom-color: var(--light-blue);
+}
+
+.tabs button:hover:not([aria-selected='true']) {
+  color: var(--dark-blue);
+  background-color: rgba(100, 204, 197, 0.1);
+}
+
+.tab-content {
   flex: 1;
   overflow-y: auto;
-  padding-right: 8px;
+  padding: 1rem;
+  background-color: var(--background);
 }
 
-/* Scrollbar styling */
-.panel-content::-webkit-scrollbar {
-  width: 6px;
-}
-.panel-content::-webkit-scrollbar-thumb {
-  background-color: #cbd5e1;
-  border-radius: 3px;
-}
-
-/* Responsive for smaller screens */
-@media (max-width: 1200px) {
-  .dashboard-container {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto;
-    height: auto;
-    min-height: 100vh;
-    overflow: visible;
-  }
-
-  .right-panel {
-    flex-direction: row;
-    height: auto;
-  }
-
-  .milestones-panel,
-  .funding-panel {
-    height: auto;
-  }
-}
-
+/* Responsive layout */
 @media (max-width: 768px) {
   .dashboard-container {
-    padding: 12px;
     grid-template-columns: 1fr;
-  }
-
-  .right-panel {
-    flex-direction: column;
-  }
-
-  .panel-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
+    grid-template-rows: 1fr 1fr;
   }
 }
