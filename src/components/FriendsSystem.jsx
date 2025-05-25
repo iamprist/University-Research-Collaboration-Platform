@@ -1,4 +1,3 @@
-// FriendsSystem.jsx - Manages friend requests, searching users, and displaying friends list
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { db, auth } from '../config/firebaseConfig';
@@ -18,20 +17,16 @@ import { toast } from 'react-toastify';
 import './FriendsSystem.css';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 
-// Main component for the friends system
 const FriendsSystem = () => {
-  // State variables for friends, requests, search, and UI
   const [friends, setFriends] = useState([]);
   const [pendingReceived, setPendingReceived] = useState([]);
   const [pendingSent, setPendingSent] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [sendingRequest, setSendingRequest] = useState(null);
   const navigate = useNavigate();
   const currentUser = auth.currentUser;
 
-  // Listen for changes in the friends collection for the current user
   useEffect(() => {
     if (!currentUser) return;
 
@@ -45,7 +40,6 @@ const FriendsSystem = () => {
       const sent = [];
       const accepted = [];
 
-      // Categorize friend documents by status
       snapshot.forEach((docSnap) => {
         const data = docSnap.data();
         const otherUserId = data.users.find((u) => u !== currentUser.uid);
@@ -69,7 +63,6 @@ const FriendsSystem = () => {
     return () => unsubscribe();
   }, [currentUser]);
 
-  // Search for users by name, excluding current friends and pending requests
   const handleSearch = async () => {
     if (!searchTerm.trim()) {
       setSearchResults([]);
@@ -96,10 +89,9 @@ const FriendsSystem = () => {
     }
   };
 
-  // Send a friend request to another user
   const sendFriendRequest = async (userId) => {
     try {
-      setSendingRequest(userId);
+      setLoading(true); // Using existing loading state instead of sendingRequest
 
       await addDoc(collection(db, 'friends'), {
         users: [currentUser.uid, userId],
@@ -112,11 +104,10 @@ const FriendsSystem = () => {
     } catch (error) {
       toast.error('Failed to send request');
     } finally {
-      setSendingRequest(null);
+      setLoading(false);
     }
   };
 
-  // Accept or decline a received friend request
   const respondToRequest = async (docId, userId, accept) => {
     try {
       if (accept) {
@@ -134,73 +125,63 @@ const FriendsSystem = () => {
       toast.error('Failed to respond to request');
     }
   };
-
-  // Render the friends system UI
   return (
-    <section className="friends-system">
-        {/* Back button to navigate to previous page */}
+    <main className="friends-system">
+      <header className="friends-header">
         <button 
-              className="back-button"
-              onClick={() => navigate(-1)}
-              style={{ 
-                color: 'var(--white)',
-                marginRight: '1.5rem'
-              }}
-            >
-            <ArrowBackIosIcon />
+          className="back-button"
+          onClick={() => navigate(-1)}
+          aria-label="Go back"
+        >
+          <ArrowBackIosIcon />
         </button>
-      <h2>Friends</h2>
+        <h1>Friends</h1>
+      </header>
 
-      {/* Search bar for finding researchers */}
       <section className="search-section">
-        <input
-          type="text"
-          placeholder="Search for researchers..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-        />
-        <button onClick={handleSearch} disabled={loading}>
-          {loading ? 'Searching...' : 'Search'}
-        </button>
+        <form onSubmit={(e) => {
+          e.preventDefault();
+          handleSearch();
+        }}>
+          <input
+            type="search"
+            placeholder="Search for researchers..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            aria-label="Search researchers"
+          />
+          <button 
+            type="submit" 
+            disabled={loading}
+            aria-busy={loading}
+          >
+            {loading ? 'Searching...' : 'Search'}
+          </button>
+        </form>
       </section>
-      {/* Display search results if any */}
-      {searchResults.length > 0 && (
-        <section className="search-results">
-          <h3>Search Results</h3>
-          {searchResults.map(user => {
-            const isPending = pendingSent.includes(user.id);
-            const isSending = sendingRequest === user.id;
 
-            return (
-              <section key={user.id} className="user-card">
-                <section className="user-info">
-                  <span className="user-name">{user.name}</span>
-                  {user.researchArea && (
-                    <span className="research-area">{user.researchArea}</span>
-                  )}
-                </section>
-                {isPending ? (
-                  <span className="request-sent-label">Request Sent</span>
-                ) : (
-                  <button
-                    className="add-friend-btn"
-                    onClick={() => sendFriendRequest(user.id)}
-                    disabled={isSending}
-                  >
-                    {isSending ? 'Sending...' : 'Add Friend'}
-                  </button>
-                )}
-              </section>
-            );
-          })}
+      {searchResults.length > 0 && (
+        <section className="search-results" aria-live="polite">
+          <h2>Search Results</h2>
+          <ul className="results-list">
+            {searchResults.map(user => (
+              <FriendCard 
+                key={user.id} 
+                userId={user.id}
+                isSearchResult={true}
+                onRespond={(docId, friendId, accept) => {
+                  if (accept) sendFriendRequest(friendId);
+                }}
+              />
+            ))}
+          </ul>
         </section>
       )}
-      {/* Section for received friend requests */}
-      <section className="requests-section">
-        <h3>Friend Requests</h3>
+
+      <section className="requests-section" aria-live="polite">
+        <h2>Friend Requests</h2>
         {pendingReceived.length > 0 ? (
-          <section className="requests-list">
+          <ul className="requests-list">
             {pendingReceived.map(({ docId, userId }) => (
               <FriendCard
                 key={userId}
@@ -209,63 +190,131 @@ const FriendsSystem = () => {
                 onRespond={respondToRequest}
               />
             ))}
-          </section>
+          </ul>
         ) : (
           <p className="no-requests">No pending friend requests</p>
         )}
       </section>
 
-      {/* Section for displaying current friends */}
-      <section className="friends-list">
-        <h3>Your Friends ({friends.length})</h3>
+      <section className="friends-list" aria-live="polite">
+        <h2>Your Friends <small>({friends.length})</small></h2>
         {friends.length > 0 ? (
-          friends.map(friendId => (
-            <FriendCard key={friendId} userId={friendId} />
-          ))
+          <ul className="friends-ul">
+            {friends.map(friendId => (
+              <FriendCard key={friendId} userId={friendId} />
+            ))}
+          </ul>
         ) : (
           <p className="no-friends">You haven't added any friends yet</p>
         )}
       </section>
-    </section>
+    </main>
   );
 };
 
-// Card component for displaying user info and request actions
-const FriendCard = ({ userId, requestDocId, onRespond }) => {
+const FriendCard = ({ userId, requestDocId, onRespond, isSearchResult }) => {
+  const navigate = useNavigate();
+  const currentUser = auth.currentUser;
   const [userData, setUserData] = useState(null);
+  const [isFriend, setIsFriend] = useState(false);
+  const [hasPendingRequest, setHasPendingRequest] = useState(false);
 
-  // Fetch user data for the card
   useEffect(() => {
-    const fetchUser = async () => {
+    const fetchData = async () => {
       const userDoc = await getDoc(doc(db, 'users', userId));
       if (userDoc.exists()) setUserData(userDoc.data());
-    };
-    fetchUser();
-  }, [userId]);
 
-  if (!userData) return <section className="user-card loading">Loading...</section>;
+      if (currentUser) {
+        const friendsQuery = query(
+          collection(db, 'friends'),
+          where('users', 'array-contains', currentUser.uid),
+          where('status', '==', 'accepted')
+        );
+        const friendsSnapshot = await getDocs(friendsQuery);
+        const isFriend = friendsSnapshot.docs.some(doc => 
+          doc.data().users.includes(userId)
+        );
+        setIsFriend(isFriend);
+
+        const pendingQuery = query(
+          collection(db, 'friends'),
+          where('users', 'array-contains', currentUser.uid),
+          where('status', '==', 'pending'),
+          where('sender', '==', currentUser.uid)
+        );
+        const pendingSnapshot = await getDocs(pendingQuery);
+        const hasPending = pendingSnapshot.docs.some(doc => 
+          doc.data().users.includes(userId)
+        );
+        setHasPendingRequest(hasPending);
+      }
+    };
+
+    fetchData();
+  }, [userId, currentUser]);
+
+  if (!userData) return (
+    <li className="user-card loading" aria-busy="true">
+      Loading...
+    </li>
+  );
+
+  const handleViewProfile = () => {
+    navigate(`/friend-profile/${userId}`);
+  };
 
   return (
-    <section className="user-card">
-      <section className="user-info">
-        <span className="user-name">{userData.name}</span>
+    <li className="user-card">
+      <div 
+        className="user-info"
+        onClick={handleViewProfile}
+        role="button"
+        tabIndex="0"
+        onKeyPress={(e) => e.key === 'Enter' && handleViewProfile()}
+        aria-label={`View ${userData.name}'s profile`}
+      >
+        <h3 className="user-name">{userData.name}</h3>
         {userData.researchArea && (
-          <span className="research-area">{userData.researchArea}</span>
+          <p className="research-area">{userData.researchArea}</p>
         )}
-      </section>
+      </div>
+      
       {onRespond ? (
-        <section className="request-actions">
-          <button className="accept-btn" onClick={() => onRespond(requestDocId, userId, true)}>
+        <div className="request-actions">
+          <button 
+            className="accept-btn"
+            onClick={() => onRespond(requestDocId, userId, true)}
+            aria-label={`Accept friend request from ${userData.name}`}
+          >
             Accept
           </button>
-          <button className="decline-btn" onClick={() => onRespond(requestDocId, userId, false)}>
+          <button 
+            className="decline-btn"
+            onClick={() => onRespond(requestDocId, userId, false)}
+            aria-label={`Decline friend request from ${userData.name}`}
+          >
             Decline
           </button>
-        </section>
-      ) : (
-        <span className="friend-status">Friends</span>
-      )}
-    </section>
+        </div>
+      ) : isFriend ? (
+        <div className="friend-status" aria-label="Friends">
+          Friends
+        </div>
+      ) : hasPendingRequest ? (
+        <div className="request-sent-label" aria-label="Request sent">
+          Request Sent
+        </div>
+      ) : isSearchResult ? (
+        <button
+          className="add-friend-btn"
+          onClick={() => onRespond(null, userId, true)}
+          disabled={!currentUser}
+          aria-label={`Add ${userData.name} as friend`}
+        >
+          Add Friend
+        </button>
+      ) : null}
+    </li>
   );
 };
 

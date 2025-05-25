@@ -31,6 +31,8 @@ import CollaboratePage from "./pages/Researcher/CollaboratePage";
 import ChatRoom from "./pages/Researcher/ChatRoom";
 import FriendsSystem from './components/FriendsSystem';
 import CollaborationDashboard from "./pages/Researcher/CollaborationDashboard";
+import FriendProfile from "./components/FriendProfile";
+
 
 import { auth, db } from "./config/firebaseConfig";
 import { useEffect } from "react";
@@ -90,7 +92,7 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/signin" element={<SignInPage />} />
         <Route path="/learn-more" element={<LearnMore />} />
-
+<Route path="/friend-profile/:userId" element={<FriendProfile />} />
         {/* Admin routes */}
         <Route
           path="/admin"
