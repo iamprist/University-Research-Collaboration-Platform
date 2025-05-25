@@ -16,6 +16,8 @@ import ReviewerPage from "./pages/Reviewer/ReviewerPage";
 import ReviewerForm from "./pages/Reviewer/ReviewerForm";      // reviewer signup/apply form
 import ReviewForm from "./components/ReviewForm";          // actual review submission form
 import TermsAndConditions from "./pages/TermsAndConditions";
+import ReviewerProfile from "./pages/Reviewer/ReviewerProfile"; // Reviewer profile page
+import EditReviewerProfile from "./pages/Reviewer/EditReviewerProfile"; // Reviewer profile edit page
 
 // Researcher
 import ListingDetailPage from "./pages/Researcher/ListingDetailPage";
@@ -111,15 +113,25 @@ function App() {
         <Route path="/about" element={<About />} />
         <Route path="/terms" element={<TermsAndConditions />} />
 
+
         {/* Reviewer routes */}
         <Route
-          path="/reviewer"
-          element={
-            <ProtectedRoute>
-              <ReviewerPage />
-            </ProtectedRoute>
-          }
-        />
+  path="/reviewer"
+  element={
+    <ProtectedRoute>
+      <ReviewerPage />
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/reviewer/edit-profile"
+  element={
+    <ProtectedRoute>
+      <EditReviewerProfile />
+    </ProtectedRoute>
+  }
+/>
+        <Route path="/reviewer-profile" element={<ReviewerProfile />} />
         <Route path="/reviewer-form" element={<ReviewerForm />} />
         <Route path="/apply" element={<ReviewerForm />} />
         <Route

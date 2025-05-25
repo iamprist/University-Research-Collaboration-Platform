@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react'
+import { IconButton, Menu, MenuItem } from '@mui/material'
+import MenuIcon from '@mui/icons-material/Menu'
 import {
   doc,
   getDoc,
@@ -21,6 +23,7 @@ import ChatRoom from '../Researcher/ChatRoom'
 
 export default function ReviewerPage() {
   const [status, setStatus] = useState('')
+   const [menuAnchorEl, setMenuAnchorEl] = useState(null)
   const [reason, setReason] = useState('')
   const [loading, setLoading] = useState(true)
   const { currentUser } = useAuth()
@@ -241,29 +244,74 @@ useEffect(() => {
         style={{ borderBottom: '1px solid #000' }}
       >
         <h1 className="navbar-brand fw-bold fs-4">Innerk Hub</h1>
-        <button
-          className="btn btn-outline-light p-0"
-          onClick={toggleSidebar}
-          aria-label="Toggle profile sidebar"
-          style={{
-            borderRadius: '50%',
-            width: '40px',
-            height: '40px',
-            overflow: 'hidden'
+        <IconButton
+          onClick={e => setMenuAnchorEl(e.currentTarget)}
+          sx={{
+            bgcolor: 'var(--light-blue)',
+            color: 'var(--dark-blue)',
+            borderRadius: '1.5rem',
+            ml: 2,
+            '&:hover': { bgcolor: '#5AA9A3', color: 'var(--white)' }
           }}
         >
-          <img
-            src={currentUser?.photoURL || 'https://via.placeholder.com/40'}
-            alt="Profile"
-            className="rounded-circle"
-            style={{
-              width: '40px',
-              height: '40px',
-              objectFit: 'cover',
-              display: 'block'
+          <MenuIcon />
+        </IconButton>
+         <Menu
+          anchorEl={menuAnchorEl}
+          open={Boolean(menuAnchorEl)}
+          onClose={() => setMenuAnchorEl(null)}
+          PaperProps={{
+            sx: {
+              bgcolor: 'var(--dark-blue)',
+              color: 'var(--accent-teal)',
+              borderRadius: '0.8rem',
+              minWidth: 200,
+              mt: 1,
+              boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+            },
+          }}
+          anchorOrigin={{
+            vertical: 'bottom',
+            horizontal: 'right',
+          }}
+           transformOrigin={{
+            vertical: 'top',
+            horizontal: 'right',
+          }}
+        >
+          <MenuItem
+            onClick={() => {
+              setMenuAnchorEl(null)
+              navigate('/reviewer-profile')
             }}
-          />
-        </button>
+            sx={{
+              color: 'var(--accent-teal)',
+              borderRadius: '0.5rem',
+              px: 2,
+              py: 1,
+              fontSize: '1.1rem',
+              '&:hover': { bgcolor: 'var(--light-blue)', color: 'var(--dark-blue)' },
+            }}
+          >
+            View Profile
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              setMenuAnchorEl(null)
+              handleLogout()
+            }}
+            sx={{
+              color: 'var(--accent-teal)',
+              borderRadius: '0.5rem',
+              px: 2,
+              py: 1,
+              fontSize: '1.1rem',
+              '&:hover': { bgcolor: 'var(--light-blue)', color: 'var(--dark-blue)' },
+            }}
+          >
+            Logout
+          </MenuItem>
+        </Menu>
       </header>
 
       <aside
