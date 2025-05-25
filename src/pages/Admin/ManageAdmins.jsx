@@ -11,24 +11,28 @@ import {
   where,
 } from "firebase/firestore";
 
+// Main component for managing admin users
 export default function ManageAdmins() {
+  // State for current and revoked admins
   const [admins, setAdmins] = useState([]);
   const [revokedAdmins, setRevokedAdmins] = useState([]);
+  // State for new admin form
   const [newAdminEmail, setNewAdminEmail] = useState("");
+  // State for error/success messages and loading
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // For revoke modal
+  // State for revoke modal
   const [showRevokeModal, setShowRevokeModal] = useState(false);
   const [revokeReason, setRevokeReason] = useState("");
   const [revokingAdmin, setRevokingAdmin] = useState(null);
 
-  // Search state
+  // State for search inputs
   const [searchTerm, setSearchTerm] = useState("");
   const [revokedSearchTerm, setRevokedSearchTerm] = useState("");
 
-  // Fetch admins from Firestore
+  // Fetch all admins from Firestore
   const fetchAdmins = async () => {
     try {
       const querySnapshot = await getDocs(collection(db, "users"));
@@ -41,7 +45,7 @@ export default function ManageAdmins() {
     }
   };
 
-  // Fetch revoked admins from Firestore
+  // Fetch all revoked admins from Firestore
   const fetchRevokedAdmins = async () => {
     try {
       const revokedQuery = query(
@@ -59,7 +63,7 @@ export default function ManageAdmins() {
     }
   };
 
-  // Add a new admin
+  // Add a new admin (by email)
   const handleAddAdmin = async (e) => {
     e.preventDefault();
     setError("");
@@ -79,7 +83,7 @@ export default function ManageAdmins() {
 
     setLoading(true);
     try {
-      // Check if email already exists in Firestore with the role `admin`
+      // Check if email already exists as admin
       const querySnapshot = await getDocs(collection(db, "users"));
       const existingAdmin = querySnapshot.docs.some(
         (doc) =>
@@ -110,14 +114,14 @@ export default function ManageAdmins() {
     }
   };
 
-  // Open revoke modal
+  // Open the revoke modal for a specific admin
   const openRevokeModal = (admin) => {
     setRevokingAdmin(admin);
     setRevokeReason("");
     setShowRevokeModal(true);
   };
 
-  // Confirm revoke admin
+  // Confirm revoke admin (update role and add reason)
   const confirmRevokeAdmin = async () => {
     if (!revokeReason.trim()) {
       setError("Please provide a reason for revoking.");
@@ -159,6 +163,7 @@ export default function ManageAdmins() {
     }
   };
 
+  // Fetch admins and revoked admins on mount
   useEffect(() => {
     fetchAdmins();
     fetchRevokedAdmins();
@@ -363,10 +368,10 @@ export default function ManageAdmins() {
 
   return (
     <section style={styles.container}>
+      {/* Main admin management section */}
       <article style={styles.article}>
         <h2 style={styles.heading}>Manage Admins</h2>
         
-
         {/* Add Admin Form */}
         <form onSubmit={handleAddAdmin} style={styles.form}>
           <input
@@ -381,6 +386,7 @@ export default function ManageAdmins() {
           </button>
         </form>
         
+        {/* Show error or success messages */}
         {error && <p style={styles.error}>{error}</p>}
         {success && <p style={styles.success}>{success}</p>}
 
@@ -401,20 +407,24 @@ export default function ManageAdmins() {
         </p>
         {/* List of Admins */}
         {filteredAdmins.length > 0 ? (
-          filteredAdmins.map((admin) => (
-            <div key={admin.id} style={styles.adminCard}>
-              <p style={styles.adminName}>{admin.name || admin.email}</p>
-              <p style={{ color: "#A0AEC0", fontSize: "0.95rem", margin: 0 }}>
-                {admin.email}
-              </p>
-              <button
-                onClick={() => openRevokeModal(admin)}
-                style={styles.revokeButton}
-              >
-                Revoke Admin
-              </button>
-            </div>
-          ))
+          <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+            {filteredAdmins.map((admin) => (
+              <li key={admin.id} style={{ marginBottom: "1rem" }}>
+                <article style={styles.adminCard}>
+                  <p style={styles.adminName}>{admin.name || admin.email}</p>
+                  <p style={{ color: "#A0AEC0", fontSize: "0.95rem", margin: 0 }}>
+                    {admin.email}
+                  </p>
+                  <button
+                    onClick={() => openRevokeModal(admin)}
+                    style={styles.revokeButton}
+                  >
+                    Revoke Admin
+                  </button>
+                </article>
+              </li>
+            ))}
+          </ul>
         ) : (
           <p style={{ color: "#cbd5e0", textAlign: "center" }}>No admins found.</p>
         )}
@@ -422,8 +432,14 @@ export default function ManageAdmins() {
 
       {/* Revoke Reason Modal */}
       {showRevokeModal && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.modal}>
+        <dialog open style={styles.modalOverlay}>
+          <form
+            style={styles.modal}
+            onSubmit={(e) => {
+              e.preventDefault();
+              confirmRevokeAdmin();
+            }}
+          >
             <h3 style={{ marginBottom: "1rem" }}>Revoke Admin</h3>
             <label htmlFor="revoke-reason" style={styles.modalLabel}>
               Please provide a reason for revoking:
@@ -437,6 +453,7 @@ export default function ManageAdmins() {
             />
             <div style={styles.modalButtonRow}>
               <button
+                type="button"
                 onClick={() => {
                   setShowRevokeModal(false);
                   setRevokeReason("");
@@ -447,21 +464,21 @@ export default function ManageAdmins() {
                 Cancel
               </button>
               <button
-                onClick={confirmRevokeAdmin}
+                type="submit"
                 style={styles.modalConfirm}
                 disabled={loading}
               >
                 Confirm Revoke
               </button>
             </div>
-          </div>
-        </div>
+          </form>
+        </dialog>
       )}
 
       {/* Add space between current and revoked admins */}
       <div style={{ height: "2.5rem" }} />
 
-      {/* Revoked Admins */}
+      {/* Revoked Admins Section */}
       <article style={styles.article}>
         <h2 style={styles.heading}>Revoked Admins</h2>
         <p style={styles.description}>
@@ -475,20 +492,25 @@ export default function ManageAdmins() {
           value={revokedSearchTerm}
           onChange={(e) => setRevokedSearchTerm(e.target.value)}
         />
+        {/* List of Revoked Admins */}
         {filteredRevokedAdmins.length > 0 ? (
-          filteredRevokedAdmins.map((admin) => (
-            <div key={admin.id} style={styles.revokedCard}>
-              <p style={styles.adminName}>{admin.name || admin.email}</p>
-              <p style={{ color: "#A0AEC0", fontSize: "0.95rem", margin: 0 }}>
-                {admin.email}
-              </p>
-              {admin.revokeReason && (
-                <p style={styles.revokedReason}>
-                  <strong>Revoke Reason:</strong> {admin.revokeReason}
-                </p>
-              )}
-            </div>
-          ))
+          <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+            {filteredRevokedAdmins.map((admin) => (
+              <li key={admin.id} style={{ marginBottom: "1rem" }}>
+                <article style={styles.revokedCard}>
+                  <p style={styles.adminName}>{admin.name || admin.email}</p>
+                  <p style={{ color: "#A0AEC0", fontSize: "0.95rem", margin: 0 }}>
+                    {admin.email}
+                  </p>
+                  {admin.revokeReason && (
+                    <p style={styles.revokedReason}>
+                      <strong>Revoke Reason:</strong> {admin.revokeReason}
+                    </p>
+                  )}
+                </article>
+              </li>
+            ))}
+          </ul>
         ) : (
           <p style={{ color: "#cbd5e0", textAlign: "center" }}>No revoked admins found.</p>
         )}

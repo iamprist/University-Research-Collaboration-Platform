@@ -3,20 +3,24 @@ import { collection, getDocs } from "firebase/firestore";
 import { db } from "../../config/firebaseConfig";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 
+// Dashboard component for admin analytics and stats
 export default function Dashboard() {
+  // State variables for dashboard metrics
   const [totalUsers, setTotalUsers] = useState(0);
   const [totalLogins, setTotalLogins] = useState(0);
   const [totalLogouts, setTotalLogouts] = useState(0);
   const [totalListings, setTotalListings] = useState(0);
   const [totalReviewerApps, setTotalReviewerApps] = useState(0);
-  const [engagementData, setEngagementData] = useState([]);
+  const [engagementData, setEngagementData] = useState([]); // Data for engagement chart
   const [loading, setLoading] = useState(true);
 
+  // Fetch all dashboard data on mount
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
 
+        // Fetch logs for login/logout and engagement
         const logsCollection = collection(db, "logs");
         const logsSnapshot = await getDocs(logsCollection);
         const logs = logsSnapshot.docs.map((doc) => ({
@@ -24,6 +28,7 @@ export default function Dashboard() {
           ...doc.data(),
         }));
 
+        // Fetch reviewer applications
         const reviewersCollection = collection(db, "reviewers");
         const reviewersSnapshot = await getDocs(reviewersCollection);
         const reviewers = reviewersSnapshot.docs.map((doc) => ({
@@ -31,6 +36,7 @@ export default function Dashboard() {
           ...doc.data(),
         }));
 
+        // Fetch all users
         const usersCollection = collection(db, "users");
         const usersSnapshot = await getDocs(usersCollection);
         const users = usersSnapshot.docs.map((doc) => ({
@@ -38,27 +44,35 @@ export default function Dashboard() {
           ...doc.data(),
         }));
 
+        // Fetch research listings
         const listingsCollection = collection(db, "research-listings");
         const listingsSnapshot = await getDocs(listingsCollection);
-        
+
+        // Calculate unique users by email
         const uniqueUsers = new Set(users.map((user) => user.email)).size;
+        // Count login and logout actions
         const logins = logs.filter((log) => log.action === "Login").length;
         const logouts = logs.filter((log) => log.action === "Logout").length;
+        // Count total listings
         const listings = listingsSnapshot.size;
+        // Count reviewer applications in progress
         const reviewerApps = reviewers.filter((reviewer) => reviewer.status === "in_progress").length;
 
+        // Update state with calculated metrics
         setTotalUsers(uniqueUsers);
         setTotalLogins(logins);
         setTotalLogouts(logouts);
         setTotalListings(listings);
         setTotalReviewerApps(reviewerApps);
 
+        // Prepare last 7 days for engagement chart
         const days = Array.from({ length: 7 }, (_, i) => {
           const d = new Date();
           d.setDate(d.getDate() - (6 - i));
           return d.toISOString().slice(0, 10);
         });
 
+        // Aggregate logs per day for engagement chart
         const engagement = days.map((date) => ({
           date,
           count: logs.filter(
@@ -80,6 +94,7 @@ export default function Dashboard() {
     fetchData();
   }, []);
 
+  // Inline styles for dashboard layout and cards
   const styles = {
     container: {
       backgroundColor: "#1A2E40",
@@ -122,12 +137,14 @@ export default function Dashboard() {
     },
   };
 
+  // Show loading state while fetching data
   if (loading) {
     return <section style={styles.container}>Loading...</section>;
   }
 
   return (
     <section style={styles.container}>
+      {/* Dashboard metric cards */}
       <section style={styles.dashboard}>
         <article style={styles.card}>
           <header>Total Users</header>
@@ -151,6 +168,7 @@ export default function Dashboard() {
         </article>
       </section>
 
+      {/* Engagement line chart for logs per day */}
       <section style={styles.chartCard}>
         <header style={{ marginBottom: "1rem" }}>Engagement (Logs per Day)</header>
         <ResponsiveContainer width="100%" height={200}>

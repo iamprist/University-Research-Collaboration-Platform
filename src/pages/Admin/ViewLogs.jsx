@@ -4,13 +4,20 @@ import { db } from "../../config/firebaseConfig";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
+// Component for viewing and exporting system logs
 export default function ViewLogs() {
+  // State for all logs fetched from Firestore
   const [logs, setLogs] = useState([]);
+  // State for search input
   const [searchTerm, setSearchTerm] = useState("");
+  // State for current page in pagination
   const [currentPage, setCurrentPage] = useState(1);
+  // Number of logs to show per page
   const logsPerPage = 10;
+  // State for grouping pages in pagination (for large log sets)
   const [pageGroup, setPageGroup] = useState(0);
 
+  // Fetch logs from Firestore on component mount
   useEffect(() => {
     const fetchLogs = async () => {
       const logsQuery = query(collection(db, "logs"), orderBy("timestamp", "desc"));
@@ -22,17 +29,20 @@ export default function ViewLogs() {
     fetchLogs();
   }, []);
 
+  // Filter logs based on search input (case-insensitive, checks all fields)
   const filteredLogs = logs.filter((log) =>
     Object.values(log).some((value) =>
       value?.toString().toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
 
+  // Pagination calculations
   const indexOfLastLog = currentPage * logsPerPage;
   const indexOfFirstLog = indexOfLastLog - logsPerPage;
   const currentLogs = filteredLogs.slice(indexOfFirstLog, indexOfLastLog);
   const totalPages = Math.max(1, Math.ceil(filteredLogs.length / logsPerPage));
 
+  // Inline styles for layout and appearance
   const styles = {
     container: {
       backgroundColor: "#1A2E40",
@@ -128,9 +138,9 @@ export default function ViewLogs() {
       marginBottom: "1rem",
       marginRight: "1rem",
     }
-    
   };
 
+  // Export all logs as a PDF file using jsPDF and autoTable
   const exportLogsAsPDF = () => {
     const doc = new jsPDF();
     const tableColumn = ["Timestamp", "User Role", "User Name", "Action", "Target", "Details", "IP Address"];
@@ -158,16 +168,19 @@ export default function ViewLogs() {
     doc.save("logs_report.pdf");
   };
 
+  // Pagination group logic (for showing 10 pages at a time)
   const pagesPerGroup = 10;
   const startPage = pageGroup * pagesPerGroup + 1;
   const endPage = Math.min(startPage + pagesPerGroup - 1, totalPages);
 
+  // Go to next group of pages
   const handleNextGroup = () => {
     if (endPage < totalPages) {
       setPageGroup(pageGroup + 1);
     }
   };
 
+  // Go to previous group of pages
   const handlePreviousGroup = () => {
     if (pageGroup > 0) {
       setPageGroup(pageGroup - 1);
@@ -176,9 +189,11 @@ export default function ViewLogs() {
 
   return (
     <section style={styles.container}>
+      {/* Export logs as PDF button */}
       <button style={styles.exportButton} onClick={exportLogsAsPDF}>
         Export Logs
       </button>
+      {/* Search input for filtering logs */}
       <input
         type="text"
         placeholder="Search logs..."
@@ -186,8 +201,8 @@ export default function ViewLogs() {
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
       />
-      
 
+      {/* Logs table */}
       <section style={styles.tableContainer}>
         <table style={styles.table}>
           <thead>
@@ -229,6 +244,7 @@ export default function ViewLogs() {
         </table>
       </section>
 
+      {/* Pagination controls */}
       <section style={styles.pagination}>
         {pageGroup > 0 && (
           <button style={styles.nextButton} onClick={handlePreviousGroup}>
