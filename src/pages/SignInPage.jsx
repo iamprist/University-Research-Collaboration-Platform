@@ -9,6 +9,7 @@ import './TermsAndConditions.css';
 import Footer from "../components/Footer";
 import "../pages/Researcher/ResearcherDashboard.css";
 import axios from "axios";
+import { Typography, Box, Button as MuiButton, Paper } from "@mui/material";
 
 // Add this above function SignInPage
 const logEvent = async ({ userId, role, userName, action, details, ip, target }) => {
@@ -259,80 +260,134 @@ function SignInPage() {
     <main role="main" style={styles.container}>
       <header className="researcher-header">
         <nav className="header-actions" aria-label="Navigation actions">
-          <button
+          <MuiButton
             className="back-button"
             onClick={() => navigate(-1)}
-            style={{
+            sx={{
               color: 'var(--white)',
-              marginRight: '1.5rem'
+              minWidth: 0,
+              p: 1.2,
+              mr: 3,
+              borderRadius: '50%',
+              background: 'rgba(50,50,50,0.15)'
             }}
           >
             <ArrowBackIosIcon />
-          </button>
+          </MuiButton>
         </nav>
-        <section className="header-title" aria-label="Header title section"
-          style={{
+        <Box
+          className="header-title"
+          aria-label="Header title section"
+          sx={{
             textAlign: 'left',
             width: '100%',
-            padding: '0 4rem'
+            px: 8,
+            py: 2
           }}
         >
-          <h1>Welcome to Innerk Hub</h1>
-          <p>Empowering Researchers to Connect, Collaborate, and Innovate</p>
-        </section>
+          <Typography
+            variant="h3"
+            sx={{
+              fontWeight: 600,
+              fontSize: '2.1rem',
+              color: 'var(--white)',
+              mb: 1,
+              letterSpacing: 0.5,
+              textShadow: '0 2px 8px rgba(100,204,197,0.12)'
+            }}
+          >
+            Welcome to Innerk Hub
+          </Typography>
+          <Typography
+            variant="subtitle1"
+            sx={{
+              color: '#B1EDE8',
+              fontSize: '1.15rem',
+              fontWeight: 400,
+              mb: 0
+            }}
+          >
+            Empowering Researchers to Connect, Collaborate, and Innovate
+          </Typography>
+        </Box>
         {/* Right side - Home button */}
         <section className="header-right-actions">
-          <button
+          <MuiButton
             className="home-button"
             onClick={() => navigate("/")}
-            style={{
+            sx={{
               color: 'var(--white)',
-              padding: '0.5rem 1rem',
+              px: 2,
+              py: 1,
               borderRadius: '4px',
               border: '1px solid var(--white)',
               background: 'transparent',
-              cursor: 'pointer'
+              fontWeight: 500,
+              fontSize: '1rem',
+              textTransform: 'none',
+              '&:hover': {
+                background: 'rgba(177,237,232,0.08)'
+              }
             }}
           >
             Home
-          </button>
+          </MuiButton>
         </section>
       </header>
 
       {/* Sign-In Section */}
-      <section
+      <Paper
         aria-label="Sign in options"
-        style={styles.card}
+        elevation={4}
+        sx={{
+          ...styles.card,
+          background: "rgba(255,255,255,0.92)",
+          mt: 6
+        }}
         className="card"
       >
         {["researcher", "reviewer", "admin"].map((role) => (
-          <button
+          <MuiButton
             key={role}
             className="neon-button"
-            style={styles.button}
+            sx={{
+              ...styles.button,
+              mb: 2,
+              backgroundColor: "#132238",
+              color: "#FFFFFF",
+              fontSize: "0.95rem",
+              padding: "0.6rem 1.2rem",
+              borderRadius: "2rem",
+              minHeight: "unset",
+              textTransform: "none", // Not all caps
+              '&:hover': {
+                backgroundColor: "#364E68"
+              }
+            }}
             onMouseOver={(e) => {
-              e.target.style.animation = "neon-glow 1.5s ease-in-out infinite";
-              e.target.querySelector("img").style.filter = "brightness(1.2)";
+              e.currentTarget.style.animation = "neon-glow 1.5s ease-in-out infinite";
+              e.currentTarget.querySelector("img").style.filter = "brightness(1.2)";
             }}
             onMouseOut={(e) => {
-              e.target.style.animation = "none";
-              e.target.querySelector("img").style.filter = "brightness(1)";
+              e.currentTarget.style.animation = "none";
+              e.currentTarget.querySelector("img").style.filter = "brightness(1)";
             }}
             onClick={() => handleSignIn(role)}
+            fullWidth
           >
             <img
               src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
               alt=""
               aria-hidden="true"
               style={{
-                height: "1.5rem",
+                height: "1.2rem",
                 transition: "filter 0.3s ease"
               }}
             />
             Continue as {role.charAt(0).toUpperCase() + role.slice(1)}
-          </button>
+          </MuiButton>
         ))}
-      </section>
+      </Paper>
 
       <Footer />
     </main>
