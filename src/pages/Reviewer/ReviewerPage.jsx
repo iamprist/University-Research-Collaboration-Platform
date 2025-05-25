@@ -105,15 +105,21 @@ export default function ReviewerPage() {
   className="navbar navbar-light bg-light fixed-top px-4 py-3"
   style={{ borderBottom: '1px solid #000' }}
 >
-  <span style={{ display: 'flex', alignItems: 'center' }}>
-    <img
-      src="/favicon.ico"
-      alt="Favicon"
-      style={{ width: 28, height: 28, marginRight: 8 }}
-    />
-    <h1 className="navbar-brand fw-bold fs-4 mb-0">Reviewer</h1>
-    
-  </span>
+<span style={{ display: 'flex', alignItems: 'center' }}>
+  <img
+    src="/favicon.ico"
+    alt="Favicon"
+    style={{
+      width: 44,            // Increased from 28 to 44
+      height: 44,           // Increased from 28 to 44
+      marginRight: 12,      // Slightly more space
+      borderRadius: '50%',
+      border: '2px solid #B1EDE8', // Add border for branding
+      objectFit: 'cover'
+    }}
+  />
+  <h1 className="navbar-brand fw-bold fs-4 mb-0">Reviewer</h1>
+</span>
   <IconButton
     onClick={e => setMenuAnchorEl(e.currentTarget)}
     sx={{
