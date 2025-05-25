@@ -64,4 +64,10 @@ describe('TermsAndConditions Component', () => {
   it('renders Privacy Policy link correctly', () => {
     expect(screen.getByText(/Privacy Policy/i)).toHaveAttribute("href", "/privacy-policy");
   });
+
+  it('navigates back when the back button is clicked', () => {
+    const backButton = screen.getByRole('button', { name: '' }); // The button has no accessible name
+    fireEvent.click(backButton.querySelector('svg'));
+    expect(mockNavigate).toHaveBeenCalledWith(-1);
+  });
 });
