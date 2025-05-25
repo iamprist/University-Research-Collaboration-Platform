@@ -24,6 +24,7 @@ import {
   Box
 } from '@mui/material';
 import { Notifications, Menu as MenuIcon, Close } from '@mui/icons-material';
+import CollaborationRequestsPanel from '../../components/CollaborationRequestsPanel';
 
 const MessageNotification = ({ messages, unreadCount, onMessageClick, selectedMessage, onAccept, onReject, onCloseSelected }) => {
   const [anchorEl, setAnchorEl] = useState(null);
@@ -855,6 +856,13 @@ const handleDeclineReviewRequest = async (requestId) => {
             ))}
           </section>
         </section>
+
+  <section style={{ maxWidth: 800, margin: '32px auto' }}>
+  <h2 style={{ marginBottom: 24, fontSize: '1.7rem' }}>Collaboration Requests</h2>
+  <Paper sx={{ p: 2, bgcolor: '#1a2a42', color: '#B1EDE8' }}>
+    <CollaborationRequestsPanel />
+  </Paper>
+</section>
 <section style={{ maxWidth: 800, margin: '32px auto' }}>
   <h2>Pending Review Requests</h2>
   {reviewRequests.length === 0 ? (
