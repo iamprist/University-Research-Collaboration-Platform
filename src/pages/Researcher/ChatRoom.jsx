@@ -4,8 +4,9 @@ import { auth } from '../../config/firebaseConfig';
 import { chatService } from './chatService';
 import './ChatRoom.css';
 
-export default function ChatRoom() {
-  const { chatId } = useParams();
+export default function ChatRoom({ chatId: chatIdProp }) {
+  const params = useParams();
+  const chatId = chatIdProp || params.chatId
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [status, setStatus] = useState({ loading: true, error: null });
