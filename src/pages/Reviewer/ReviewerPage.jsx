@@ -5,13 +5,19 @@ import {
   deleteDoc,
   addDoc,
   collection,
-  serverTimestamp
+  serverTimestamp,
+  getDocs,
+  query,
+  where
 } from 'firebase/firestore'
 import { db, auth } from '../../config/firebaseConfig'
 import { useAuth } from './authContext'
 import { useNavigate } from 'react-router-dom'
 import ReviewerRecommendations from '../../components/ReviewerRecommendations'
 import axios from 'axios'
+import ChatRoom from '../Researcher/ChatRoom'
+
+
 
 export default function ReviewerPage() {
   const [status, setStatus] = useState('')
@@ -21,6 +27,57 @@ export default function ReviewerPage() {
   const [ipAddress, setIpAddress] = useState('')
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const navigate = useNavigate()
+  //const researcherId = 'demoResearcherId'; // Replace with real logic later
+  const [acceptedResearchers, setAcceptedResearchers] = useState([]);
+const [selectedResearcherId, setSelectedResearcherId] = useState(null);
+
+useEffect(() => {
+  if (!currentUser?.uid) return;
+  const fetchAcceptedResearchers = async () => {
+    const q = query(
+      collection(db, 'reviewRequests'),
+      where('reviewerId', '==', currentUser.uid),
+      where('status', '==', 'accepted')
+    );
+    const snapshot = await getDocs(q);
+    const accepted = snapshot.docs.map(doc => doc.data());
+
+    // Remove duplicates by researcherId
+    const unique = [];
+    const seen = new Set();
+    for (const r of accepted) {
+      if (!seen.has(r.researcherId)) {
+        seen.add(r.researcherId);
+        unique.push(r);
+      }
+    }
+
+    // Fetch researcher names and info
+    const withNames = await Promise.all(
+      unique.map(async (r) => {
+        try {
+          const userSnap = await getDoc(doc(db, 'users', r.researcherId));
+          const userData = userSnap.exists() ? userSnap.data() : {};
+          return {
+            ...r,
+            researcherName: userData.displayName || userData.name || r.researcherId,
+            researcherExpertise: userData.expertise || 'N/A',
+            researcherEmail: userData.email || 'N/A'
+          };
+        } catch {
+          return {
+            ...r,
+            researcherName: r.researcherId,
+            researcherExpertise: 'N/A',
+            researcherEmail: 'N/A'
+          };
+        }
+      })
+    );
+    setAcceptedResearchers(withNames);
+  };
+  fetchAcceptedResearchers();
+}, [currentUser]);
 
   // fetch client IP
   useEffect(() => {
@@ -295,7 +352,7 @@ export default function ReviewerPage() {
         </section>
       </aside>
 
-      <section
+           <section
         className="container"
         style={{ backgroundColor: 'white', color: 'black' }}
       >
@@ -315,9 +372,44 @@ export default function ReviewerPage() {
               </p>
             </header>
 
-            {status === 'approved' && (
-              <ReviewerRecommendations />
-            )}
+{status === 'approved' && (
+  <>
+    <ReviewerRecommendations />
+<div className="mb-4">
+  <h5>Select a Researcher to Chat:</h5>
+  <div className="row">
+    {acceptedResearchers.length === 0 && (
+      <div className="col-12">
+        <div className="alert alert-info">No accepted researchers yet.</div>
+      </div>
+    )}
+    {acceptedResearchers.map(r => (
+      <div className="col-md-4 mb-3" key={r.researcherId}>
+        <div className={`card h-100 ${selectedResearcherId === r.researcherId ? 'border-primary' : ''}`}>
+          <div className="card-body">
+            <h6 className="card-title">{r.researcherName}</h6>
+            <p className="card-text mb-1"><strong>Expertise:</strong> {r.researcherExpertise}</p>
+            <p className="card-text mb-2"><strong>Email:</strong> {r.researcherEmail}</p>
+            <button
+              className={`btn btn-sm ${selectedResearcherId === r.researcherId ? 'btn-primary' : 'btn-outline-primary'}`}
+              onClick={() => setSelectedResearcherId(r.researcherId)}
+            >
+              {selectedResearcherId === r.researcherId ? 'Chatting' : 'Chat'}
+            </button>
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+</div>
+    {selectedResearcherId && (
+      <ChatRoom
+        chatId={[currentUser.uid, selectedResearcherId].sort().join('_')}
+        currentUser={currentUser}
+      />
+    )}
+  </>
+)}
 
             {status === 'not_found' && (
               <section className="text-center mt-4 text-muted">
