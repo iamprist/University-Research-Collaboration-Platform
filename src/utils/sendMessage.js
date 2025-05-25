@@ -4,6 +4,12 @@ import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 
 // Sends a message to a user's messages subcollection
 export const sendMessage = async (recipientId, messageData) => {
+  if (!recipientId) {
+    throw new Error('recipientId is required');
+  }
+  if (!messageData) {
+    throw new Error('messageData is required');
+  }
   try {
     await addDoc(collection(db, 'users', recipientId, 'messages'), {
       ...messageData,
