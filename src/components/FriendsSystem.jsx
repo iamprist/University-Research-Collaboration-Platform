@@ -91,7 +91,7 @@ const FriendsSystem = () => {
 
   const sendFriendRequest = async (userId) => {
     try {
-      setLoading(true); // Using existing loading state instead of sendingRequest
+      setLoading(true);
 
       await addDoc(collection(db, 'friends'), {
         users: [currentUser.uid, userId],
@@ -125,6 +125,7 @@ const FriendsSystem = () => {
       toast.error('Failed to respond to request');
     }
   };
+
   return (
     <main className="friends-system">
       <header className="friends-header">
@@ -265,10 +266,9 @@ const FriendCard = ({ userId, requestDocId, onRespond, isSearchResult }) => {
 
   return (
     <li className="user-card">
-      <div 
+      <article 
         className="user-info"
         onClick={handleViewProfile}
-        role="button"
         tabIndex="0"
         onKeyPress={(e) => e.key === 'Enter' && handleViewProfile()}
         aria-label={`View ${userData.name}'s profile`}
@@ -277,33 +277,37 @@ const FriendCard = ({ userId, requestDocId, onRespond, isSearchResult }) => {
         {userData.researchArea && (
           <p className="research-area">{userData.researchArea}</p>
         )}
-      </div>
+      </article>
       
       {onRespond ? (
-        <div className="request-actions">
-          <button 
-            className="accept-btn"
-            onClick={() => onRespond(requestDocId, userId, true)}
-            aria-label={`Accept friend request from ${userData.name}`}
-          >
-            Accept
-          </button>
-          <button 
-            className="decline-btn"
-            onClick={() => onRespond(requestDocId, userId, false)}
-            aria-label={`Decline friend request from ${userData.name}`}
-          >
-            Decline
-          </button>
-        </div>
+        <menu className="request-actions">
+          <li>
+            <button 
+              className="accept-btn"
+              onClick={() => onRespond(requestDocId, userId, true)}
+              aria-label={`Accept friend request from ${userData.name}`}
+            >
+              Accept
+            </button>
+          </li>
+          <li>
+            <button 
+              className="decline-btn"
+              onClick={() => onRespond(requestDocId, userId, false)}
+              aria-label={`Decline friend request from ${userData.name}`}
+            >
+              Decline
+            </button>
+          </li>
+        </menu>
       ) : isFriend ? (
-        <div className="friend-status" aria-label="Friends">
+        <output className="friend-status" aria-label="Friends">
           Friends
-        </div>
+        </output>
       ) : hasPendingRequest ? (
-        <div className="request-sent-label" aria-label="Request sent">
+        <output className="request-sent-label" aria-label="Request sent">
           Request Sent
-        </div>
+        </output>
       ) : isSearchResult ? (
         <button
           className="add-friend-btn"
