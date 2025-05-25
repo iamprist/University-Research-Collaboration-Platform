@@ -213,6 +213,7 @@ export const useResearcherDashboard = () => {
     if (!searchTerm.trim()) {
       setSearchResults([]);
       setDropdownVisible(false);
+      setShowNoResults(false); // reset when search is empty
       return;
     }
     const searchTermLower = searchTerm.toLowerCase();
@@ -222,7 +223,8 @@ export const useResearcherDashboard = () => {
       return title.includes(searchTermLower) || researcherName.includes(searchTermLower);
     });
     setSearchResults(filtered);
-    setDropdownVisible(true);
+    setDropdownVisible(filtered.length > 0); //only show dropdown if there are results
+    setShowNoResults(filtered.length === 0);  // Set showNoResults based on actual results
     clearTimeout(dropdownTimeout.current);
     dropdownTimeout.current = setTimeout(() => {
       setDropdownVisible(false);
@@ -312,6 +314,7 @@ export const useResearcherDashboard = () => {
     setSearchTerm('');
     setSearchResults([]);
     setDropdownVisible(false);
+    setShowNoResults(false);
   };
 
   // Log user events

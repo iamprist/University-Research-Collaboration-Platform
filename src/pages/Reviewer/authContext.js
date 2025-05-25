@@ -1,5 +1,5 @@
 // src/context/AuthContext.js
-import { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, getAuth } from 'firebase/auth';
 import { logEvent } from '../../utils/logEvent'; // Import the logEvent function
 

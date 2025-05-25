@@ -21,14 +21,13 @@ import MuiAlert from '@mui/material/Alert';
 
 // Mapping of shorthand tag codes to full, canonical names
 const tagAliases = {
-  PHYS: "Physics",
-  CHEM: "Chemistry",
-  BIO: "Biology",
-  CS: "Computer Science",
-  AI: "Artificial Intelligence",
-  // …other aliases…
-  Other: "Other (please specify)",
-};
+    PHYS: "Physics",
+    CHEM: "Chemistry",
+    BIO: "Biology",
+    CS: "Computer Science",
+    AI: "Artificial Intelligence",
+    Other: "Other (please specify)",
+  };
 
 // Convert one tag string into its canonical form (lowercase)
 function normalizeTag(tag) {
@@ -289,8 +288,7 @@ export default function ResearchProjectDisplay() {
         style={{ padding: 40, textAlign: "center" }}
       >
         <p>
-          You have no expertise tags set in your profile, so no recommendations
-          can be made.
+          You have no expertise tags set in your profile, so no recommendations can be made.
         </p>
       </section>
     );
@@ -314,7 +312,7 @@ export default function ResearchProjectDisplay() {
     <>
       <Helmet>
         <link
-          href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Open+Sans :wght@400;600;700&display=swap"
           rel="stylesheet"
         />
       </Helmet>
@@ -515,4 +513,5 @@ export default function ResearchProjectDisplay() {
       </main>
     </>
   );
-}
+};
+

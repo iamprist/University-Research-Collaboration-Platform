@@ -41,6 +41,57 @@ export default function ReviewerPage() {
   const [reviewedIds, setReviewedIds] = useState([]);
   const dropdownTimeout = React.useRef(null)
   const navigate = useNavigate()
+  //const researcherId = 'demoResearcherId'; // Replace with real logic later
+  const [acceptedResearchers, setAcceptedResearchers] = useState([]);
+const [selectedResearcherId, setSelectedResearcherId] = useState(null);
+
+useEffect(() => {
+  if (!currentUser?.uid) return;
+  const fetchAcceptedResearchers = async () => {
+    const q = query(
+      collection(db, 'reviewRequests'),
+      where('reviewerId', '==', currentUser.uid),
+      where('status', '==', 'accepted')
+    );
+    const snapshot = await getDocs(q);
+    const accepted = snapshot.docs.map(doc => doc.data());
+
+    // Remove duplicates by researcherId
+    const unique = [];
+    const seen = new Set();
+    for (const r of accepted) {
+      if (!seen.has(r.researcherId)) {
+        seen.add(r.researcherId);
+        unique.push(r);
+      }
+    }
+
+    // Fetch researcher names and info
+    const withNames = await Promise.all(
+      unique.map(async (r) => {
+        try {
+          const userSnap = await getDoc(doc(db, 'users', r.researcherId));
+          const userData = userSnap.exists() ? userSnap.data() : {};
+          return {
+            ...r,
+            researcherName: userData.displayName || userData.name || r.researcherId,
+            researcherExpertise: userData.expertise || 'N/A',
+            researcherEmail: userData.email || 'N/A'
+          };
+        } catch {
+          return {
+            ...r,
+            researcherName: r.researcherId,
+            researcherExpertise: 'N/A',
+            researcherEmail: 'N/A'
+          };
+        }
+      })
+    );
+    setAcceptedResearchers(withNames);
+  };
+  fetchAcceptedResearchers();
+}, [currentUser]);
 
   // fetch client IP
   useEffect(() => {
@@ -516,7 +567,7 @@ export default function ReviewerPage() {
         </section>
       </aside>
 
-      <section
+           <section
         className="container"
         style={{ backgroundColor: 'white', color: 'black' }}
       >
