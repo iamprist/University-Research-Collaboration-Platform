@@ -5,56 +5,57 @@
 
 [![codecov](https://codecov.io/gh/iamprist/University-Research-Collaboration-Platform/branch/skeletoncode/graph/badge.svg?token=EIG69HYXA7)](https://codecov.io/gh/iamprist/University-Research-Collaboration-Platform)
 
-**Innerk Hub** is a full-stack web application built to streamline research collaboration in academic environments. The platform connects researchers, facilitates project and funding management, and offers a space for real-time communication, feedback, and supervision.
+**Innerk Hub** is a full-stack web application designed to streamline research collaboration in academic environments. The platform connects researchers, facilitates project and funding management, and provides tools for real-time communication, supervision, and progress tracking.
 
 > Developed for the **COMS3003A Software Design** course at the **University of the Witwatersrand**, 2025.
 
 ---
 
-## Objectives
+##  Objectives
 
-* Simplify collaboration between researchers through a centralized platform.
-* Enable research project management and transparent progress tracking.
-* Support supervision and reviewer feedback mechanisms.
-* Track and manage research funding and grants.
-* Empower administrators to monitor usage and manage user roles effectively.
+* Centralize research collaboration in a single platform
+* Enable transparent research project and milestone management
+* Facilitate supervision and reviewer feedback mechanisms
+* Track and manage research funding and grant usage
+* Empower admins with usage monitoring and role management
 
 ---
 
 ##  Features Overview
 
-| Feature                     | Description                                                                                                |
-| --------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| 🔐 **User Verification**    | Third-party authentication (Firebase Google Sign-In) with 3 roles: **Researcher**, **Reviewer**, **Admin** |
-| 🧪 **Project Management**   | Researchers can create listings, define team requirements, and invite collaborators                        |
-| 💬 **Collaboration Tools**  | Built-in real-time messaging, document sharing, milestone tracking                                         |
-| 💰 **Funding Tracker**      | Grant tracking, spending logs, and funding forecast dashboards                                             |
-| 📊 **Reports & Dashboards** | Exportable project reports (CSV/PDF), custom analytics views                                               |
-| 🤖 **AI Recommendations**   | (Planned) Match reviewers to projects based on expertise tags                                              |
+| Feature                     | Description                                                                           |
+| --------------------------- | ------------------------------------------------------------------------------------- |
+|  **User Verification**    | Firebase Google Sign-In with three roles: **Researcher**, **Reviewer**, and **Admin** |
+|  **Project Management**   | Researchers can post projects, define team needs, and invite collaborators            |
+|  **Collaboration Tools**  | Real-time messaging, document sharing, and milestone tracking                         |
+|  **Funding Tracker**      | Manage grants, spending logs, and funding forecast dashboards                         |
+|  **Reports & Dashboards** | Export project data as CSV/PDF, with support for custom analytics views               |
+|  **AI Recommendations**   | *(Planned)* Match reviewers to projects based on expertise tags                       |
 
 ---
 
-## Testing & Quality Assurance
+##  Testing & Quality Assurance
 
-* **Unit Testing** with [Jest](https://jestjs.io/)
-* **User Acceptance Tests (UAT)** using Given-When-Then format
+* **Unit Testing** using [Jest](https://jestjs.io/)
+* **User Acceptance Testing (UAT)** with the Given-When-Then approach
 * **Code Coverage** tracked with [Codecov](https://codecov.io/)
-* **CI/CD** pipeline via GitHub Actions for automated testing & deployment
+* **CI/CD Pipeline** via GitHub Actions for automated testing & deployment
 
 ---
 
-## ⚙Technologies Used
+##  Technologies Used
 
-*  **React + Vite** (Frontend)
-*  **Firebase** – Auth, Firestore, Storage
-*  **Bootstrap 5** + Custom CSS
-*  **Jest**, **Codecov** (Testing)
-*  **GitHub Actions** (CI/CD)
-* **Trello** for Agile workflow & sprint tracking
+* **Frontend**: React + Vite
+* **Backend & Services**: Firebase Auth, Firestore, Firebase Storage
+* **Styling**: Bootstrap 5 + Custom CSS
+* **Testing**: Jest, Codecov
+* **CI/CD**: GitHub Actions
+* **Agile Tooling**: Trello for sprint and task tracking
+* **Hosting**: **Microsoft Azure**
 
 ---
 
-## 📂 Project Structure
+## 📁 Project Structure
 
 ```
 /src
@@ -63,13 +64,13 @@
   /services         # Firebase/Firestore interactions
   /utils            # Helper functions
 /tests              # Unit tests
-/.github/workflows  # CI/CD configuration
+/.github/workflows  # CI/CD configurations
 README.md
 ```
 
 ---
 
-## Team Members
+##  Team Members
 
 | Name                  | Role          |
 | --------------------- | ------------- |
@@ -82,22 +83,18 @@ README.md
 
 ---
 
+##  Future Enhancements
+
+* AI-powered collaborator suggestions using tag/expertise matching
+* Reviewer suggestions based on past research contributions
+* Integration with external data sources (e.g., arXiv, ORCID)
+* Funding analytics and prediction models
+* Research project version control and history
 
 ---
 
-## Future Enhancements
-
-* AI-powered collaborator suggestions using tag matching
-* Reviewer recommendations based on past research
-* External data integration (e.g., arXiv, ORCID)
-* Funding prediction analytics
-* Research project version control
-
----
-
-## License
+##  License
 
 This repository is developed for **educational purposes only** as part of the Wits **COMS3003A Software Design** course in 2025.
 
 ---
-

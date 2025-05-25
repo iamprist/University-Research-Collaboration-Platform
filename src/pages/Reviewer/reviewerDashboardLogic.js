@@ -13,7 +13,7 @@ import {
   onSnapshot,
   getDocs
 } from 'firebase/firestore';
-import axios from 'axios';
+const axios = require('axios');
 
 export const useReviewerDashboard = () => {
   const [status, setStatus] = useState('');
