@@ -152,7 +152,7 @@ export default function MyReviewRequests() {
 
   const handleDeleteReview = async (req) => {
     setMenuAnchor(null);
-    // Find and delete the review document for this listing/reviewer
+    // Delete the review document(s)
     const q = query(
       collection(db, "reviews"),
       where("reviewerId", "==", user.uid),
@@ -162,6 +162,10 @@ export default function MyReviewRequests() {
     snap.forEach(async (docSnap) => {
       await deleteDoc(doc(db, "reviews", docSnap.id));
     });
+
+    // Delete the review request document
+    await deleteDoc(doc(db, "reviewRequests", req.id));
+
     setReviewsSubmitted((prev) => {
       const updated = { ...prev };
       delete updated[req.listingId];
@@ -178,7 +182,7 @@ export default function MyReviewRequests() {
 
   return (
     <section className="dashboard-content">
-      <h3>My Review Requests</h3>
+      <h3>My Reviews</h3>
       {requests.length === 0 ? (
         <p className="no-listings">You have not requested to review any projects yet.</p>
       ) : (
