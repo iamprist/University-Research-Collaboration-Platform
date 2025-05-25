@@ -4,7 +4,6 @@ import { db, auth } from '../../config/firebaseConfig';
 import { collection, getDocs, query, where, doc, getDoc, onSnapshot, orderBy, updateDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import './ResearcherDashboard.css';
 import axios from "axios";
-import CollaborationRequestsPanel from '../../components/CollaborationRequestsPanel';
 import Footer from '../../components/Footer';
 import ContactForm from '../../components/ContactForm';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
@@ -17,7 +16,6 @@ import {
   MenuItem,
   Badge,
   Paper,
-  Grid,
   Typography,
   Dialog,
   DialogTitle,
@@ -27,7 +25,7 @@ import {
 } from '@mui/material';
 import { Notifications, Menu as MenuIcon, Close } from '@mui/icons-material';
 
-const MessageNotification = ({ messages, unreadCount, onMessageClick }) => {
+const MessageNotification = ({ messages, unreadCount, onMessageClick, selectedMessage, onAccept, onReject, onCloseSelected }) => {
   const [anchorEl, setAnchorEl] = useState(null);
 
   return (
@@ -55,7 +53,7 @@ const MessageNotification = ({ messages, unreadCount, onMessageClick }) => {
       <Menu
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
-        onClose={() => setAnchorEl(null)}
+        onClose={() => { setAnchorEl(null); onCloseSelected && onCloseSelected(); }}
         PaperProps={{
           sx: {
             bgcolor: '#132238',
@@ -76,12 +74,28 @@ const MessageNotification = ({ messages, unreadCount, onMessageClick }) => {
             mb: 2
           }}>
             <Typography variant="h6">Notifications</Typography>
-            <IconButton onClick={() => setAnchorEl(null)} size="small">
+            <IconButton onClick={() => { setAnchorEl(null); onCloseSelected && onCloseSelected(); }} size="small">
               <Close sx={{ color: '#B1EDE8' }} />
             </IconButton>
           </Box>
-          
-          {messages.length === 0 ? (
+          {/* If a collaboration-request message is selected, show accept/reject UI */}
+          {selectedMessage && selectedMessage.type === 'collaboration-request' ? (
+            <Paper sx={{ p: 2, mb: 1, bgcolor: 'rgba(177, 237, 232, 0.05)' }}>
+              <Typography variant="subtitle1">{selectedMessage.title}</Typography>
+              <Typography variant="body2">{selectedMessage.content}</Typography>
+              <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
+                <Button variant="contained" color="success" onClick={() => { onAccept(selectedMessage); onCloseSelected && onCloseSelected(); }}>
+                  Accept
+                </Button>
+                <Button variant="contained" color="error" onClick={() => { onReject(selectedMessage); onCloseSelected && onCloseSelected(); }}>
+                  Reject
+                </Button>
+                <Button variant="outlined" onClick={() => { onCloseSelected && onCloseSelected(); }}>
+                  Close
+                </Button>
+              </Box>
+            </Paper>
+          ) : messages.length === 0 ? (
             <Typography variant="body2" sx={{ textAlign: 'center' }}>
               No new messages
             </Typography>
@@ -99,7 +113,6 @@ const MessageNotification = ({ messages, unreadCount, onMessageClick }) => {
                 }}
                 onClick={() => {
                   onMessageClick(message);
-                  setAnchorEl(null);
                 }}
               >
                 <Typography variant="subtitle1">{message.title}</Typography>
@@ -135,7 +148,52 @@ const ResearcherDashboard = () => {
   const [showContactForm, setShowContactForm] = useState(false);
   const [ipAddress, setIpAddress] = useState("");
   const [anchorEl, setAnchorEl] = useState(null);
-  const navigate = useNavigate();
+  const [selectedMessage, setSelectedMessage] = useState(null);
+  const navigate = useNavigate();const [reviewRequests, setReviewRequests] = useState([]);
+
+useEffect(() => {
+  if (!userId) return;
+  const q = query(
+    collection(db, "reviewRequests"),
+    where("researcherId", "==", userId),
+    where("status", "==", "pending")
+  );
+  const unsub = onSnapshot(q, async (snapshot) => {
+    const requests = await Promise.all(snapshot.docs.map(async (docSnap) => {
+      const data = docSnap.data();
+      // Fetch reviewer info
+      let reviewerName = "Unknown Reviewer";
+      let reviewerEmail = "";
+      try {
+        const reviewerDoc = await getDoc(doc(db, "users", data.reviewerId));
+        if (reviewerDoc.exists()) {
+          reviewerName = reviewerDoc.data().name || reviewerName;
+          reviewerEmail = reviewerDoc.data().email || "";
+        }
+      } catch {}
+      // Fetch project info
+      let projectTitle = "Unknown Project";
+      let projectSummary = "";
+      try {
+        const projectDoc = await getDoc(doc(db, "research-listings", data.listingId));
+        if (projectDoc.exists()) {
+          projectTitle = projectDoc.data().title || projectTitle;
+          projectSummary = projectDoc.data().summary || "";
+        }
+      } catch {}
+      return {
+        id: docSnap.id,
+        ...data,
+        reviewerName,
+        reviewerEmail,
+        projectTitle,
+        projectSummary,
+      };
+    }));
+    setReviewRequests(requests);
+  });
+  return () => unsub();
+}, [userId]);
 
   useEffect(() => {
     const fetchIpAddress = async () => {
@@ -271,6 +329,19 @@ const ResearcherDashboard = () => {
     setFilteredListings(myListings);
   }, [myListings]);
 
+const handleAcceptReviewRequest = async (requestId) => {
+  await updateDoc(doc(db, "reviewRequests", requestId), {
+    status: "accepted",
+    respondedAt: serverTimestamp(),
+  });
+};
+
+const handleDeclineReviewRequest = async (requestId) => {
+  await updateDoc(doc(db, "reviewRequests", requestId), {
+    status: "declined",
+    respondedAt: serverTimestamp(),
+  });
+};
   const handleSearch = () => {
     if (!searchTerm.trim()) {
       setSearchResults([]);
@@ -306,10 +377,12 @@ const ResearcherDashboard = () => {
 
   const handleMessageClick = (message) => {
     markMessageAsRead(message.id);
+    if (message.type === 'collaboration-request') {
+      setSelectedMessage(message); // Show Accept/Reject in menu
+      return;
+    }
+    setSelectedMessage(null);
     switch(message.type) {
-      case 'collaboration-request':
-        navigate('/collaboration-requests');
-        break;
       case 'review-request':
         navigate(`/review-requests/${message.relatedId}`);
         break;
@@ -375,40 +448,76 @@ const ResearcherDashboard = () => {
     }
   };
 
+  // Accept/reject handlers for collaboration-request messages
+  const handleAcceptCollab = async (message) => {
+    try {
+      // Use message.id as the document ID for the collaboration request
+      await updateDoc(doc(db, 'collaboration-requests', message.id), {
+        status: 'accepted',
+        respondedAt: new Date()
+      });
+      // Add to collaborations collection
+      await addDoc(collection(db, 'collaborations'), {
+        listingId: message.relatedId,
+        researcherId: userId,
+        collaboratorId: message.senderId || message.requesterId,
+        joinedAt: new Date(),
+        status: 'active'
+      });
+      setSelectedMessage(null);
+    } catch (error) {
+      console.error('Error accepting collaboration:', error);
+    }
+  };
+  const handleRejectCollab = async (message) => {
+    try {
+      await updateDoc(doc(db, 'collaboration-requests', message.id), {
+        status: 'rejected',
+        respondedAt: new Date()
+      });
+      setSelectedMessage(null);
+    } catch (error) {
+      console.error('Error rejecting collaboration:', error);
+    }
+  };
+
   return (
-    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <main style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
-      <Box 
-        component="header"
-        sx={{
+      <header
+        style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          bgcolor: 'var(--dark-blue)',
+          backgroundColor: 'var(--dark-blue)',
           color: 'var(--white)',
           borderBottom: '2px solid var(--light-blue)',
-          p: '1.5rem 2rem'
+          padding: '1.5rem 2rem'
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <nav style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <IconButton onClick={() => navigate(-1)} sx={{ color: 'var(--white)' }}>
             <ArrowBackIosIcon />
           </IconButton>
-          <Box>
-            <Typography variant="h4" sx={{ fontWeight: 600, fontSize: '1.7rem'}}>
+          <section>
+            <h1 style={{ fontWeight: 600, fontSize: '1.7rem', margin: 0 }}>
               Welcome, {userName}
-            </Typography>
-            <Typography variant="body1" sx={{ color: 'var(--accent-teal)' }}>
+            </h1>
+            <p style={{ color: 'var(--accent-teal)', margin: 0 }}>
               Manage your research and collaborate
-            </Typography>
-          </Box>
-        </Box>
+            </p>
+          </section>
+        </nav>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <nav style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <MessageNotification 
             messages={messages}
             unreadCount={unreadCount}
             onMessageClick={handleMessageClick}
+            selectedMessage={selectedMessage}
+            onAccept={handleAcceptCollab}
+            onReject={handleRejectCollab}
+            onCloseSelected={() => setSelectedMessage(null)}
           />
 
           <IconButton
@@ -442,261 +551,247 @@ const ResearcherDashboard = () => {
             <MenuItem onClick={() => setShowContactForm(true)}>Chat with Us</MenuItem>
             <MenuItem onClick={handleLogout}>Logout</MenuItem>
           </Menu>
-        </Box>
-      </Box>
+        </nav>
+      </header>
 
       {/* Main Content */}
-      <Box sx={{ flex: 1, p: 3 }}>
-{/* Updated Search Section with matching buttons */}
-<Box sx={{ maxWidth: 800, mx: 'auto', mb: 4 }}>
-  <Paper 
-    component="form"
-    onSubmit={(e) => { 
-      e.preventDefault();
-      handleSearch();
-    }}
-    sx={{ 
-      p: 1,
-      display: 'flex',
-      gap: 1,
-      bgcolor: 'background.paper',
-      position: 'relative'
-    }}
-  >
-    <TextField
-      fullWidth
-      variant="outlined"
-      placeholder="Search research by title or researcher name..."
-      value={searchTerm}
-      onChange={handleInputChange}
-      onFocus={handleInputFocus}
-      sx={{
-        '& .MuiOutlinedInput-root': {
-          borderRadius: '1.2rem',
-          borderColor: 'var(--dark-blue)'
-        }
-      }}
-    />
-    {/* Error Modal */}
-{showErrorModal && (
-  <Dialog
-    open={showErrorModal}
-    onClose={() => setShowErrorModal(false)}
-    PaperProps={{
-      sx: {
-        bgcolor: 'var(--dark-blue)',
-        color: 'var(--white)',
-        padding: '1.5rem'
-      }
-    }}
-  >
-    <DialogTitle>Profile Error</DialogTitle>
-    <DialogContent>
-      <Typography variant="body1">
-        Error loading profile. Please try again.
-      </Typography>
-      <Button 
-        onClick={() => setShowErrorModal(false)}
-        variant="contained"
-        sx={{ 
-          mt: 2,
-          bgcolor: 'var(--light-blue)',
-          color: 'var(--dark-blue)'
-        }}
-      >
-        Close
-      </Button>
-    </DialogContent>
-  </Dialog>
-)}
-    
-    {/* Clear Button */}
-    <Button 
-      type="button"
-      variant="contained"
-      onClick={handleClear}
-      sx={{
-        bgcolor: 'var(--light-blue)',
-        color: 'var(--dark-blue)',
-        borderRadius: '1.5rem',
-        minWidth: '100px',
-        px: 3,
-        '&:hover': { 
-          bgcolor: '#5AA9A3',
-          color: 'var(--white)'
-        }
-      }}
-    >
-      Clear
-    </Button>
-
-    {/* Search Button */}
-     <Button 
-      type="button"
-      variant="contained"
-      onClick={handleSearch}
-      sx={{
-        bgcolor: 'var(--light-blue)',
-        color: 'var(--dark-blue)',
-        borderRadius: '1.5rem',
-        minWidth: '100px',
-        px: 3,
-        '&:hover': { 
-          bgcolor: '#5AA9A3',
-          color: 'var(--white)'
-        }
-      }}
-    >
-      Search
-    </Button>
-
-    {/* Search Dropdown */}
-    {dropdownVisible && (
-      <Paper sx={{
-        position: 'absolute',
-        top: '110%',
-        left: 0,
-        right: 0,
-        zIndex: 999,
-        bgcolor: 'background.paper',
-        boxShadow: 3,
-        maxHeight: 300,
-        overflowY: 'auto'
-      }}>
-        {searchResults.length === 0 ? (
-      <Typography sx={{ p: 2 }}>
-        {showNoResults ? "No research listings found." : "Start typing to search"}
-      </Typography>
-    ) : 
-      searchResults.map(item => (
-          <Box 
-            key={item.id}
-            sx={{
-              p: 2,
-              cursor: 'pointer',
-              '&:hover': { bgcolor: 'action.hover' }
+      <section style={{ flex: 1, padding: 24 }}>
+        {/* Search Section */}
+        <section style={{ maxWidth: 800, margin: '0 auto', marginBottom: 32 }}>
+          <form
+            onSubmit={(e) => { 
+              e.preventDefault();
+              handleSearch();
             }}
-            onClick={() => navigate(`/listing/${item.id}`)}
+            style={{ 
+              padding: 8,
+              display: 'flex',
+              gap: 8,
+              background: 'var(--background-paper, #fff)',
+              position: 'relative'
+            }}
           >
-            <Typography variant="subtitle1">{item.title}</Typography>
-            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-              By: {item.researcherName}
-            </Typography>
-            <Typography variant="body2" sx={{ mt: 1 }}>
-              {item.summary}
-            </Typography>
-          </Box>
-        ))}
-      </Paper>
-    )}
-  </Paper>
-</Box>
+            <TextField
+              fullWidth
+              variant="outlined"
+              placeholder="Search research by title or researcher name..."
+              value={searchTerm}
+              onChange={handleInputChange}
+              onFocus={handleInputFocus}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '1.2rem',
+                  borderColor: 'var(--dark-blue)'
+                }
+              }}
+            />
+            {/* Error Modal */}
+            {showErrorModal && (
+              <Dialog
+                open={showErrorModal}
+                onClose={() => setShowErrorModal(false)}
+                PaperProps={{
+                  sx: {
+                    bgcolor: 'var(--dark-blue)',
+                    color: 'var(--white)',
+                    padding: '1.5rem'
+                  }
+                }}
+              >
+                <DialogTitle>Profile Error</DialogTitle>
+                <DialogContent>
+                  <Typography variant="body1">
+                    Error loading profile. Please try again.
+                  </Typography>
+                  <Button 
+                    onClick={() => setShowErrorModal(false)}
+                    variant="contained"
+                    sx={{ 
+                      mt: 2,
+                      bgcolor: 'var(--light-blue)',
+                      color: 'var(--dark-blue)'
+                    }}
+                  >
+                    Close
+                  </Button>
+                </DialogContent>
+              </Dialog>
+            )}
+            <Button 
+              type="button"
+              variant="contained"
+              onClick={handleClear}
+              sx={{
+                bgcolor: 'var(--light-blue)',
+                color: 'var(--dark-blue)',
+                borderRadius: '1.5rem',
+                minWidth: '100px',
+                px: 3,
+                '&:hover': { 
+                  bgcolor: '#5AA9A3',
+                  color: 'var(--white)'
+                }
+              }}
+            >
+              Clear
+            </Button>
+            <Button 
+              type="button"
+              variant="contained"
+              onClick={handleSearch}
+              sx={{
+                bgcolor: 'var(--light-blue)',
+                color: 'var(--dark-blue)',
+                borderRadius: '1.5rem',
+                minWidth: '100px',
+                px: 3,
+                '&:hover': { 
+                  bgcolor: '#5AA9A3',
+                  color: 'var(--white)'
+                }
+              }}
+            >
+              Search
+            </Button>
+            {/* Search Dropdown */}
+            {dropdownVisible && (
+              <section style={{
+                position: 'absolute',
+                top: '110%',
+                left: 0,
+                right: 0,
+                zIndex: 999,
+                background: 'var(--background-paper, #fff)',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                maxHeight: 300,
+                overflowY: 'auto'
+              }}>
+                {searchResults.length === 0 ? (
+                  <Typography sx={{ p: 2 }}>
+                    {showNoResults ? "No research listings found." : "Start typing to search"}
+                  </Typography>
+                ) : 
+                  searchResults.map(item => (
+                    <article 
+                      key={item.id}
+                      style={{
+                        padding: 16,
+                        cursor: 'pointer',
+                        borderBottom: '1px solid #eee'
+                      }}
+                      onClick={() => navigate(`/listing/${item.id}`)}
+                    >
+                      <h2 style={{ margin: 0 }}>{item.title}</h2>
+                      <p style={{ color: 'var(--text-secondary)' }}>
+                        By: {item.researcherName}
+                      </p>
+                      <p style={{ marginTop: 8 }}>{item.summary}</p>
+                    </article>
+                  ))}
+              </section>
+            )}
+          </form>
+        </section>
 
         {/* Listings Grid */}
-        <Box sx={{ maxWidth: 1200, mx: 'auto' }}>
-          <Typography variant="h4" sx={{ mb: 3, fontSize: '1.7rem' }}>Your Research</Typography>
-          <Grid container spacing={3}>
-            {filteredListings.map(item => (
-              <Grid item xs={12} sm={6} md={4} key={item.id}>
-                <Paper 
-                  sx={{
-                    p: 3,
-                    bgcolor: '#132238',
-                    color: '#B1EDE8',
-                    borderRadius: 2,
-                    transition: 'transform 0.3s',
-                    '&:hover': { 
-                      transform: 'translateY(-5px)',
-                      boxShadow: '0 10px 20px rgba(0, 0, 0, 0.2)'
-                    }
-                  }}
-                >
-                  <Typography variant="h6" gutterBottom>{item.title}</Typography>
-                  <Typography variant="body2" paragraph>{item.summary}</Typography>
-                  <Box sx={{ display: 'flex', gap: 1 }}>
-                    <Button
-                      variant="contained"
-                      onClick={() => navigate(`/listing/${item.id}`)}
-                      sx={{
-                        bgcolor: '#2a3a57',
-                        '&:hover': { bgcolor: '#3a4a67' }
-                      }}
-                    >
-                      View Listing
-                    </Button>
-                    <Button
-                      variant="contained"
-                      onClick={() => navigate(`/collaboration/${item.id}`)}
-                      sx={{
-                        bgcolor: '#B1EDE8',
-                        color: '#132238',
-                        '&:hover': { bgcolor: '#9dd8d3' }
-                      }}
-                    >
-                      Collaboration Room
-                    </Button>
-                  </Box>
-                </Paper>
-              </Grid>
+        <section style={{ maxWidth: 1200, margin: '0 auto' }}>
+          <h2 style={{ marginBottom: 24, fontSize: '1.7rem' }}>Your Research</h2>
+          <section style={{ display: 'flex', flexWrap: 'wrap', gap: 24 }}>
+            {filteredListings.map((item, idx) => (
+              <article key={`my-${item.id}-${idx}`} style={{ flex: '1 1 30%', background: '#132238', color: '#B1EDE8', borderRadius: 16, padding: 24, marginBottom: 24 }}>
+                <h3>{item.title}</h3>
+                <p>{item.summary}</p>
+                <section style={{ display: 'flex', gap: 8 }}>
+                  <Button
+                    variant="contained"
+                    onClick={() => navigate(`/listing/${item.id}`)}
+                    sx={{
+                      bgcolor: '#2a3a57',
+                      '&:hover': { bgcolor: '#3a4a67' }
+                    }}
+                  >
+                    View Listing
+                  </Button>
+                  <Button
+                    variant="contained"
+                    onClick={() => navigate(`/collaboration/${item.id}`)}
+                    sx={{
+                      bgcolor: '#B1EDE8',
+                      color: '#132238',
+                      '&:hover': { bgcolor: '#9dd8d3' }
+                    }}
+                  >
+                    Collaboration Room
+                  </Button>
+                </section>
+              </article>
             ))}
-          </Grid>
-        </Box>
-           <Box sx={{ mt: 6, maxWidth: 1200, mx: 'auto' }}>
-  <Typography variant="h4" sx={{ mb: 3, fontSize: '1.7rem' }}>Collaboration Requests</Typography>
-  <Paper sx={{ p: 3, bgcolor: '#132238', borderRadius: 2 }}>
-    <CollaborationRequestsPanel userId={userId} />
-  </Paper>
-</Box> 
+          </section>
+        </section>
+
         {/* Collaborations Section */}
-        <Box sx={{ mt: 6, maxWidth: 1200, mx: 'auto' }}>
-          <Typography variant="h4" sx={{ mb: 3, fontSize: '1.7rem'}}>Your Collaborations</Typography>
-          <Grid container spacing={3}>
-            {collabListings.map(listing => (
-              <Grid item xs={12} sm={6} md={4} key={listing.id}>
-                <Paper 
-                  sx={{
-                    p: 3,
-                    bgcolor: '#132238',
-                    color: '#B1EDE8',
-                    borderRadius: 2,
-                    transition: 'transform 0.3s',
-                    '&:hover': { 
-                      transform: 'translateY(-5px)',
-                      boxShadow: '0 10px 20px rgba(0, 0, 0, 0.2)'
-                    }
-                  }}
-                >
-                  <Typography variant="h6" gutterBottom>{listing.title}</Typography>
-                  <Typography variant="body2" paragraph>{listing.summary}</Typography>
-                  <Box sx={{ display: 'flex', gap: 1 }}>
-                    <Button
-                      variant="contained"
-                      onClick={() => navigate(`/listing/${listing.id}`)}
-                      sx={{
-                        bgcolor: '#2a3a57',
-                        
-                        '&:hover': { bgcolor: '#3a4a67' }
-                      }}
-                    >
-                      View Project
-                    </Button>
-                    <Button
-                      variant="contained"
-                      onClick={() => navigate(`/collaboration/${listing.id}`)}
-                      sx={{
-                        bgcolor: '#B1EDE8',
-                        color: '#132238',
-                        '&:hover': { bgcolor: '#9dd8d3' }
-                      }}
-                    >
-                      Collaboration Room
-                    </Button>
-                  </Box>
-                </Paper>
-              </Grid>
+        <section style={{ marginTop: 48, maxWidth: 1200, marginLeft: 'auto', marginRight: 'auto' }}>
+          <h2 style={{ marginBottom: 24, fontSize: '1.7rem'}}>Your Collaborations</h2>
+          <section style={{ display: 'flex', flexWrap: 'wrap', gap: 24 }}>
+            {collabListings.map((listing, idx) => (
+              <article key={`collab-${listing.id}-${idx}`} style={{ flex: '1 1 30%', background: '#132238', color: '#B1EDE8', borderRadius: 16, padding: 24, marginBottom: 24 }}>
+                <h3>{listing.title}</h3>
+                <p>{listing.summary}</p>
+                <section style={{ display: 'flex', gap: 8 }}>
+                  <Button
+                    variant="contained"
+                    onClick={() => navigate(`/listing/${listing.id}`)}
+                    sx={{
+                      bgcolor: '#2a3a57',
+                      '&:hover': { bgcolor: '#3a4a67' }
+                    }}
+                  >
+                    View Project
+                  </Button>
+                  <Button
+                    variant="contained"
+                    onClick={() => navigate(`/collaboration/${listing.id}`)}
+                    sx={{
+                      bgcolor: '#B1EDE8',
+                      color: '#132238',
+                      '&:hover': { bgcolor: '#9dd8d3' }
+                    }}
+                  >
+                    Collaboration Room
+                  </Button>
+                </section>
+              </article>
             ))}
-          </Grid>
+          </section>
+        </section>
+<section style={{ maxWidth: 800, margin: '32px auto' }}>
+  <h2>Pending Review Requests</h2>
+  {reviewRequests.length === 0 ? (
+    <p>No pending review requests.</p>
+  ) : (
+    reviewRequests.map(req => (
+      <Paper key={req.id} sx={{ p: 2, mb: 2, bgcolor: '#1a2a42', color: '#B1EDE8' }}>
+        <Typography variant="subtitle1">
+          Reviewer: {req.reviewerName} {req.reviewerEmail && <>({req.reviewerEmail})</>}
+        </Typography>
+        <Typography variant="body2" sx={{ mb: 1 }}>
+          Project: <strong>{req.projectTitle}</strong>
+        </Typography>
+        <Typography variant="body2" sx={{ mb: 1 }}>
+          {req.projectSummary}
+        </Typography>
+        <Box sx={{ mt: 1, display: 'flex', gap: 1 }}>
+          <Button variant="contained" color="success" onClick={() => handleAcceptReviewRequest(req.id)}>
+            Accept
+          </Button>
+          <Button variant="contained" color="error" onClick={() => handleDeclineReviewRequest(req.id)}>
+            Decline
+          </Button>
         </Box>
+      </Paper>
+    ))
+  )}
+</section>
 
         {/* Contact Form Dialog */}
         <Dialog
@@ -711,21 +806,23 @@ const ResearcherDashboard = () => {
           }}
         >
           <DialogTitle>
-            <Box display="flex" justifyContent="space-between" alignItems="center">
+            <section style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               Contact Form
               <IconButton onClick={() => setShowContactForm(false)}>
                 <Close sx={{ color: '#B1EDE8' }} />
               </IconButton>
-            </Box>
+            </section>
           </DialogTitle>
           <DialogContent>
             <ContactForm onClose={() => setShowContactForm(false)} />
           </DialogContent>
         </Dialog>
-      </Box>
+      </section>
 
-      <Footer />
-    </Box>
+      <footer>
+        <Footer />
+      </footer>
+    </main>
   );
 };
 

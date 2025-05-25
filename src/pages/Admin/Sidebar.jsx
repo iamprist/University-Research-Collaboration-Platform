@@ -7,13 +7,16 @@ import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "../../config/firebaseConfig";
 import axios from "axios"; // Import axios for fetching IP
 
+// Sidebar navigation component for the admin dashboard
 export default function Sidebar({ activeTab, setActiveTab }) {
+  // State for sidebar collapse/expand
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [ipAddress, setIpAddress] = useState(""); // State to store the IP address
+  // State to store the user's IP address
+  const [ipAddress, setIpAddress] = useState("");
   const navigate = useNavigate();
 
+  // Fetch the user's IP address on mount
   useEffect(() => {
-    // Fetch the user's IP address
     const fetchIpAddress = async () => {
       try {
         const response = await axios.get("https://api.ipify.org?format=json");
@@ -22,10 +25,10 @@ export default function Sidebar({ activeTab, setActiveTab }) {
         console.error("Error fetching IP address:", error);
       }
     };
-
     fetchIpAddress();
   }, []);
 
+  // Inline styles for sidebar and navigation buttons
   const styles = {
     sidebar: {
       width: isCollapsed ? "60px" : "250px",
@@ -60,6 +63,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
     },
   };
 
+  // Style generator for sidebar navigation buttons
   const sidebarBtn = (isActive) => ({
     padding: "0.75rem 1rem",
     backgroundColor: isActive ? "#3a5a72" : "#243447",
@@ -76,6 +80,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
     width: "100%", // Ensures all buttons take the full width of the sidebar
   });
 
+  // Log an event to Firestore logs collection
   const logEvent = async ({ userId, role, userName, action, details, ip, target }) => {
     try {
       await addDoc(collection(db, "logs"), {
@@ -94,6 +99,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
     }
   };
 
+  // Handle user logout and log the event
   const handleLogout = async () => {
     try {
       const user = auth.currentUser;
@@ -124,9 +130,12 @@ export default function Sidebar({ activeTab, setActiveTab }) {
   };
 
   return (
+    // Sidebar container
     <aside style={styles.sidebar}>
+      {/* Top section: navigation and collapse/expand controls */}
       <section>
         <header style={styles.toggleButtonContainer}>
+          {/* Home button (only when expanded) */}
           {!isCollapsed && (
             <button
               style={styles.toggleButton}
@@ -135,6 +144,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
               <FaHome />
             </button>
           )}
+          {/* Collapse/expand sidebar button */}
           <button
             style={styles.toggleButton}
             onClick={() => setIsCollapsed(!isCollapsed)}
@@ -142,6 +152,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
             ☰
           </button>
         </header>
+        {/* Navigation buttons (only when expanded) */}
         {!isCollapsed && (
           <>
             <button
@@ -171,6 +182,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
           </>
         )}
       </section>
+      {/* Logout button (only when expanded) */}
       {!isCollapsed && (
         <footer
           style={sidebarBtn(false)}

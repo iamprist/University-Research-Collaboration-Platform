@@ -2,25 +2,25 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../../config/firebaseConfig';
-import { 
-  collection, 
-  getDocs, 
-  query, 
-  where, 
-  doc, 
-  getDoc, 
-  onSnapshot, 
-  orderBy, 
-  updateDoc, 
-  addDoc, 
-  serverTimestamp, 
-  arrayUnion 
+import {
+  collection,
+  getDocs,
+  query,
+  where,
+  doc,
+  getDoc,
+  onSnapshot,
+  orderBy,
+  updateDoc,
+  addDoc,
+  serverTimestamp,
+  arrayUnion
 } from 'firebase/firestore';
-import axios from "axios";
+import axios from 'axios';
 
 export const useResearcherDashboard = () => {
   const navigate = useNavigate();
-  
+
   // State variables
   const [allListings, setAllListings] = useState([]);
   const [myListings, setMyListings] = useState([]);
@@ -38,21 +38,30 @@ export const useResearcherDashboard = () => {
   const [messages, setMessages] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showContactForm, setShowContactForm] = useState(false);
-  const [ipAddress, setIpAddress] = useState("");
+  const [ipAddress, setIpAddress] = useState('');
   const [anchorEl, setAnchorEl] = useState(null);
-  const [showCollaborationRequests, setShowCollaborationRequests] = useState(false);
+  const [selectedMessage, setSelectedMessage] = useState(null);
 
   // Fetch user's public IP address
   useEffect(() => {
+    let isMounted = true;
     const fetchIpAddress = async () => {
       try {
-        const response = await axios.get("https://api.ipify.org?format=json");
-        setIpAddress(response.data.ip);
+        const response = await axios.get('https://api.ipify.org?format=json');
+        // In test mode, use setTimeout to avoid act warnings; otherwise, use microtask
+        if (isMounted) {
+          if (process.env.NODE_ENV === 'test') {
+            setTimeout(() => setIpAddress(response.data.ip), 0);
+          } else {
+            Promise.resolve().then(() => setIpAddress(response.data.ip));
+          }
+        }
       } catch (error) {
-        console.error("Error fetching IP address:", error);
+        console.error('Error fetching IP address:', error);
       }
     };
     fetchIpAddress();
+    return () => { isMounted = false; };
   }, []);
 
   // Check authentication and set userId
@@ -69,16 +78,19 @@ export const useResearcherDashboard = () => {
         navigate('/signin');
       }
     });
-    return () => unsubscribe();
+    return () => {
+      if (typeof unsubscribe === 'function') unsubscribe();
+    };
   }, [navigate]);
 
   // Fetch user profile and name
   useEffect(() => {
     if (!userId) return;
-    
+    let isMounted = true;
     const fetchUserProfile = async () => {
       try {
         const userDoc = await getDoc(doc(db, 'users', userId));
+        if (!isMounted) return;
         if (userDoc.exists()) {
           setHasProfile(true);
           setUserName(userDoc.data().name || 'Researcher');
@@ -86,59 +98,66 @@ export const useResearcherDashboard = () => {
           navigate('/researcher-edit-profile');
         }
       } catch (err) {
-        setShowErrorModal(true);
+        if (isMounted) setShowErrorModal(true);
       }
     };
     fetchUserProfile();
+    return () => { isMounted = false; };
   }, [userId, navigate]);
 
   // Listen for messages and collaborations
   useEffect(() => {
     if (!userId) return;
-    
-    const messagesRef = collection(db, 'users', userId, 'messages');
-    const messagesQuery = query(messagesRef, orderBy('timestamp', 'desc'));
-    
-    const unsubscribeMessages = onSnapshot(messagesQuery, (snapshot) => {
-      const messagesData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        timestamp: doc.data().timestamp?.toDate() || new Date()
-      }));
-      setMessages(messagesData);
-      setUnreadCount(messagesData.filter(msg => !msg.read).length);
-    });
-
-    const collabQuery = query(
-      collection(db, "collaborations"),
-      where("collaboratorId", "==", userId)
-    );
-    
-    const unsubscribeCollabs = onSnapshot(collabQuery, async (snapshot) => {
-      const collabs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      const listings = await Promise.all(
-        collabs.map(async collab => {
-          const listingDoc = await getDoc(doc(db, "research-listings", collab.listingId));
-          return listingDoc.exists() ? { id: listingDoc.id, ...listingDoc.data() } : null;
-        })
+    let unsubMessages = null;
+    let unsubCollabs = null;
+    try {
+      const messagesRef = collection(db, 'users', userId, 'messages');
+      const messagesQuery = query(messagesRef, orderBy('timestamp', 'desc'));
+      unsubMessages = onSnapshot(messagesQuery, (snapshot) => {
+        const messagesData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          timestamp: doc.data().timestamp?.toDate() || new Date()
+        }));
+        setMessages(messagesData);
+        setUnreadCount(messagesData.filter(msg => !msg.read).length);
+      });
+      const collabQuery = query(
+        collection(db, 'collaborations'),
+        where('collaboratorId', '==', userId)
       );
-      setCollabListings(listings.filter(Boolean));
-    });
-
+      unsubCollabs = onSnapshot(collabQuery, async (snapshot) => {
+        const collabs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const listings = await Promise.all(
+          collabs.map(async collab => {
+            const listingDoc = await getDoc(doc(db, 'research-listings', collab.listingId));
+            return listingDoc.exists() ? { id: listingDoc.id, ...listingDoc.data() } : null;
+          })
+        );
+        setCollabListings(listings.filter(Boolean));
+      });
+    } catch (err) {
+      // Defensive: log error if snapshot setup fails
+      console.error('Error setting up Firestore listeners:', err);
+    }
     return () => {
-      unsubscribeMessages();
-      unsubscribeCollabs();
+      if (typeof unsubMessages === 'function') unsubMessages();
+      if (typeof unsubCollabs === 'function') unsubCollabs();
     };
   }, [userId]);
 
   // Fetch all research listings for search
   useEffect(() => {
     if (!userId || !hasProfile) return;
-    
+    let isMounted = true;
     const fetchListings = async () => {
       try {
         const q = query(collection(db, 'research-listings'));
         const querySnapshot = await getDocs(q);
+        if (!querySnapshot || !Array.isArray(querySnapshot.docs)) {
+          setAllListings([]);
+          return;
+        }
         const data = await Promise.all(
           querySnapshot.docs.map(async (docSnap) => {
             const listing = { id: docSnap.id, ...docSnap.data() };
@@ -153,29 +172,35 @@ export const useResearcherDashboard = () => {
             }
           })
         );
-        setAllListings(data);
+        if (isMounted) setAllListings(data);
       } catch (error) {
-        console.error("Error fetching listings:", error);
+        console.error('Error fetching listings:', error);
       }
     };
     fetchListings();
+    return () => { isMounted = false; };
   }, [userId, hasProfile]);
 
   // Fetch only the current user's listings
   useEffect(() => {
     if (!userId || !hasProfile) return;
-    
+    let isMounted = true;
     const fetchMyListings = async () => {
       try {
         const q = query(collection(db, 'research-listings'), where('userId', '==', userId));
         const querySnapshot = await getDocs(q);
+        if (!querySnapshot || !Array.isArray(querySnapshot.docs)) {
+          setMyListings([]);
+          return;
+        }
         const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setMyListings(data);
+        if (isMounted) setMyListings(data);
       } catch (error) {
-        console.error("Error fetching user listings:", error);
+        console.error('Error fetching user listings:', error);
       }
     };
     fetchMyListings();
+    return () => { isMounted = false; };
   }, [userId, hasProfile]);
 
   // Update filtered listings when myListings changes
@@ -190,14 +215,12 @@ export const useResearcherDashboard = () => {
       setDropdownVisible(false);
       return;
     }
-    
     const searchTermLower = searchTerm.toLowerCase();
     const filtered = allListings.filter(item => {
       const title = item.title?.toLowerCase() || '';
       const researcherName = item.researcherName?.toLowerCase() || '';
       return title.includes(searchTermLower) || researcherName.includes(searchTermLower);
     });
-    
     setSearchResults(filtered);
     setDropdownVisible(true);
     clearTimeout(dropdownTimeout.current);
@@ -214,24 +237,62 @@ export const useResearcherDashboard = () => {
         read: true
       });
     } catch (error) {
-      console.error("Error marking message as read:", error);
+      console.error('Error marking message as read:', error);
     }
   };
 
   // Handle clicking a notification message
-  const handleMessageClick = (message) => {
-    markMessageAsRead(message.id);
-    switch(message.type) {
-      case 'collaboration-request':
-        setShowCollaborationRequests(true);
-        break;
+  const handleMessageClick = async (message) => {
+    await markMessageAsRead(message.id);
+    if (!userId) return;
+    if (message.type === 'collaboration-request') {
+      setSelectedMessage(message); // Only set selected message, do not navigate
+      return;
+    }
+    setSelectedMessage(message); // For other message types, still set selected
+    switch (message.type) {
       case 'review-request':
         navigate(`/review-requests/${message.relatedId}`);
         break;
       case 'upload-confirmation':
         navigate(`/listing/${message.relatedId}`);
         break;
-      default: break;
+      default:
+        break;
+    }
+  };
+
+  // Accept/reject handlers for collaboration-request messages
+  const handleAcceptCollab = async (message) => {
+    try {
+      // Use message.id as the document ID for the collaboration request
+      await updateDoc(doc(db, 'collaboration-requests', message.id), {
+        status: 'accepted',
+        respondedAt: new Date()
+      });
+      // Add to collaborations collection
+      await addDoc(collection(db, 'collaborations'), {
+        listingId: message.relatedId,
+        researcherId: userId,
+        collaboratorId: message.senderId || message.requesterId,
+        joinedAt: new Date(),
+        status: 'active'
+      });
+      setSelectedMessage(null);
+    } catch (error) {
+      console.error('Error accepting collaboration:', error);
+    }
+  };
+
+  const handleRejectCollab = async (message) => {
+    try {
+      await updateDoc(doc(db, 'collaboration-requests', message.id), {
+        status: 'rejected',
+        respondedAt: new Date()
+      });
+      setSelectedMessage(null);
+    } catch (error) {
+      console.error('Error rejecting collaboration:', error);
     }
   };
 
@@ -256,18 +317,18 @@ export const useResearcherDashboard = () => {
   // Log user events
   const logEvent = async ({ userId, role, userName, action, details, ip, target }) => {
     try {
-      await addDoc(collection(db, "logs"), {
+      await addDoc(collection(db, 'logs'), {
         userId,
         role,
         userName,
         action,
         details,
         ip,
-        target,
+        target: target || 'Unknown', // Ensure target is always defined
         timestamp: serverTimestamp(),
       });
     } catch (error) {
-      console.error("Error logging event:", error);
+      console.error('Error logging event:', error);
     }
   };
 
@@ -278,18 +339,18 @@ export const useResearcherDashboard = () => {
       if (user) {
         await logEvent({
           userId: user.uid,
-          role: "Researcher",
-          userName: user.displayName || "N/A",
-          action: "Logout",
-          details: "User logged out",
+          role: 'Researcher',
+          userName: user.displayName || 'N/A',
+          action: 'Logout',
+          details: 'User logged out',
           ip: ipAddress,
-          target: "Researcher Dashboard", 
+          target: 'Researcher Dashboard',
         });
         await auth.signOut();
-        navigate("/signin");
+        navigate('/signin');
       }
     } catch (error) {
-      console.error("Error during logout:", error);
+      console.error('Error during logout:', error);
     }
   };
 
@@ -313,8 +374,7 @@ export const useResearcherDashboard = () => {
     showContactForm,
     anchorEl,
     ipAddress,
-    showCollaborationRequests,
-    
+    selectedMessage,
     // Handlers
     handleSearch,
     handleMessageClick,
@@ -328,6 +388,8 @@ export const useResearcherDashboard = () => {
     setAnchorEl,
     setShowContactForm,
     setShowErrorModal,
-    setShowCollaborationRequests
+    setSelectedMessage,
+    // For testability: allow tests to set userId directly
+    setUserId
   };
 };

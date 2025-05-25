@@ -8,9 +8,12 @@ import ManageResearchers from "./ManageResearchers";
 import ManageAdmins from "./ManageAdmins";
 import ViewLogs from "./ViewLogs";
 
-export default function AdminPage({ initialTab = "dashboard" }) { // Allow an initial tab
-  const [activeTab, setActiveTab] = useState(initialTab); // Set state from prop
-  
+// Main admin page component
+export default function AdminPage({ initialTab = "dashboard" }) { // Allow an initial tab via props
+  // State to track which tab is currently active
+  const [activeTab, setActiveTab] = useState(initialTab);
+
+  // Inline styles for layout and appearance
   const styles = {
     container: {
       display: "flex",
@@ -22,7 +25,7 @@ export default function AdminPage({ initialTab = "dashboard" }) { // Allow an in
       flex: 1,
       padding: "20px",
       overflowY: "auto",
-      backgroundColor: "#1A2E40", // Updated to match the container background
+      backgroundColor: "#1A2E40", // Match container background
       borderLeft: "1px solid #2B3E50", // Subtle border for separation
     },
     header: {
@@ -40,26 +43,33 @@ export default function AdminPage({ initialTab = "dashboard" }) { // Allow an in
       color: "#B1EDE8", // Light teal for subtitles
     },
   };
+
+  // Debug: log the currently active tab
   console.log("ActiveTab is:", activeTab);
+
   return (
+    // Main container for the admin page
     <section style={styles.container}>
+      {/* Sidebar navigation for switching tabs */}
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+      {/* Main content area */}
       <main style={styles.main}>
+        {/* Header with dynamic title and subtitle based on active tab */}
         <header style={styles.header}>
-        <h1 style={styles.title}>
-  {console.log("Heading is rendering for:", activeTab)}
-  {activeTab === "dashboard"
-    ? "Dashboard"
-    : activeTab === "logs"
-    ? "System Logs"
-    : activeTab === "researchers"
-    ? "Manage Researchers"
-    : activeTab === "admins"
-    ? "Manage Admins"
-    : activeTab === "reviewers"
-    ? "Manage Reviewers"
-    : "User Management"}
-</h1>
+          <h1 style={styles.title}>
+            {console.log("Heading is rendering for:", activeTab)}
+            {activeTab === "dashboard"
+              ? "Dashboard"
+              : activeTab === "logs"
+              ? "System Logs"
+              : activeTab === "researchers"
+              ? "Manage Researchers"
+              : activeTab === "admins"
+              ? "Manage Admins"
+              : activeTab === "reviewers"
+              ? "Manage Reviewers"
+              : "User Management"}
+          </h1>
           <p style={styles.subtitle}>
             {activeTab === "dashboard"
               ? "Overview of platform usage and engagement."
@@ -74,6 +84,7 @@ export default function AdminPage({ initialTab = "dashboard" }) { // Allow an in
               : "Manage user accounts and permissions."}
           </p>
         </header>
+        {/* Render the selected tab's component */}
         {activeTab === "dashboard" && <Dashboard />}
         {activeTab === "logs" && <ViewLogs />}
         {activeTab === "researchers" && <ManageResearchers />}

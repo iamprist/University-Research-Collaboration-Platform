@@ -2,9 +2,12 @@ import React, { useEffect, useState } from "react";
 import { db } from "../../config/firebaseConfig";
 import { collection, getDocs, updateDoc, doc, query, where, deleteDoc } from "firebase/firestore";
 
+// Main component for managing researcher accounts
 export default function ManageResearchers() {
+  // State for current and revoked researchers
   const [researchers, setResearchers] = useState([]);
   const [revokedResearchers, setRevokedResearchers] = useState([]);
+  // State for revoke modal
   const [showRevokeModal, setShowRevokeModal] = useState(false);
   const [revokeReason, setRevokeReason] = useState("");
   const [revokingId, setRevokingId] = useState(null);
@@ -18,7 +21,7 @@ export default function ManageResearchers() {
   const [searchTerm, setSearchTerm] = useState("");
   const [revokedSearchTerm, setRevokedSearchTerm] = useState("");
 
-  // Fetch current researchers
+  // Fetch all current researchers from Firestore
   const fetchResearchers = async () => {
     try {
       const querySnapshot = await getDocs(collection(db, "users"));
@@ -31,7 +34,7 @@ export default function ManageResearchers() {
     }
   };
 
-  // Fetch revoked researchers
+  // Fetch all revoked researchers from Firestore
   const fetchRevokedResearchers = async () => {
     try {
       const usersQuery = query(collection(db, "users"), where("role", "==", "revokedResearcher"));
@@ -46,18 +49,19 @@ export default function ManageResearchers() {
     }
   };
 
+  // Fetch researchers and revoked researchers on mount
   useEffect(() => {
     fetchResearchers();
     fetchRevokedResearchers();
   }, []);
 
-  // Handle revoke modal open
+  // Open revoke modal for a researcher
   const handleRevoke = (id) => {
     setRevokingId(id);
     setShowRevokeModal(true);
   };
 
-  // Confirm revoke with reason
+  // Confirm revoke with reason and update Firestore
   const confirmRevoke = async () => {
     if (!revokeReason.trim()) {
       alert("Please provide a reason for revoking.");
@@ -76,7 +80,7 @@ export default function ManageResearchers() {
     }
   };
 
-  // Delete revoked researcher
+  // Delete a revoked researcher from Firestore
   const handleDeleteRevoked = async (id) => {
     try {
       await deleteDoc(doc(db, "users", id));
@@ -86,13 +90,13 @@ export default function ManageResearchers() {
     }
   };
 
-  // Pagination helpers
+  // Helper for paginating lists
   const paginate = (items, page) => {
     const start = (page - 1) * itemsPerPage;
     return items.slice(start, start + itemsPerPage);
   };
 
-  // Filtered lists for search
+  // Filtered lists for search functionality
   const filteredResearchers = researchers.filter((researcher) =>
     (researcher.name || "")
       .toLowerCase()
@@ -104,7 +108,7 @@ export default function ManageResearchers() {
       .includes(revokedSearchTerm.trim().toLowerCase())
   );
 
-  // Inline styles
+  // Inline styles for layout and appearance
   const styles = {
     container: {
       minHeight: "100vh",
@@ -258,11 +262,13 @@ export default function ManageResearchers() {
 
   return (
     <section style={styles.container}>
+      {/* Main researcher management section */}
       <article style={styles.article}>
         <h2 style={styles.heading}>Manage Researchers</h2>
         <p style={styles.description}>
           Below is the list of all users with the <span style={{ fontWeight: "bold" }}>researcher</span> role:
         </p>
+        {/* Search input for researchers */}
         <input
           type="text"
           placeholder="Search by researcher name..."
@@ -273,47 +279,60 @@ export default function ManageResearchers() {
             setResearchersPage(1);
           }}
         />
+        {/* List of current researchers */}
         <section>
-          {paginate(filteredResearchers, researchersPage).map((researcher) => (
-            <div key={researcher.id} style={styles.card}>
-              <header style={styles.cardHeader}>
-                <h3 style={styles.cardTitle}>
-                  {researcher.name || "N/A"}
-                </h3>
-                <p style={styles.cardEmail}>{researcher.email || "N/A"}</p>
-              </header>
-              <button
-                style={styles.revokeButton}
-                onClick={() => handleRevoke(researcher.id)}
-              >
-                Revoke
-              </button>
-            </div>
-          ))}
+          <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+            {paginate(filteredResearchers, researchersPage).map((researcher) => (
+              <li key={researcher.id} style={{ marginBottom: "1rem" }}>
+                <article style={styles.card}>
+                  <header style={styles.cardHeader}>
+                    <h3 style={styles.cardTitle}>
+                      {researcher.name || "N/A"}
+                    </h3>
+                    <p style={styles.cardEmail}>{researcher.email || "N/A"}</p>
+                  </header>
+                  <button
+                    style={styles.revokeButton}
+                    onClick={() => handleRevoke(researcher.id)}
+                  >
+                    Revoke
+                  </button>
+                </article>
+              </li>
+            ))}
+          </ul>
+          {/* Show message if no researchers found */}
           {filteredResearchers.length === 0 && (
             <p style={styles.noData}>No researcher accounts found.</p>
           )}
         </section>
         {/* Pagination for researchers */}
         {filteredResearchers.length > itemsPerPage && (
-          <div style={styles.pagination}>
+          <nav style={styles.pagination} aria-label="Researcher pagination">
             {Array.from({ length: Math.ceil(filteredResearchers.length / itemsPerPage) }, (_, i) => (
               <button
                 key={i}
                 style={styles.paginationBtn(researchersPage === i + 1)}
                 onClick={() => setResearchersPage(i + 1)}
+                aria-current={researchersPage === i + 1 ? "page" : undefined}
               >
                 {i + 1}
               </button>
             ))}
-          </div>
+          </nav>
         )}
       </article>
 
       {/* Revoke Reason Modal */}
       {showRevokeModal && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.modal}>
+        <dialog open style={styles.modalOverlay}>
+          <form
+            style={styles.modal}
+            onSubmit={e => {
+              e.preventDefault();
+              confirmRevoke();
+            }}
+          >
             <h3 style={{ marginBottom: "1rem" }}>Revoke Researcher</h3>
             <label htmlFor="revoke-reason" style={styles.modalLabel}>
               Please provide a reason for revoking:
@@ -327,6 +346,7 @@ export default function ManageResearchers() {
             />
             <div style={styles.modalButtonRow}>
               <button
+                type="button"
                 onClick={() => {
                   setShowRevokeModal(false);
                   setRevokeReason("");
@@ -337,22 +357,23 @@ export default function ManageResearchers() {
                 Cancel
               </button>
               <button
-                onClick={confirmRevoke}
+                type="submit"
                 style={styles.modalConfirm}
               >
                 Confirm Revoke
               </button>
             </div>
-          </div>
-        </div>
+          </form>
+        </dialog>
       )}
 
-      {/* Revoked Researchers */}
+      {/* Revoked Researchers section */}
       <article style={styles.article}>
         <h2 style={styles.heading}>Revoked Researchers</h2>
         <p style={styles.description}>
           Below is the list of all researchers who have been revoked:
         </p>
+        {/* Search input for revoked researchers */}
         <input
           type="text"
           placeholder="Search by researcher name..."
@@ -363,45 +384,52 @@ export default function ManageResearchers() {
             setRevokedPage(1);
           }}
         />
+        {/* List of revoked researchers */}
         <section>
-          {paginate(filteredRevokedResearchers, revokedPage).map((researcher) => (
-            <div key={researcher.id} style={styles.card}>
-              <header style={styles.cardHeader}>
-                <h3 style={styles.cardTitle}>
-                  {researcher.name || "N/A"}
-                </h3>
-                <p style={styles.cardEmail}>{researcher.email || "N/A"}</p>
-                {researcher.revokeReason && (
-                  <p>
-                    <strong>Revoke Reason:</strong> {researcher.revokeReason}
-                  </p>
-                )}
-              </header>
-              <button
-                style={styles.deleteButton}
-                onClick={() => handleDeleteRevoked(researcher.id)}
-              >
-                Delete
-              </button>
-            </div>
-          ))}
+          <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+            {paginate(filteredRevokedResearchers, revokedPage).map((researcher) => (
+              <li key={researcher.id} style={{ marginBottom: "1rem" }}>
+                <article style={styles.card}>
+                  <header style={styles.cardHeader}>
+                    <h3 style={styles.cardTitle}>
+                      {researcher.name || "N/A"}
+                    </h3>
+                    <p style={styles.cardEmail}>{researcher.email || "N/A"}</p>
+                    {researcher.revokeReason && (
+                      <p>
+                        <strong>Revoke Reason:</strong> {researcher.revokeReason}
+                      </p>
+                    )}
+                  </header>
+                  <button
+                    style={styles.deleteButton}
+                    onClick={() => handleDeleteRevoked(researcher.id)}
+                  >
+                    Delete
+                  </button>
+                </article>
+              </li>
+            ))}
+          </ul>
+          {/* Show message if no revoked researchers found */}
           {filteredRevokedResearchers.length === 0 && (
             <p style={styles.noData}>No revoked researcher accounts found.</p>
           )}
         </section>
         {/* Pagination for revoked researchers */}
         {filteredRevokedResearchers.length > itemsPerPage && (
-          <div style={styles.pagination}>
+          <nav style={styles.pagination} aria-label="Revoked researcher pagination">
             {Array.from({ length: Math.ceil(filteredRevokedResearchers.length / itemsPerPage) }, (_, i) => (
               <button
                 key={i}
                 style={styles.paginationBtn(revokedPage === i + 1)}
                 onClick={() => setRevokedPage(i + 1)}
+                aria-current={revokedPage === i + 1 ? "page" : undefined}
               >
                 {i + 1}
               </button>
             ))}
-          </div>
+          </nav>
         )}
       </article>
     </section>
