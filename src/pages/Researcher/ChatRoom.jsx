@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { auth } from '../../config/firebaseConfig';
@@ -11,7 +10,6 @@ export default function ChatRoom() {
   const [newMessage, setNewMessage] = useState('');
   const [status, setStatus] = useState({ loading: true, error: null });
   const [userData, setUserData] = useState({});
-  const [chatName, setChatName] = useState('Chat Room');
   const [attachment, setAttachment] = useState(null);
   const [attachmentType, setAttachmentType] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -46,16 +44,11 @@ export default function ChatRoom() {
       try {
         setStatus({ loading: true, error: null });
         
-        const { chatRef, chatData } = await chatService.initializeChat(chatId);
+        const { chatRef } = await chatService.initializeChat(chatId);
         
-        if (chatData?.name) {
-          setChatName(chatData.name);
-        }
-
         unsubscribe = chatService.subscribeToChatUpdates(chatRef, ({ messages: newMessages, participants }) => {
           setMessages(newMessages);
           updateUserData(newMessages);
-          updateChatName(participants);
         });
 
         setStatus({ loading: false, error: null });
@@ -78,21 +71,13 @@ export default function ChatRoom() {
       }
     };
 
-    const updateChatName = (participants) => {
-      if (participants?.length === 2) {
-        const otherUserId = chatService.getOtherParticipant(participants, auth.currentUser?.uid);
-        if (otherUserId && userData[otherUserId]) {
-          setChatName(userData[otherUserId]);
-        }
-      }
-    };
-
     initializeChat();
 
     return () => {
       if (unsubscribe) unsubscribe();
     };
   }, [chatId, userData]);
+
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
