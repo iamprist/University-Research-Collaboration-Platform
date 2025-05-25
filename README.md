@@ -21,16 +21,16 @@
 
 ---
 
-## 🚀 Features Overview
+##  Features Overview
 
 | Feature                     | Description                                                                           |
 | --------------------------- | ------------------------------------------------------------------------------------- |
-| 🔐 **User Verification**    | Firebase Google Sign-In with three roles: **Researcher**, **Reviewer**, and **Admin** |
-| 🧪 **Project Management**   | Researchers can post projects, define team needs, and invite collaborators            |
-| 💬 **Collaboration Tools**  | Real-time messaging, document sharing, and milestone tracking                         |
-| 💰 **Funding Tracker**      | Manage grants, spending logs, and funding forecast dashboards                         |
-| 📊 **Reports & Dashboards** | Export project data as CSV/PDF, with support for custom analytics views               |
-| 🤖 **AI Recommendations**   | *(Planned)* Match reviewers to projects based on expertise tags                       |
+|  **User Verification**    | Firebase Google Sign-In with three roles: **Researcher**, **Reviewer**, and **Admin** |
+|  **Project Management**   | Researchers can post projects, define team needs, and invite collaborators            |
+|  **Collaboration Tools**  | Real-time messaging, document sharing, and milestone tracking                         |
+|  **Funding Tracker**      | Manage grants, spending logs, and funding forecast dashboards                         |
+|  **Reports & Dashboards** | Export project data as CSV/PDF, with support for custom analytics views               |
+|  **AI Recommendations**   | *(Planned)* Match reviewers to projects based on expertise tags                       |
 
 ---
 
@@ -70,7 +70,7 @@ README.md
 
 ---
 
-## 👥 Team Members
+##  Team Members
 
 | Name                  | Role          |
 | --------------------- | ------------- |
