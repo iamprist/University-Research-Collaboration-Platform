@@ -147,7 +147,54 @@
 <a name='L82'></a><a href='#L82'>82</a>
 <a name='L83'></a><a href='#L83'>83</a>
 <a name='L84'></a><a href='#L84'>84</a>
-<a name='L85'></a><a href='#L85'>85</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L85'></a><a href='#L85'>85</a>
+<a name='L86'></a><a href='#L86'>86</a>
+<a name='L87'></a><a href='#L87'>87</a>
+<a name='L88'></a><a href='#L88'>88</a>
+<a name='L89'></a><a href='#L89'>89</a>
+<a name='L90'></a><a href='#L90'>90</a>
+<a name='L91'></a><a href='#L91'>91</a>
+<a name='L92'></a><a href='#L92'>92</a>
+<a name='L93'></a><a href='#L93'>93</a>
+<a name='L94'></a><a href='#L94'>94</a>
+<a name='L95'></a><a href='#L95'>95</a>
+<a name='L96'></a><a href='#L96'>96</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">12x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">12x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -166,31 +213,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">12x</span>
-<span class="cline-any cline-yes">12x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -241,9 +263,12 @@ import ManageResearchers from "./ManageResearchers";
 import ManageAdmins from "./ManageAdmins";
 import ViewLogs from "./ViewLogs";
 &nbsp;
-export default function AdminPage({ initialTab = "dashboard" }) { // Allow an initial tab
-  const [activeTab, setActiveTab] = useState(initialTab); // Set state from prop
-  
+// Main admin page component
+export default function AdminPage({ initialTab = "dashboard" }) { // Allow an initial tab via props
+  // State to track which tab is currently active
+  const [activeTab, setActiveTab] = useState(initialTab);
+&nbsp;
+  // Inline styles for layout and appearance
   const styles = {
     container: {
       display: "flex",
@@ -255,7 +280,7 @@ export default function AdminPage({ initialTab = "dashboard" }) { // Allow an in
       flex: 1,
       padding: "20px",
       overflowY: "auto",
-      backgroundColor: "#1A2E40", // Updated to match the container background
+      backgroundColor: "#1A2E40", // Match container background
       borderLeft: "1px solid #2B3E50", // Subtle border for separation
     },
     header: {
@@ -273,26 +298,33 @@ export default function AdminPage({ initialTab = "dashboard" }) { // Allow an in
       color: "#B1EDE8", // Light teal for subtitles
     },
   };
+&nbsp;
+  // Debug: log the currently active tab
   console.log("ActiveTab is:", activeTab);
+&nbsp;
   return (
+    // Main container for the admin page
     &lt;section style={styles.container}&gt;
+      {/* Sidebar navigation for switching tabs */}
       &lt;Sidebar activeTab={activeTab} setActiveTab={setActiveTab} /&gt;
+      {/* Main content area */}
       &lt;main style={styles.main}&gt;
+        {/* Header with dynamic title and subtitle based on active tab */}
         &lt;header style={styles.header}&gt;
-        &lt;h1 style={styles.title}&gt;
-  {console.log("Heading is rendering for:", activeTab)}
-  {activeTab === "dashboard"
-    ? "Dashboard"
-    : activeTab === "logs"
-    ? "System Logs"
-    : activeTab === "researchers"
-    ? "Manage Researchers"
-    : activeTab === "admins"
-    ? "Manage Admins"
-    : activeTab === "reviewers"
-    ? "Manage Reviewers"
-    : <span class="branch-1 cbranch-no" title="branch not covered" >"User Management"}</span>
-&lt;/h1&gt;
+          &lt;h1 style={styles.title}&gt;
+            {console.log("Heading is rendering for:", activeTab)}
+            {activeTab === "dashboard"
+              ? "Dashboard"
+              : activeTab === "logs"
+              ? "System Logs"
+              : activeTab === "researchers"
+              ? "Manage Researchers"
+              : activeTab === "admins"
+              ? "Manage Admins"
+              : activeTab === "reviewers"
+              ? "Manage Reviewers"
+              : <span class="branch-1 cbranch-no" title="branch not covered" >"User Management"}</span>
+          &lt;/h1&gt;
           &lt;p style={styles.subtitle}&gt;
             {activeTab === "dashboard"
               ? "Overview of platform usage and engagement."
@@ -307,6 +339,7 @@ export default function AdminPage({ initialTab = "dashboard" }) { // Allow an in
               : <span class="branch-1 cbranch-no" title="branch not covered" >"Manage user accounts and permissions."}</span>
           &lt;/p&gt;
         &lt;/header&gt;
+        {/* Render the selected tab's component */}
         {activeTab === "dashboard" &amp;&amp; &lt;Dashboard /&gt;}
         {activeTab === "logs" &amp;&amp; &lt;ViewLogs /&gt;}
         {activeTab === "researchers" &amp;&amp; &lt;ManageResearchers /&gt;}
@@ -322,7 +355,7 @@ export default function AdminPage({ initialTab = "dashboard" }) { // Allow an in
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-05-24T13:31:55.425Z
+                at 2025-05-25T12:28:45.042Z
             </div>
         <script src="../../prettify.js"></script>
         <script>
