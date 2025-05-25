@@ -1,5 +1,6 @@
 // App.js - Main application entry point and route configuration
 // src/App.js
+import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import SignInPage from "./pages/SignInPage";
 import LandingPage from "./pages/LandingPage";
