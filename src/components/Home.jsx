@@ -11,8 +11,17 @@ const Home = () => {
     <section className="home-container">
       <Navbar />
       <section className="home-banner-container">
-        <figure className="home-bannerImage-container">
-          <img src={BannerBackground} alt="Research Collaboration Background" />
+        <figure className="home-bannerImage-container">        <img
+          src="/favicon.ico"
+          alt="Inerk Hub Logo"
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: "50%",
+            border: "2px solid #B1EDE8",
+            objectFit: "cover"
+          }}
+        />
         </figure>
         <article className="home-text-section">
           <header>
