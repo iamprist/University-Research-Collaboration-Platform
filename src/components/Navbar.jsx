@@ -29,18 +29,19 @@ const Navbar = () => {
 
   return (
     <nav>
-      <figure className="nav-logo-container">
-        <img
-          src="/favicon.ico"
-          alt="Inerk Hub Logo"
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: "50%",
-            border: "2px solid #B1EDE8",
-            objectFit: "cover"
-          }}
-        />      </figure>
+<figure className="nav-logo-container">
+  <img
+    src="/favicon.ico"
+    alt="Inerk Hub Logo"
+    style={{
+      width: 48, // Increased from 36 to 48
+      height: 48, // Increased from 36 to 48
+      borderRadius: "50%",
+      border: "2px solid #B1EDE8",
+      objectFit: "cover"
+    }}
+  />
+</figure>
       <menu className="navbar-links-container">
         <Link to="/">Home</Link>
         <Link to="/about" state={{ fromNavbar: true }}>About</Link>
