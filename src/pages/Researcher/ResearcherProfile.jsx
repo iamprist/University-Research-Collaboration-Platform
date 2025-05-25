@@ -24,7 +24,7 @@ const ResearcherProfile = () => {
   const [userId, setUserId] = useState(null);
   // Loading and error state
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  
   // State for dropdown menu anchor
   const [menuAnchorEl, setMenuAnchorEl] = useState(null);
 
@@ -62,34 +62,43 @@ const ResearcherProfile = () => {
         const userDocRef = doc(db, 'researcherProfiles', userId);
         const userDoc = await getDoc(userDocRef);
 
-        if (userDoc.exists()) {
-          // Ensure all fields have proper fallback values
-          const profileData = userDoc.data();
-          setProfile({
-            title: profileData.title || '',
-            name: profileData.name || '',
-            email: profileData.email || '',
-            researchArea: profileData.researchArea || '',
-            biography: profileData.biography || '',
-            country: profileData.country || '',
-            university: profileData.university || '',
-            otherUniversity: profileData.otherUniversity || '',
-            otherCountry: profileData.otherCountry || '',
-            profilePicture: profileData.profilePicture || null
-          });
-        } else {
-          setError('Profile not found');
+        if (!userDoc.exists()) {
+          navigate('/researcher-edit-profile'); // Redirect if doc doesn't exist
+          return;
         }
+
+        const profileData = userDoc.data();
+        const requiredFields = ['name', 'email', 'researchArea']; // Customize required fields
+        const isProfileIncomplete = requiredFields.some(field => !profileData[field]);
+
+        if (isProfileIncomplete) {
+          navigate('/researcher-edit-profile'); // Redirect if missing required fields
+          return;
+        }
+
+        // Only set profile if everything is valid
+        setProfile({
+          title: profileData.title || '',
+          name: profileData.name || '',
+          email: profileData.email || '',
+          researchArea: profileData.researchArea || '',
+          biography: profileData.biography || '',
+          country: profileData.country || '',
+          university: profileData.university || '',
+          otherUniversity: profileData.otherUniversity || '',
+          otherCountry: profileData.otherCountry || '',
+          profilePicture: profileData.profilePicture || null,
+        });
       } catch (error) {
         console.error('Error fetching profile:', error);
-        setError('Failed to load profile');
+        navigate('/researcher-edit-profile'); // Redirect on error (silently)
       } finally {
         setLoading(false);
       }
     };
 
     fetchProfile();
-  }, [userId]);
+  }, [userId, navigate]);
 
   // Display loading state
   if (loading) {
@@ -100,28 +109,7 @@ const ResearcherProfile = () => {
     );
   }
 
-  // Display error state
-  if (error) {
-    return (
-      <Box className="error-container" sx={{ p: 6, textAlign: 'center' }}>
-        <Typography color="error">{error}</Typography>
-        <Button
-          onClick={() => window.location.reload()}
-          variant="contained"
-          sx={{
-            mt: 2,
-            bgcolor: 'var(--light-blue)',
-            color: 'var(--dark-blue)',
-            borderRadius: '1.5rem',
-            px: 4,
-            '&:hover': { bgcolor: '#5AA9A3', color: 'var(--white)' },
-          }}
-        >
-          Try Again
-        </Button>
-      </Box>
-    );
-  }
+
 
   // Render profile UI
   return (
