@@ -1,6 +1,6 @@
 import React from "react";
 import { render, screen, waitFor, within } from "@testing-library/react";
-import { act } from "react-dom/test-utils";
+import { act } from "react";
 import Dashboard from "../Dashboard";
 import * as firestore from "firebase/firestore";
 
@@ -98,6 +98,42 @@ describe("Dashboard", () => {
     render(<Dashboard />);
     await waitFor(() => {
       expect(screen.getByText(/engagement \(logs per day\)/i)).toBeInTheDocument();
+    });
+  });
+
+  // Test for line 89: "No logs found" message
+  it('shows "No logs found" if logs are empty', async () => {
+    // Override logs to be empty
+    firestore.getDocs.mockImplementation(async (collectionRef) => {
+      if (collectionRef === "logs") {
+        return { docs: [] };
+      }
+      return mockGetDocs(collectionRef);
+    });
+    await act(async () => {
+      render(<Dashboard />);
+    });
+    await waitFor(() => {
+      expect(screen.getByText(/no logs found/i)).toBeInTheDocument();
+    });
+  });
+
+  // Test for lines 140-141: "No reviewer applications found" message
+  it('shows 0 in "Reviewer Applications" if no in_progress reviewers', async () => {
+    // Override reviewers to have no in_progress status
+    firestore.getDocs.mockImplementation(async (collectionRef) => {
+      if (collectionRef === "reviewers") {
+        return { docs: [{ id: "2", data: () => ({ status: "approved" }) }] };
+      }
+      return mockGetDocs(collectionRef);
+    });
+    await act(async () => {
+      render(<Dashboard />);
+    });
+    await waitFor(() => {
+      expect(
+        within(screen.getByText(/reviewer applications/i).closest("article")).getByText("0")
+      ).toBeInTheDocument();
     });
   });
 });
