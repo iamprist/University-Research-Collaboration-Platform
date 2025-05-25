@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { fundingService } from './fundingService';
 import jsPDF from 'jspdf';
 import './FundingSection.css'; 
-export default function FundingSection({ chatId }) {
+
+export default function FundingSection({ chatId, isReviewer }) {
   const [fundingData, setFundingData] = useState({
     funding: [],
     expenditures: [],
@@ -27,7 +28,7 @@ export default function FundingSection({ chatId }) {
 
   const handleAddFunding = async (e) => {
     e.preventDefault();
-    if (!fundingInput.amount || !fundingInput.source) return;
+    if (!fundingInput.amount || !fundingInput.source || isReviewer) return;
     await fundingService.addFunding(chatId, {
       amount: parseFloat(fundingInput.amount),
       source: fundingInput.source,
@@ -39,7 +40,7 @@ export default function FundingSection({ chatId }) {
 
   const handleAddExpenditure = async (e) => {
     e.preventDefault();
-    if (!expenditureInput.amount || !expenditureInput.description) return;
+    if (!expenditureInput.amount || !expenditureInput.description || isReviewer) return;
     await fundingService.addExpenditure(chatId, {
       amount: parseFloat(expenditureInput.amount),
       description: expenditureInput.description,
@@ -74,13 +75,12 @@ export default function FundingSection({ chatId }) {
       y += 3;
     }
 
-    
     doc.save('funding_report.pdf');
   };
 
   const handleSaveTotalNeeded = async (e) => {
     e.preventDefault();
-    if (!totalNeededInput) return;
+    if (!totalNeededInput || isReviewer) return;
     await fundingService.updateTotalNeeded(chatId, totalNeededInput);
     setTotalNeededInput('');
   };
@@ -88,7 +88,7 @@ export default function FundingSection({ chatId }) {
   return (
     <article className="funding-container">
       <header>
-        <h2>Research Funding Management</h2>
+        <h2>Research Funding Management {isReviewer && <span className="view-only-badge">(View Only)</span>}</h2>
       </header>
 
       <section aria-labelledby="funding-summary-heading">
@@ -105,33 +105,35 @@ export default function FundingSection({ chatId }) {
         </dl>
       </section>
 
-      <nav aria-label="Funding actions">
-        <ul className="action-buttons">
-          <li>
-            <button 
-              onClick={() => setShowFundingForm(v => !v)}
-              aria-expanded={showFundingForm}
-            >
-              {showFundingForm ? 'Cancel' : 'Add Funding'}
-            </button>
-          </li>
-          <li>
-            <button 
-              onClick={() => setShowExpenditureForm(v => !v)}
-              aria-expanded={showExpenditureForm}
-            >
-              {showExpenditureForm ? 'Cancel' : 'Add Expenditure'}
-            </button>
-          </li>
-          <li>
-            <button onClick={handleExportFundingPDF}>
-              Export as PDF
-            </button>
-          </li>
-        </ul>
-      </nav>
+      {!isReviewer && (
+        <nav aria-label="Funding actions">
+          <ul className="action-buttons">
+            <li>
+              <button 
+                onClick={() => setShowFundingForm(v => !v)}
+                aria-expanded={showFundingForm}
+              >
+                {showFundingForm ? 'Cancel' : 'Add Funding'}
+              </button>
+            </li>
+            <li>
+              <button 
+                onClick={() => setShowExpenditureForm(v => !v)}
+                aria-expanded={showExpenditureForm}
+              >
+                {showExpenditureForm ? 'Cancel' : 'Add Expenditure'}
+              </button>
+            </li>
+            <li>
+              <button onClick={handleExportFundingPDF}>
+                Export as PDF
+              </button>
+            </li>
+          </ul>
+        </nav>
+      )}
 
-      {showFundingForm && (
+      {showFundingForm && !isReviewer && (
         <form onSubmit={handleAddFunding} aria-labelledby="add-funding-heading">
           <fieldset>
             <legend id="add-funding-heading">Add New Funding</legend>
@@ -174,7 +176,7 @@ export default function FundingSection({ chatId }) {
         </form>
       )}
 
-      {showExpenditureForm && (
+      {showExpenditureForm && !isReviewer && (
         <form onSubmit={handleAddExpenditure} aria-labelledby="add-expenditure-heading">
           <fieldset>
             <legend id="add-expenditure-heading">Add New Expenditure</legend>
@@ -220,20 +222,22 @@ export default function FundingSection({ chatId }) {
       <section aria-labelledby="funding-requirements-heading">
         <h3 id="funding-requirements-heading">Funding Requirements</h3>
         
-        <form onSubmit={handleSaveTotalNeeded}>
-          <label>
-            Total Needed (R)
-            <input
-              type="number"
-              step="0.01"
-              value={totalNeededInput}
-              onChange={(e) => setTotalNeededInput(e.target.value)}
-            />
-          </label>
-          <button type="submit" disabled={!totalNeededInput}>
-            Save
-          </button>
-        </form>
+        {!isReviewer && (
+          <form onSubmit={handleSaveTotalNeeded}>
+            <label>
+              Total Needed (R)
+              <input
+                type="number"
+                step="0.01"
+                value={totalNeededInput}
+                onChange={(e) => setTotalNeededInput(e.target.value)}
+              />
+            </label>
+            <button type="submit" disabled={!totalNeededInput}>
+              Save
+            </button>
+          </form>
+        )}
 
         {totalNeeded !== null && (
           <dl>

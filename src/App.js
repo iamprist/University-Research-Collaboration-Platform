@@ -7,7 +7,7 @@ import LandingPage from "./pages/LandingPage";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import About from "./components/About";
 import LearnMore from "./pages/LearnMore";
-
+import { useLocation } from 'react-router-dom';
 // Admin
 import AdminPage from "./pages/Admin/AdminPage";
 import ViewLogs from "./pages/Admin/ViewLogs";
@@ -58,7 +58,7 @@ function App() {
       return "N/A";
     }
   };
-
+ const location = useLocation();
   // Log login events to Firestore on auth state change
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
@@ -197,7 +197,12 @@ function App() {
         />
         <Route path="/chat/:chatId" element={<ChatRoom />} />
         <Route path="/friends" element={<FriendsSystem />} />
-        <Route path="/collaboration/:chatId" element={<CollaborationDashboard />} />
+         <Route 
+        path="/collaboration/:chatId" 
+        element={
+          <CollaborationDashboard 
+            userRole={location.state?.userRole || 'reviewer'} 
+          />}/>
 
         {/* Catch-all: redirect unknown routes to home */}
         <Route path="*" element={<Navigate to="/" replace />} />

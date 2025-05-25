@@ -907,22 +907,22 @@ const handleDeclineReviewRequest = async (requestId) => {
                       View Listing
                     </Button>
                     <Button
-                      variant="contained"
-                      size="small"
-                      sx={{
-                        bgcolor: 'var(--light-blue)',
-                        color: 'var(--dark-blue)',
-                        borderRadius: '1.5rem',
-                        fontWeight: 600,
-                        px: 2,
-                        py: 0.5,
-                        minWidth: 0,
-                        boxShadow: '0 2px 10px rgba(100,204,197,0.08)',
-                        textTransform: "none",
-                        '&:hover': { bgcolor: '#5AA9A3', color: 'var(--white)' },
-                        flex: 1
-                      }}
-                      onClick={() => navigate(`/collaboration/${item.id}`)}
+  variant="contained"
+  size="small"
+  sx={{
+    bgcolor: 'var(--light-blue)',
+    color: 'var(--dark-blue)',
+    borderRadius: '1.5rem',
+    fontWeight: 600,
+    px: 2,
+    py: 0.5,
+    minWidth: 0,
+    boxShadow: '0 2px 10px rgba(100,204,197,0.08)',
+    textTransform: "none",
+    '&:hover': { bgcolor: '#5AA9A3', color: 'var(--white)' },
+    flex: 1
+  }}
+  onClick={() => navigate(`/collaboration/${item.id}`, { state: { userRole: 'researcher' } })}
                     >
                       Collaboration Room
                     </Button>
@@ -1057,22 +1057,22 @@ const handleDeclineReviewRequest = async (requestId) => {
                       View Project
                     </Button>
                     <Button
-                      variant="contained"
-                      size="small"
-                      sx={{
-                        bgcolor: 'var(--light-blue)',
-                        color: 'var(--dark-blue)',
-                        borderRadius: '1.5rem',
-                        fontWeight: 600,
-                        px: 2,
-                        py: 0.5,
-                        minWidth: 0,
-                        boxShadow: '0 2px 10px rgba(100,204,197,0.08)',
-                        textTransform: "none",
-                        '&:hover': { bgcolor: '#5AA9A3', color: 'var(--white)' },
-                        flex: 1
-                      }}
-                      onClick={() => navigate(`/collaboration/${listing.id}`)}
+  variant="contained"
+  size="small"
+  sx={{
+    bgcolor: 'var(--light-blue)',
+    color: 'var(--dark-blue)',
+    borderRadius: '1.5rem',
+    fontWeight: 600,
+    px: 2,
+    py: 0.5,
+    minWidth: 0,
+    boxShadow: '0 2px 10px rgba(100,204,197,0.08)',
+    textTransform: "none",
+    '&:hover': { bgcolor: '#5AA9A3', color: 'var(--white)' },
+    flex: 1
+  }}
+  onClick={() => navigate(`/collaboration/${listing.id}`, { state: { userRole: 'researcher' } })}
                     >
                       Collaboration Room
                     </Button>
