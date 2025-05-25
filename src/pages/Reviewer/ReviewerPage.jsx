@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { IconButton, Menu, MenuItem, TextField, Button, Paper, Box, Typography, Snackbar } from '@mui/material'
 import MenuIcon from '@mui/icons-material/Menu'
 import MuiAlert from '@mui/material/Alert'
@@ -79,33 +79,53 @@ export default function ReviewerPage() {
   }
 
   const toggleSidebar = () => setSidebarOpen(prev => !prev);
-
+    useEffect(() => {
+    const faviconUrl = '/favicon.ico'; // Update path if your favicon is named differently or in a different location
+    let link = document.querySelector("link[rel~='icon']");
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'icon';
+      document.getElementsByTagName('head')[0].appendChild(link);
+    }
+    link.href = faviconUrl;
+  }, []);
   return (
     <main
       style={{
         backgroundColor: '#FFFFFF',
         color: '#000000',
         minHeight: '100vh',
-        paddingTop: '70px'
+        paddingTop: '70px',
+        fontFamily: 'Arial, sans-serif'
+
+
       }}
     >
       <header
-        className="navbar navbar-light bg-light fixed-top px-4 py-3"
-        style={{ borderBottom: '1px solid #000' }}
-      >
-        <h1 className="navbar-brand fw-bold fs-4">Innerk Hub</h1>
-        <IconButton
-          onClick={e => setMenuAnchorEl(e.currentTarget)}
-          sx={{
-            bgcolor: 'var(--light-blue)',
-            color: 'var(--dark-blue)',
-            borderRadius: '1.5rem',
-            ml: 2,
-            '&:hover': { bgcolor: '#5AA9A3', color: 'var(--white)' }
-          }}
-        >
-          <MenuIcon />
-        </IconButton>
+  className="navbar navbar-light bg-light fixed-top px-4 py-3"
+  style={{ borderBottom: '1px solid #000' }}
+>
+  <span style={{ display: 'flex', alignItems: 'center' }}>
+    <img
+      src="/favicon.ico"
+      alt="Favicon"
+      style={{ width: 28, height: 28, marginRight: 8 }}
+    />
+    <h1 className="navbar-brand fw-bold fs-4 mb-0">Reviewer</h1>
+    
+  </span>
+  <IconButton
+    onClick={e => setMenuAnchorEl(e.currentTarget)}
+    sx={{
+      bgcolor: 'var(--light-blue)',
+      color: 'var(--dark-blue)',
+      borderRadius: '1.5rem',
+      ml: 2,
+      '&:hover': { bgcolor: '#5AA9A3', color: 'var(--white)' }
+    }}
+  >
+    <MenuIcon />
+  </IconButton>
         <Menu
           anchorEl={menuAnchorEl}
           open={Boolean(menuAnchorEl)}
