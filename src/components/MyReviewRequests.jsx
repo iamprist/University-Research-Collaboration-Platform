@@ -94,13 +94,27 @@ export default function MyReviewRequests() {
         ...prev,
         [req.listingId]: true,
       }));
+
+      // Fetch the review just submitted and update local state
+      const q = query(
+        collection(db, "reviews"),
+        where("reviewerId", "==", user.uid),
+        where("listingId", "==", req.listingId)
+      );
+      const snap = await getDocs(q);
+      let reviewData = null;
+      snap.forEach(docSnap => {
+        reviewData = docSnap.data();
+      });
       setReviews((prev) => ({
         ...prev,
         [req.id]: {
-          ...prev[req.id],
+          rating: reviewData?.rating || reviews[req.id]?.rating || 0,
+          comment: reviewData?.comment || reviews[req.id]?.comment || "",
           editing: false,
         }
       }));
+
       setSnackbar({ open: true, msg: "Review submitted!", severity: "success" });
     } catch (e) {
       setSnackbar({ open: true, msg: "Failed to submit review.", severity: "error" });
