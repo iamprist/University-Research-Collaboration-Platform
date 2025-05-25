@@ -1037,19 +1037,38 @@ const handleDeclineReviewRequest = async (requestId) => {
           </Stack>
         </section>
         {/* Collaboration Requests Section */}
-<section style={{ maxWidth: 800, margin: '32px auto' }}>
+<section style={{ maxWidth: 1200, margin: '48px auto 0 auto' }}>
   <h2 style={{ marginBottom: 24, fontSize: '1.7rem' }}>Collaboration Requests</h2>
-  <Paper sx={{ p: 2, bgcolor: '#1a2a42', color: '#B1EDE8' }}>
+  <Paper
+    sx={{
+      p: 2,
+      bgcolor: '#fff',           // White background
+      color: '#222',             // Black text
+      boxShadow: "0 6px 24px rgba(30, 60, 90, 0.10)",
+      borderRadius: "1.2rem",
+      mb: 4
+    }}
+  >
     <CollaborationRequestsPanel />
   </Paper>
 </section>
-<section style={{ maxWidth: 800, margin: '32px auto' }}>
-  <h2>Pending Review Requests</h2>
+<section style={{ maxWidth: 1200, margin: '32px auto' }}>
+  <h2 style={{ marginBottom: 24, fontSize: '1.7rem' }}>Pending Review Requests</h2>
   {reviewRequests.length === 0 ? (
     <p>No pending review requests.</p>
   ) : (
     reviewRequests.map(req => (
-      <Paper key={req.id} sx={{ p: 2, mb: 2, bgcolor: '#1a2a42', color: '#B1EDE8' }}>
+      <Paper
+        key={req.id}
+        sx={{
+          p: 2,
+          mb: 2,
+          bgcolor: '#fff',       // White background
+          color: '#222',         // Black text
+          boxShadow: "0 6px 24px rgba(30, 60, 90, 0.10)",
+          borderRadius: "1.2rem"
+        }}
+      >
         <Typography variant="subtitle1">
           Reviewer: {req.reviewerName} {req.reviewerEmail && <>({req.reviewerEmail})</>}
         </Typography>
