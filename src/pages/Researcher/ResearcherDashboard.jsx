@@ -867,7 +867,7 @@ const handleDeclineReviewRequest = async (requestId) => {
                 </section>
               </article>
             ))}
-          </Stack>
+          </section>
         </section>
         {/* Collaboration Requests Section */}
 <section style={{ maxWidth: 1200, margin: '48px auto 0 auto' }}>
