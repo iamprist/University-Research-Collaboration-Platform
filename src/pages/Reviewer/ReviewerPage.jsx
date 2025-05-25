@@ -1,265 +1,36 @@
-import React, { useEffect, useState } from 'react'
-import { IconButton, Menu, MenuItem, TextField, Button, Paper, Box, Typography } from '@mui/material'
+import React from 'react'
+import { IconButton, Menu, MenuItem, TextField, Button, Paper, Box, Typography, Snackbar } from '@mui/material'
 import MenuIcon from '@mui/icons-material/Menu'
-
-import {
-  doc,
-  getDoc,
-  deleteDoc,
-  addDoc,
-  collection,
-  serverTimestamp,
-  query,
-  where,
-  onSnapshot,
-  getDocs
-} from 'firebase/firestore'
-import { db, auth } from '../../config/firebaseConfig'
-import { useAuth } from './authContext'
-import { useNavigate } from 'react-router-dom'
+import MuiAlert from '@mui/material/Alert'
 import ReviewerRecommendations from '../../components/ReviewerRecommendations'
 import MyReviewRequests from '../../components/MyReviewRequests'
-import axios from 'axios'
-import Snackbar from '@mui/material/Snackbar'
-import MuiAlert from '@mui/material/Alert'
+import { useReviewerDashboard } from './reviewerDashboardLogic'
 
 export default function ReviewerPage() {
-  const [status, setStatus] = useState('')
-   const [menuAnchorEl, setMenuAnchorEl] = useState(null)
-  const [reason, setReason] = useState('')
-  const [loading, setLoading] = useState(true)
-  const { currentUser } = useAuth()
-  const [ipAddress, setIpAddress] = useState('')
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [notif, setNotif] = useState({ open: false, msg: '', severity: 'info' })
-  const [searchTerm, setSearchTerm] = useState('')
-  const [searchResults, setSearchResults] = useState([])
-  const [dropdownVisible, setDropdownVisible] = useState(false)
-  const [showNoResults, setShowNoResults] = useState(false)
-  const [allListings, setAllListings] = useState([])
-  const [requestedIds, setRequestedIds] = useState([]);
-  const [reviewedIds, setReviewedIds] = useState([]);
-  const dropdownTimeout = React.useRef(null)
-  const navigate = useNavigate()
-
-  
-
-  // fetch client IP
-  useEffect(() => {
-    axios
-      .get('https://api.ipify.org?format=json')
-      .then(res => setIpAddress(res.data.ip))
-      .catch(err => console.error('Error fetching IP:', err))
-  }, [])
-
-  // save auth token
-  useEffect(() => {
-    if (currentUser) {
-      currentUser
-        .getIdToken()
-        .then(token => localStorage.setItem('authToken', token))
-    }
-  }, [currentUser])
-
-  // fetch reviewer record
-  useEffect(() => {
-    let mounted = true
-    const fetchStatus = async () => {
-      const token = localStorage.getItem('authToken')
-      if (!token) return navigate('/signin')
-      if (!currentUser?.uid) return
-      try {
-        const snap = await getDoc(doc(db, 'reviewers', currentUser.uid))
-        if (!mounted) return
-        if (snap.exists()) {
-          const data = snap.data()
-          setStatus(data.status || 'in_progress')
-          setReason(data.rejectionReason || '')
-        } else {
-          setStatus('not_found')
-        }
-      } catch (e) {
-        console.error('Error fetching reviewer status:', e)
-      } finally {
-        mounted && setLoading(false)
-      }
-    }
-    fetchStatus()
-    return () => {
-      mounted = false
-    }
-  }, [currentUser, navigate])
-
-  // log on tab close
-  useEffect(() => {
-    const onClose = async () => {
-      const user = auth.currentUser
-      if (user) {
-        await addDoc(collection(db, 'logs'), {
-          userId: user.uid,
-          role: 'Reviewer',
-          userName: user.displayName || 'N/A',
-          action: 'Logout',
-          details: 'Tab closed',
-          timestamp: serverTimestamp()
-        })
-      }
-    }
-    window.addEventListener('beforeunload', onClose)
-    return () => window.removeEventListener('beforeunload', onClose)
-  }, [])
-
-  // reviewer request status notifications
-  useEffect(() => {
-    if (!currentUser) return
-    const q = query(
-      collection(db, 'reviewRequests'),
-      where('reviewerId', '==', currentUser.uid)
-    )
-    const unsub = onSnapshot(q, snap => {
-      snap.docChanges().forEach(change => {
-        const data = change.doc.data()
-        if (change.type === 'modified') {
-          if (data.status === 'accepted') {
-            setNotif({ open: true, msg: 'Your review request was accepted!', severity: 'success' })
-          }
-          if (data.status === 'declined') {
-            setNotif({ open: true, msg: 'Your review request was declined.', severity: 'warning' })
-          }
-        }
-      })
-    })
-    return () => unsub()
-  }, [currentUser]) 
-
-  // Fetch all listings on mount
-  useEffect(() => {
-    const fetchListings = async () => {
-      try {
-        const q = collection(db, 'research-listings');
-        const querySnapshot = await getDocs(q);
-        const data = await Promise.all(
-          querySnapshot.docs.map(async (docSnap) => {
-            const listing = { id: docSnap.id, ...docSnap.data() };
-            try {
-              const researcherDoc = await getDoc(doc(db, 'users', listing.userId));
-              return {
-                ...listing,
-                researcherName: researcherDoc.exists() ? researcherDoc.data().name : 'Unknown Researcher'
-              };
-            } catch {
-              return { ...listing, researcherName: 'Unknown Researcher' };
-            }
-          })
-        );
-        setAllListings(data);
-      } catch (error) {
-        console.error("Error fetching listings:", error);
-      }
-    };
-    fetchListings();
-  }, []); // <--- Remove db from here
-
-  // Fetch requested review listing IDs
-  useEffect(() => {
-    if (!currentUser) return;
-    const q = query(
-      collection(db, 'reviewRequests'),
-      where('reviewerId', '==', currentUser.uid)
-    );
-    const unsub = onSnapshot(q, snap => {
-      setRequestedIds(snap.docs.map(doc => doc.data().listingId));
-    });
-    return () => unsub();
-  }, [currentUser]);
-
-  // Fetch reviewed listing IDs
-  useEffect(() => {
-    if (!currentUser) return;
-    const q = query(
-      collection(db, 'reviews'),
-      where('reviewerId', '==', currentUser.uid)
-    );
-    const unsub = onSnapshot(q, snap => {
-      setReviewedIds(snap.docs.map(doc => doc.data().listingId));
-    });
-    return () => unsub();
-  }, [currentUser]);
-
-  const toggleSidebar = () => setSidebarOpen(o => !o)
-
-  const handleRevoke = async () => {
-    if (!currentUser?.uid) return
-    try {
-      await deleteDoc(doc(db, 'reviewers', currentUser.uid))
-      setStatus('not_found')
-    } catch (e) {
-      console.error('Error revoking:', e)
-    }
-  }
-
-  const handleLogout = async () => {
-    const user = auth.currentUser
-    if (!user) return
-    await addDoc(collection(db, 'logs'), {
-      userId: user.uid,
-      role: 'Reviewer',
-      userName: user.displayName || 'N/A',
-      action: 'Logout',
-      details: 'User clicked logout',
-      ip: ipAddress,
-      target: 'Reviewer Dashboard',
-      timestamp: serverTimestamp()
-    })
-    await auth.signOut()
-    navigate('/signin')
-  }
-
-  const handleSearch = () => {
-    if (!searchTerm.trim()) {
-      setSearchResults([]);
-      setShowNoResults(false);
-      setDropdownVisible(false);
-      return;
-    }
-    const searchTermLower = searchTerm.toLowerCase();
-    const filtered = allListings.filter(item => {
-      const title = item.title?.toLowerCase() || '';
-      const researcherName = item.researcherName?.toLowerCase() || '';
-      return title.includes(searchTermLower) || researcherName.includes(searchTermLower);
-    });
-    setSearchResults(filtered);
-    setDropdownVisible(true);
-    setShowNoResults(filtered.length === 0);
-    clearTimeout(dropdownTimeout.current);
-    dropdownTimeout.current = setTimeout(() => {
-      setDropdownVisible(false);
-    }, 5000);
-  }
-
-  const handleInputChange = e => {
-    setSearchTerm(e.target.value)
-    if (!e.target.value.trim()) {
-      setSearchResults([])
-      setShowNoResults(false)
-      setDropdownVisible(false)
-    } else {
-      setDropdownVisible(true)
-    }
-  }
-
-  const handleInputFocus = () => {
-    if (searchTerm.trim()) {
-      setDropdownVisible(true)
-    }
-  }
-
-  const handleClear = () => {
-    setSearchTerm('')
-    setSearchResults([])
-    setShowNoResults(false)
-    setDropdownVisible(false)
-  }
+  const {
+    status,
+    reason,
+    loading,
+    notif,
+    searchTerm,
+    searchResults,
+    dropdownVisible,
+    showNoResults,
+    requestedIds,
+    reviewedIds,
+    sidebarOpen,
+    menuAnchorEl,
+    setSidebarOpen,
+    setMenuAnchorEl,
+    setNotif,
+    handleSearch,
+    handleInputChange,
+    handleInputFocus,
+    handleClear,
+    handleLogout,
+    handleRequestReviewAndNotify,
+    handleRevoke,
+  } = useReviewerDashboard();
 
   const statusStyles = {
     approved: {
@@ -282,71 +53,30 @@ export default function ReviewerPage() {
   const renderBadge = () => {
     if (status === 'approved')
       return (
-        <section
-          style={statusStyles.approved}
-          className="p-2 rounded"
-        >
+        <section style={statusStyles.approved} className="p-2 rounded">
           Approved Reviewer
         </section>
       )
     if (status === 'in_progress')
       return (
-        <section
-          style={statusStyles.in_progress}
-          className="p-2 rounded"
-        >
+        <section style={statusStyles.in_progress} className="p-2 rounded">
           Application Under Review
         </section>
       )
     if (status === 'rejected')
       return (
-        <section
-          style={statusStyles.rejected}
-          className="p-2 rounded"
-        >
+        <section style={statusStyles.rejected} className="p-2 rounded">
           Application Rejected
         </section>
       )
     return (
       <section className="p-2 rounded text-muted">
-        {currentUser?.displayName || 'Reviewer'} – you are not a
-        reviewer. Apply below.
+        You are not a reviewer. Apply below.
       </section>
     )
   }
 
-  const handleRequestReviewAndNotify = async (listing) => {
-    try {
-      if (!currentUser) {
-        setNotif({ open: true, msg: "You must be logged in.", severity: "error" });
-        return;
-      }
-      // 1. Create review request
-      await addDoc(collection(db, "reviewRequests"), {
-        listingId: listing.id,
-        reviewerId: currentUser.uid,
-        researcherId: listing.userId,
-        status: "pending",
-        requestedAt: serverTimestamp(),
-      });
-
-      // 2. Notify researcher
-      await addDoc(collection(db, "users", listing.userId, "messages"), {
-        type: "review-request",
-        title: "New Review Request",
-        content: `${currentUser.displayName || "A reviewer"} requested to review your project "${listing.title}".`,
-        relatedId: listing.id,
-        read: false,
-        timestamp: serverTimestamp(),
-        senderId: currentUser.uid,
-      });
-
-      setNotif({ open: true, msg: "Review request sent and researcher notified!", severity: "success" });
-    } catch (err) {
-      console.error("Error sending review request:", err);
-      setNotif({ open: true, msg: "Failed to send request.", severity: "error" });
-    }
-  };
+  const toggleSidebar = () => setSidebarOpen(prev => !prev);
 
   return (
     <main
@@ -354,7 +84,7 @@ export default function ReviewerPage() {
         backgroundColor: '#FFFFFF',
         color: '#000000',
         minHeight: '100vh',
-        paddingTop: '70px' /* offset for the fixed navbar */
+        paddingTop: '70px'
       }}
     >
       <header
@@ -374,7 +104,7 @@ export default function ReviewerPage() {
         >
           <MenuIcon />
         </IconButton>
-         <Menu
+        <Menu
           anchorEl={menuAnchorEl}
           open={Boolean(menuAnchorEl)}
           onClose={() => setMenuAnchorEl(null)}
@@ -392,16 +122,13 @@ export default function ReviewerPage() {
             vertical: 'bottom',
             horizontal: 'right',
           }}
-           transformOrigin={{
+          transformOrigin={{
             vertical: 'top',
             horizontal: 'right',
           }}
         >
           <MenuItem
-            onClick={() => {
-              setMenuAnchorEl(null)
-              navigate('/reviewer-profile')
-            }}
+            onClick={() => setMenuAnchorEl(null)}
             sx={{
               color: 'var(--accent-teal)',
               borderRadius: '0.5rem',
@@ -433,9 +160,7 @@ export default function ReviewerPage() {
       </header>
 
       <aside
-        className={`position-fixed top-0 end-0 h-100 bg-light shadow p-4 d-flex flex-column ${
-          sidebarOpen ? 'd-block' : 'd-none'
-        }`}
+        className={`position-fixed top-0 end-0 h-100 bg-light shadow p-4 d-flex flex-column ${sidebarOpen ? 'd-block' : 'd-none'}`}
         style={{ width: '280px', zIndex: 1050 }}
       >
         <button
@@ -446,7 +171,7 @@ export default function ReviewerPage() {
 
         <section className="text-center mb-4">
           <img
-            src={currentUser?.photoURL || 'https://via.placeholder.com/70'}
+            src={'https://via.placeholder.com/70'}
             alt="Profile"
             className="rounded-circle mb-2"
             style={{
@@ -457,10 +182,10 @@ export default function ReviewerPage() {
             }}
           />
           <h2 className="h6 mb-0 mt-2">
-            {currentUser?.displayName || 'N/A'}
+            Reviewer
           </h2>
           <address className="text-muted">
-            {currentUser?.email || 'N/A'}
+            N/A
           </address>
         </section>
 
@@ -518,7 +243,7 @@ export default function ReviewerPage() {
         </section>
       </aside>
 
-           <section
+      <section
         className="container"
         style={{ backgroundColor: 'white', color: 'black' }}
       >
@@ -531,7 +256,7 @@ export default function ReviewerPage() {
           <>
             <header className="text-center my-4">
               <h2>Reviewer Dashboard</h2>
-              <p>Hi {currentUser?.displayName || 'Reviewer'}</p>
+              <p>Hi Reviewer</p>
               <p>
                 Welcome back! Ready to read, review, and recommend
                 cutting-edge research?
@@ -540,10 +265,10 @@ export default function ReviewerPage() {
 
             {/* --- Search Bar Section --- */}
             <Box sx={{ maxWidth: 800, mx: 'auto', mb: 4 }}>
-              <Paper 
+              <Paper
                 component="form"
                 onSubmit={e => { e.preventDefault(); handleSearch() }}
-                sx={{ 
+                sx={{
                   p: 1,
                   display: 'flex',
                   gap: 1,
@@ -565,7 +290,7 @@ export default function ReviewerPage() {
                     }
                   }}
                 />
-                <Button 
+                <Button
                   type="button"
                   variant="contained"
                   onClick={handleClear}
@@ -580,7 +305,7 @@ export default function ReviewerPage() {
                 >
                   Clear
                 </Button>
-                <Button 
+                <Button
                   type="button"
                   variant="contained"
                   onClick={handleSearch}
@@ -612,7 +337,7 @@ export default function ReviewerPage() {
                       <Typography sx={{ p: 2 }}>
                         {showNoResults ? "No research listings found." : "Start typing to search"}
                       </Typography>
-                    ) : 
+                    ) :
                       searchResults.map(item => {
                         const alreadyRequested = requestedIds.includes(item.id);
                         const alreadyReviewed = reviewedIds.includes(item.id);
@@ -666,9 +391,9 @@ export default function ReviewerPage() {
                   <p className="mb-0">
                     Your account is not yet approved as a reviewer. Apply now to start reviewing research.
                   </p>
+                  {/* You may want to use a Link or navigate handler here */}
                   <Button
                     variant="contained"
-                    onClick={() => navigate('/apply-reviewer')}
                     sx={{
                       bgcolor: 'var(--light-blue)',
                       color: 'var(--dark-blue)',
@@ -678,6 +403,7 @@ export default function ReviewerPage() {
                       mt: 2,
                       '&:hover': { bgcolor: '#5AA9A3', color: 'var(--white)' }
                     }}
+                    // onClick handler for navigation should be handled in the hook if needed
                   >
                     Apply to be a Reviewer
                   </Button>
@@ -692,15 +418,15 @@ export default function ReviewerPage() {
         )}
       </section>
 
-      <Snackbar 
-        open={notif.open} 
-        autoHideDuration={6000} 
+      <Snackbar
+        open={notif.open}
+        autoHideDuration={6000}
         onClose={() => setNotif({ ...notif, open: false })}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
-        <MuiAlert 
-          onClose={() => setNotif({ ...notif, open: false })} 
-          severity={notif.severity} 
+        <MuiAlert
+          onClose={() => setNotif({ ...notif, open: false })}
+          severity={notif.severity}
           sx={{ width: '100%' }}
         >
           {notif.msg}
