@@ -76,14 +76,14 @@ const CollaborationRequestsPanel = () => {
   // Inline styles for the panel and buttons
   const styles = {
     panel: {
-      backgroundColor: '#1A2E40',
+      backgroundColor: '#FFFFFF',
       borderRadius: '0.5rem',
       padding: '1rem',
       margin: '1rem 0',
-      color: 'white'
+      color: '#000000'
     },
     requestItem: {
-      borderBottom: '1px solid #64CCC5',
+      borderBottom: '1px solid rgb(0, 0, 0)',
       padding: '1rem 0',
       marginBottom: '1rem'
     },

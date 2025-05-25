@@ -1038,7 +1038,7 @@ const handleDeclineReviewRequest = async (requestId) => {
         </section>
         {/* Collaboration Requests Section */}
 <section style={{ maxWidth: 1200, margin: '48px auto 0 auto' }}>
-  <h2 style={{ marginBottom: 24, fontSize: '1.7rem' }}>Collaboration Requests</h2>
+  
   <Paper
     sx={{
       p: 2,
