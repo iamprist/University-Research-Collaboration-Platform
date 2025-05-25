@@ -144,7 +144,6 @@ const ResearcherDashboard = () => {
   const [filteredListings, setFilteredListings] = useState([]);
   const [userName, setUserName] = useState('');
   const [messages, setMessages] = useState([]);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [showContactForm, setShowContactForm] = useState(false);
   const [ipAddress, setIpAddress] = useState("");
   const [anchorEl, setAnchorEl] = useState(null);
@@ -255,7 +254,6 @@ useEffect(() => {
         timestamp: doc.data().timestamp?.toDate() || new Date()
       }));
       setMessages(messagesData);
-      setUnreadCount(messagesData.filter(msg => !msg.read).length);
     });
 
     const collabQuery = query(
@@ -376,6 +374,13 @@ const handleDeclineReviewRequest = async (requestId) => {
   };
 
   const handleMessageClick = (message) => {
+    // If it's a review-request, maybe open a dialog or scroll to the section
+    if (message.type === 'review-request') {
+      // Optionally scroll to the Pending Review Requests section or show a dialog
+      document.querySelector('h2').scrollIntoView({ behavior: 'smooth' });
+      setSelectedMessage(null);
+      return;
+    }
     markMessageAsRead(message.id);
     if (message.type === 'collaboration-request') {
       setSelectedMessage(message); // Show Accept/Reject in menu
@@ -481,6 +486,20 @@ const handleDeclineReviewRequest = async (requestId) => {
     }
   };
 
+  // Combine messages and pending review requests for the notification bell
+  const combinedNotifications = [
+    ...messages,
+    ...reviewRequests.map(req => ({
+      id: req.id,
+      type: 'review-request',
+      title: 'Pending Review Request',
+      content: `Reviewer ${req.reviewerName} requested to review your project "${req.projectTitle}".`,
+      timestamp: req.requestedAt?.toDate?.() || new Date(),
+      read: false, // or true if you want to track read status
+      // You can add more fields if needed
+    }))
+  ];
+
   return (
     <main style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
@@ -511,8 +530,8 @@ const handleDeclineReviewRequest = async (requestId) => {
 
         <nav style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <MessageNotification 
-            messages={messages}
-            unreadCount={unreadCount}
+            messages={combinedNotifications}
+            unreadCount={combinedNotifications.filter(msg => !msg.read).length}
             onMessageClick={handleMessageClick}
             selectedMessage={selectedMessage}
             onAccept={handleAcceptCollab}

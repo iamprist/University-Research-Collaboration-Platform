@@ -242,7 +242,7 @@ export default function EditReviewerProfile() {
       </Box>
 
       {/* Edit Form */}
-      <Box sx={{ maxWidth: 700, mx: 'auto', mt: 4, p: 3 }}>
+      <Box sx={{ mx: 'auto', mt: 4, p: 3 }}>
         <form onSubmit={handleSubmit}>
           <Box sx={{
             background: '#1A2E40',

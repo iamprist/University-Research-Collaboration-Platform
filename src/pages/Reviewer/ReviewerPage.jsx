@@ -1,19 +1,27 @@
 import React, { useEffect, useState } from 'react'
-import { IconButton, Menu, MenuItem } from '@mui/material'
+import { IconButton, Menu, MenuItem, TextField, Button, Paper, Box, Typography } from '@mui/material'
 import MenuIcon from '@mui/icons-material/Menu'
+
 import {
   doc,
   getDoc,
   deleteDoc,
   addDoc,
   collection,
-  serverTimestamp
+  serverTimestamp,
+  query,
+  where,
+  onSnapshot,
+  getDocs
 } from 'firebase/firestore'
 import { db, auth } from '../../config/firebaseConfig'
 import { useAuth } from './authContext'
 import { useNavigate } from 'react-router-dom'
 import ReviewerRecommendations from '../../components/ReviewerRecommendations'
+import MyReviewRequests from '../../components/MyReviewRequests'
 import axios from 'axios'
+import Snackbar from '@mui/material/Snackbar'
+import MuiAlert from '@mui/material/Alert'
 
 export default function ReviewerPage() {
   const [status, setStatus] = useState('')
@@ -23,6 +31,15 @@ export default function ReviewerPage() {
   const { currentUser } = useAuth()
   const [ipAddress, setIpAddress] = useState('')
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [notif, setNotif] = useState({ open: false, msg: '', severity: 'info' })
+  const [searchTerm, setSearchTerm] = useState('')
+  const [searchResults, setSearchResults] = useState([])
+  const [dropdownVisible, setDropdownVisible] = useState(false)
+  const [showNoResults, setShowNoResults] = useState(false)
+  const [allListings, setAllListings] = useState([])
+  const [requestedIds, setRequestedIds] = useState([]);
+  const [reviewedIds, setReviewedIds] = useState([]);
+  const dropdownTimeout = React.useRef(null)
   const navigate = useNavigate()
 
   // fetch client IP
@@ -90,6 +107,83 @@ export default function ReviewerPage() {
     return () => window.removeEventListener('beforeunload', onClose)
   }, [])
 
+  // reviewer request status notifications
+  useEffect(() => {
+    if (!currentUser) return
+    const q = query(
+      collection(db, 'reviewRequests'),
+      where('reviewerId', '==', currentUser.uid)
+    )
+    const unsub = onSnapshot(q, snap => {
+      snap.docChanges().forEach(change => {
+        const data = change.doc.data()
+        if (change.type === 'modified') {
+          if (data.status === 'accepted') {
+            setNotif({ open: true, msg: 'Your review request was accepted!', severity: 'success' })
+          }
+          if (data.status === 'declined') {
+            setNotif({ open: true, msg: 'Your review request was declined.', severity: 'warning' })
+          }
+        }
+      })
+    })
+    return () => unsub()
+  }, [currentUser]) 
+
+  // Fetch all listings on mount
+  useEffect(() => {
+    const fetchListings = async () => {
+      try {
+        const q = collection(db, 'research-listings');
+        const querySnapshot = await getDocs(q);
+        const data = await Promise.all(
+          querySnapshot.docs.map(async (docSnap) => {
+            const listing = { id: docSnap.id, ...docSnap.data() };
+            try {
+              const researcherDoc = await getDoc(doc(db, 'users', listing.userId));
+              return {
+                ...listing,
+                researcherName: researcherDoc.exists() ? researcherDoc.data().name : 'Unknown Researcher'
+              };
+            } catch {
+              return { ...listing, researcherName: 'Unknown Researcher' };
+            }
+          })
+        );
+        setAllListings(data);
+      } catch (error) {
+        console.error("Error fetching listings:", error);
+      }
+    };
+    fetchListings();
+  }, []); // <--- Remove db from here
+
+  // Fetch requested review listing IDs
+  useEffect(() => {
+    if (!currentUser) return;
+    const q = query(
+      collection(db, 'reviewRequests'),
+      where('reviewerId', '==', currentUser.uid)
+    );
+    const unsub = onSnapshot(q, snap => {
+      setRequestedIds(snap.docs.map(doc => doc.data().listingId));
+    });
+    return () => unsub();
+  }, [currentUser]);
+
+  // Fetch reviewed listing IDs
+  useEffect(() => {
+    if (!currentUser) return;
+    const q = query(
+      collection(db, 'reviews'),
+      where('reviewerId', '==', currentUser.uid)
+    );
+    const unsub = onSnapshot(q, snap => {
+      setReviewedIds(snap.docs.map(doc => doc.data().listingId));
+    });
+    return () => unsub();
+  }, [currentUser]);
+
   const toggleSidebar = () => setSidebarOpen(o => !o)
 
   const handleRevoke = async () => {
@@ -117,6 +211,52 @@ export default function ReviewerPage() {
     })
     await auth.signOut()
     navigate('/signin')
+  }
+
+  const handleSearch = () => {
+    if (!searchTerm.trim()) {
+      setSearchResults([]);
+      setShowNoResults(false);
+      setDropdownVisible(false);
+      return;
+    }
+    const searchTermLower = searchTerm.toLowerCase();
+    const filtered = allListings.filter(item => {
+      const title = item.title?.toLowerCase() || '';
+      const researcherName = item.researcherName?.toLowerCase() || '';
+      return title.includes(searchTermLower) || researcherName.includes(searchTermLower);
+    });
+    setSearchResults(filtered);
+    setDropdownVisible(true);
+    setShowNoResults(filtered.length === 0);
+    clearTimeout(dropdownTimeout.current);
+    dropdownTimeout.current = setTimeout(() => {
+      setDropdownVisible(false);
+    }, 5000);
+  }
+
+  const handleInputChange = e => {
+    setSearchTerm(e.target.value)
+    if (!e.target.value.trim()) {
+      setSearchResults([])
+      setShowNoResults(false)
+      setDropdownVisible(false)
+    } else {
+      setDropdownVisible(true)
+    }
+  }
+
+  const handleInputFocus = () => {
+    if (searchTerm.trim()) {
+      setDropdownVisible(true)
+    }
+  }
+
+  const handleClear = () => {
+    setSearchTerm('')
+    setSearchResults([])
+    setShowNoResults(false)
+    setDropdownVisible(false)
   }
 
   const statusStyles = {
@@ -172,6 +312,39 @@ export default function ReviewerPage() {
       </section>
     )
   }
+
+  const handleRequestReviewAndNotify = async (listing) => {
+    try {
+      if (!currentUser) {
+        setNotif({ open: true, msg: "You must be logged in.", severity: "error" });
+        return;
+      }
+      // 1. Create review request
+      await addDoc(collection(db, "reviewRequests"), {
+        listingId: listing.id,
+        reviewerId: currentUser.uid,
+        researcherId: listing.userId,
+        status: "pending",
+        requestedAt: serverTimestamp(),
+      });
+
+      // 2. Notify researcher
+      await addDoc(collection(db, "users", listing.userId, "messages"), {
+        type: "review-request",
+        title: "New Review Request",
+        content: `${currentUser.displayName || "A reviewer"} requested to review your project "${listing.title}".`,
+        relatedId: listing.id,
+        read: false,
+        timestamp: serverTimestamp(),
+        senderId: currentUser.uid,
+      });
+
+      setNotif({ open: true, msg: "Review request sent and researcher notified!", severity: "success" });
+    } catch (err) {
+      console.error("Error sending review request:", err);
+      setNotif({ open: true, msg: "Failed to send request.", severity: "error" });
+    }
+  };
 
   return (
     <main
@@ -363,39 +536,174 @@ export default function ReviewerPage() {
               </p>
             </header>
 
-            {status === 'approved' && (
-              <ReviewerRecommendations />
-            )}
-
-            {status === 'not_found' && (
-              <section className="text-center mt-4 text-muted">
-                <p>No reviewer profile found.</p>
-                <button
-                  className="btn btn-success"
-                  onClick={() => navigate('/reviewer-form')}
+            {/* --- Search Bar Section --- */}
+            <Box sx={{ maxWidth: 800, mx: 'auto', mb: 4 }}>
+              <Paper 
+                component="form"
+                onSubmit={e => { e.preventDefault(); handleSearch() }}
+                sx={{ 
+                  p: 1,
+                  display: 'flex',
+                  gap: 1,
+                  bgcolor: 'background.paper',
+                  position: 'relative'
+                }}
+              >
+                <TextField
+                  fullWidth
+                  variant="outlined"
+                  placeholder="Search research by title or researcher name..."
+                  value={searchTerm}
+                  onChange={handleInputChange}
+                  onFocus={handleInputFocus}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: '1.2rem',
+                      borderColor: '#000'
+                    }
+                  }}
+                />
+                <Button 
+                  type="button"
+                  variant="contained"
+                  onClick={handleClear}
+                  sx={{
+                    bgcolor: '#F59E0B',
+                    color: '#fff',
+                    borderRadius: '1.5rem',
+                    minWidth: '100px',
+                    px: 3,
+                    '&:hover': { bgcolor: '#FBBF24' }
+                  }}
                 >
-                  Apply Now
-                </button>
-              </section>
-            )}
+                  Clear
+                </Button>
+                <Button 
+                  type="button"
+                  variant="contained"
+                  onClick={handleSearch}
+                  sx={{
+                    bgcolor: 'var(--light-blue)',
+                    color: 'var(--dark-blue)',
+                    borderRadius: '1.5rem',
+                    minWidth: '100px',
+                    px: 3,
+                    '&:hover': { bgcolor: '#5AA9A3', color: 'var(--white)' }
+                  }}
+                >
+                  Search
+                </Button>
+                {/* Search Dropdown */}
+                {dropdownVisible && (
+                  <Paper sx={{
+                    position: 'absolute',
+                    top: '110%',
+                    left: 0,
+                    right: 0,
+                    zIndex: 999,
+                    bgcolor: 'background.paper',
+                    boxShadow: 3,
+                    maxHeight: 300,
+                    overflowY: 'auto'
+                  }}>
+                    {searchResults.length === 0 ? (
+                      <Typography sx={{ p: 2 }}>
+                        {showNoResults ? "No research listings found." : "Start typing to search"}
+                      </Typography>
+                    ) : 
+                      searchResults.map(item => {
+                        const alreadyRequested = requestedIds.includes(item.id);
+                        const alreadyReviewed = reviewedIds.includes(item.id);
+                        return (
+                          <Box key={item.id} sx={{ p: 2, cursor: 'pointer', borderBottom: '1px solid #eee', '&:hover': { bgcolor: 'action.hover' } }}>
+                            <Typography variant="subtitle1">{item.title}</Typography>
+                            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                              By: {item.researcherName}
+                            </Typography>
+                            <Typography variant="body2" sx={{ mt: 1 }}>
+                              {item.summary}
+                            </Typography>
+                            <Button
+                              variant="contained"
+                              size="small"
+                              sx={{
+                                bgcolor: alreadyRequested || alreadyReviewed ? '#ccc' : 'var(--light-blue)',
+                                color: alreadyRequested || alreadyReviewed ? '#888' : 'var(--dark-blue)',
+                                borderRadius: '1.5rem',
+                                fontWeight: 600,
+                                px: 2,
+                                py: 0.5,
+                                minWidth: 0,
+                                mt: 1,
+                                boxShadow: '0 2px 10px rgba(100,204,197,0.08)',
+                                '&:hover': { bgcolor: alreadyRequested || alreadyReviewed ? '#ccc' : '#5AA9A3', color: alreadyRequested || alreadyReviewed ? '#888' : 'var(--white)' }
+                              }}
+                              onClick={() => handleRequestReviewAndNotify(item)}
+                              disabled={alreadyRequested || alreadyReviewed}
+                            >
+                              {alreadyReviewed
+                                ? "Already Reviewed"
+                                : alreadyRequested
+                                  ? "Already Requested"
+                                  : "Request Review"}
+                            </Button>
+                          </Box>
+                        );
+                      })
+                    }
+                  </Paper>
+                )}
+              </Paper>
+            </Box>
 
-            {status === 'in_progress' && (
-              <section className="text-center text-warning mt-4">
-                <p>Your application is currently being reviewed.</p>
-              </section>
-            )}
+            {/* --- Main Content Section --- */}
+            <section className="mb-5">
+              {status === 'not_found' && (
+                <section className="alert alert-warning text-center py-4">
+                  <h3 className="mb-3">Become a Reviewer</h3>
+                  <p className="mb-0">
+                    Your account is not yet approved as a reviewer. Apply now to start reviewing research.
+                  </p>
+                  <Button
+                    variant="contained"
+                    onClick={() => navigate('/apply-reviewer')}
+                    sx={{
+                      bgcolor: 'var(--light-blue)',
+                      color: 'var(--dark-blue)',
+                      borderRadius: '1.5rem',
+                      px: 4,
+                      py: 2,
+                      mt: 2,
+                      '&:hover': { bgcolor: '#5AA9A3', color: 'var(--white)' }
+                    }}
+                  >
+                    Apply to be a Reviewer
+                  </Button>
+                </section>
+              )}
 
-            {status === 'rejected' && (
-              <section className="text-center text-danger mt-4">
-                <p>Your application was rejected.</p>
-                <small>
-                  Reason: {reason || 'No reason provided.'}
-                </small>
-              </section>
-            )}
+              <MyReviewRequests />
+            </section>
+
+            <ReviewerRecommendations />
           </>
         )}
       </section>
+
+      <Snackbar 
+        open={notif.open} 
+        autoHideDuration={6000} 
+        onClose={() => setNotif({ ...notif, open: false })}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <MuiAlert 
+          onClose={() => setNotif({ ...notif, open: false })} 
+          severity={notif.severity} 
+          sx={{ width: '100%' }}
+        >
+          {notif.msg}
+        </MuiAlert>
+      </Snackbar>
     </main>
   )
 }

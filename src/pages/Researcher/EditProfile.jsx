@@ -200,7 +200,7 @@ const EditProfile = () => {
       </Box>
 
       {/* FORM: Edit profile fields */}
-      <Box sx={{ maxWidth: '700px', margin: '2rem auto', px: '1.5rem' }}>
+      <Box sx={{ width: '100%', maxWidth: '1200px', margin: '2rem auto', px: '1.5rem' }}>
         <form onSubmit={logicHandleSubmit}>
           <Box
             sx={{
@@ -209,6 +209,7 @@ const EditProfile = () => {
               boxShadow: '0 4px 6px rgba(0,0,0,0.12)',
               p: '2rem',
               color: '#FFFFFF',
+              width: '100%', 
             }}
           >
             {/* Profile Picture Upload */}
