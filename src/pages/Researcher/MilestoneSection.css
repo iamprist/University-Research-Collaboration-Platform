@@ -1,0 +1,310 @@
+/* Milestones Container */
+section.milestones-container {
+    padding: 1.5rem;
+    background-color: var(--white);
+    border-radius: 12px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+    margin-bottom: 1rem;
+}
+  
+section.milestones-container h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--primary-blue);
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--accent-teal);
+}
+
+/* Project Timeline */
+dl.project-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+  
+@media (min-width: 480px) {
+    dl.project-timeline {
+        flex-direction: row;
+        gap: 1.5rem;
+    }
+}
+  
+dt.timeline-label {
+    font-weight: 500;
+    color: var(--dark-blue);
+}
+  
+dd.timeline-value {
+    color: var(--light-gray);
+}
+
+/* Milestone Actions */
+menu.milestone-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    list-style: none;
+    padding: 0;
+}
+
+/* Milestone Form */
+form.milestone-form {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+  
+@media (min-width: 480px) {
+    form.milestone-form {
+        grid-template-columns: 1fr 1fr auto;
+    }
+}
+  
+form.milestone-form input {
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--accent-teal);
+    border-radius: 0.5rem;
+    background-color: var(--background);
+    transition: all 0.2s;
+}
+  
+form.milestone-form input:focus {
+    border-color: var(--light-blue);
+    box-shadow: 0 0 0 2px rgba(100, 204, 197, 0.2);
+    outline: none;
+}
+
+/* Milestones List */
+ul.milestones-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1.5rem 0;
+}
+
+p.no-milestones {
+    color: var(--light-gray);
+    font-style: italic;
+    text-align: center;
+    padding: 1rem;
+}
+
+/* Milestone Item */
+li.milestone-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    background-color: var(--background);
+    border-radius: 0.75rem;
+    transition: all 0.2s;
+    position: relative;
+}
+  
+li.milestone-item.completed {
+    background-color: #f0fdf4;
+}
+
+/* Milestone Checkbox */
+input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    width: 1.25rem;
+    height: 1.25rem;
+}
+  
+input[type="checkbox"] + label::before {
+    content: '';
+    display: inline-block;
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 2px solid var(--accent-teal);
+    border-radius: 0.25rem;
+    margin-right: 0.75rem;
+    vertical-align: middle;
+    cursor: pointer;
+}
+  
+input[type="checkbox"]:checked + label::before {
+    background-color: var(--light-blue);
+    border-color: var(--light-blue);
+    content: '✓';
+    color: var(--dark-blue);
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Milestone Details */
+article.milestone-details {
+    flex: 1;
+}
+  
+h4.milestone-title {
+    font-weight: 500;
+    color: var(--dark-blue);
+    margin-bottom: 0.25rem;
+}
+  
+p.milestone-description {
+    color: var(--light-gray);
+    font-size: 0.875rem;
+    margin-bottom: 0.25rem;
+}
+  
+footer.milestone-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+    font-size: 0.75rem;
+    color: var(--light-gray);
+}
+
+/* Delete Button */
+button.delete-button {
+    width: 1.5rem;
+    height: 1.5rem;
+    background-color: #fee2e2;
+    color: #b91c1c;
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-left: auto;
+}
+  
+button.delete-button:hover {
+    background-color: #fecaca;
+}
+
+/* Completion Banner */
+aside.all-complete-banner {
+    padding: 0.75rem;
+    background-color: #ecfdf5;
+    color: #065f46;
+    text-align: center;
+    border-radius: 0.5rem;
+    margin-bottom: 1.5rem;
+    font-weight: 500;
+}
+
+/* Research Completion */
+footer.research-completion {
+    text-align: center;
+    margin-top: 2rem;
+}
+  
+button.complete-button {
+    padding: 0.75rem 1.5rem;
+    background-color: var(--light-blue);
+    color: var(--dark-blue);
+    border: none;
+    border-radius: 2rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+  
+button.complete-button:hover:not(.disabled) {
+    background-color: var(--accent-teal);
+}
+  
+button.complete-button.disabled {
+    background-color: var(--light-gray);
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+/* Completion Status */
+p.completion-status {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+}
+  
+@media (min-width: 480px) {
+    p.completion-status {
+        flex-direction: row;
+        justify-content: center;
+    }
+}
+  
+span.completed-text {
+    color: var(--light-blue);
+    font-weight: 500;
+}
+  
+button.unmark-button {
+    padding: 0.5rem 1rem;
+    background-color: #fee2e2;
+    color: #b91c1c;
+    border: none;
+    border-radius: 2rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+  
+button.unmark-button:hover {
+    background-color: #fecaca;
+}
+
+/* Buttons */
+button.toggle-button {
+    padding: 0.5rem 1rem;
+    background-color: var(--background);
+    border: 1px solid var(--accent-teal);
+    border-radius: 2rem;
+    color: var(--dark-blue);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.875rem;
+}
+  
+button.toggle-button:hover {
+    background-color: rgba(100, 204, 197, 0.1);
+}
+  
+button.toggle-button.cancel {
+    background-color: #fee2e2;
+    border-color: #fee2e2;
+    color: #b91c1c;
+}
+  
+button.export-button {
+    padding: 0.5rem 1rem;
+    background-color: var(--light-blue);
+    color: var(--dark-blue);
+    border: none;
+    border-radius: 2rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.875rem;
+}
+  
+button.export-button:hover {
+    background-color: var(--accent-teal);
+}
+  
+button.submit-button {
+    padding: 0.75rem;
+    background-color: var(--light-blue);
+    color: var(--dark-blue);
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    align-self: end;
+}
+  
+button.submit-button:hover {
+    background-color: var(--accent-teal);
+}

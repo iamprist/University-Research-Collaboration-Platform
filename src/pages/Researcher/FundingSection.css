@@ -1,0 +1,236 @@
+/* Base container */
+article.funding-container {
+    padding: 1.5rem;
+    background-color: var(--white);
+    border-radius: 12px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+    margin-bottom: 1rem;
+  }
+  
+  /* Headings */
+  article.funding-container h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--primary-blue);
+    margin-bottom: 1.5rem;
+  }
+  
+  article.funding-container h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--primary-blue);
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--accent-teal);
+  }
+  
+  article.funding-container h4 {
+    color: var(--primary-blue);
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+  }
+  
+  /* Funding summary */
+  dl.funding-summary {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background-color: var(--background);
+    border-radius: 0.75rem;
+  }
+  
+  dl.funding-summary dt {
+    font-size: 0.875rem;
+    color: var(--light-gray);
+  }
+  
+  dl.funding-summary dd {
+    font-weight: 600;
+    color: var(--dark-blue);
+    margin-left: 0;
+  }
+  
+  /* Action buttons */
+  nav ul.action-buttons {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    list-style: none;
+    padding: 0;
+  }
+  
+  nav ul.action-buttons button {
+    padding: 0.5rem 1rem;
+    background-color: var(--background);
+    border: 1px solid var(--accent-teal);
+    border-radius: 2rem;
+    color: var(--dark-blue);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.875rem;
+  }
+  
+  nav ul.action-buttons button:hover {
+    background-color: rgba(100, 204, 197, 0.1);
+  }
+  
+  nav ul.action-buttons button[aria-expanded="true"] {
+    background-color: #fee2e2;
+    border-color: #fee2e2;
+    color: #b91c1c;
+  }
+  
+  /* Forms */
+  form {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  fieldset {
+    border: none;
+    padding: 0;
+    margin: 0;
+    display: contents;
+  }
+  
+  legend {
+    grid-column: 1 / -1;
+    font-weight: 600;
+    color: var(--dark-blue);
+    margin-bottom: 0.5rem;
+  }
+  
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.875rem;
+  }
+  
+  input {
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--accent-teal);
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    background-color: var(--background);
+    transition: all 0.2s;
+  }
+  
+  input:focus {
+    border-color: var(--light-blue);
+    box-shadow: 0 0 0 2px rgba(100, 204, 197, 0.2);
+    outline: none;
+  }
+  
+  button[type="submit"] {
+    padding: 0.75rem;
+    background-color: var(--light-blue);
+    color: var(--dark-blue);
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    align-self: end;
+  }
+  
+  button[type="submit"]:hover {
+    background-color: var(--accent-teal);
+  }
+  
+  /* Total needed section */
+  section[aria-labelledby="funding-requirements-heading"] {
+    background-color: var(--background);
+    border-radius: 0.75rem;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  section[aria-labelledby="funding-requirements-heading"] dl {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 1rem;
+  }
+  
+  section[aria-labelledby="funding-requirements-heading"] dt {
+    color: var(--light-gray);
+    font-size: 0.875rem;
+  }
+  
+  section[aria-labelledby="funding-requirements-heading"] dd {
+    font-weight: 600;
+    color: var(--dark-blue);
+    margin-left: 0;
+  }
+  
+  section[aria-labelledby="funding-requirements-heading"] dd.warning {
+    color: #dc2626;
+  }
+  
+  /* Tables container */
+  section.tables-container {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  
+  @media (min-width: 768px) {
+    section.tables-container {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+  
+  /* Individual tables */
+  article[aria-labelledby^="funding-"],
+  article[aria-labelledby^="expenditures-"] {
+    background-color: var(--white);
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    padding: 1rem;
+  }
+  
+  /* Table styles */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  th {
+    text-align: left;
+    padding: 0.75rem;
+    background-color: var(--background);
+    color: var(--dark-blue);
+    font-weight: 500;
+    font-size: 0.875rem;
+  }
+  
+  td {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--accent-teal);
+    color: var(--dark-blue);
+    font-size: 0.875rem;
+  }
+  
+  /* No data message */
+  p.no-data {
+    color: var(--light-gray);
+    font-style: italic;
+    text-align: center;
+    padding: 1rem;
+  }
+  
+  /* Visually hidden utility class */
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }

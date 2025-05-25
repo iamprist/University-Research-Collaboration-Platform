@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
-import { doc, getDoc, updateDoc, setDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, auth, storage } from '../../config/firebaseConfig';
+
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
+import { auth } from '../../config/firebaseConfig';
+import { chatService } from './chatService';
 import './ChatRoom.css';
 
 export default function ChatRoom() {
@@ -18,190 +18,143 @@ export default function ChatRoom() {
   const [showMediaViewer, setShowMediaViewer] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState(null);
   const [activeTab, setActiveTab] = useState('all');
+  
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  const filteredMessages = messages.filter(msg => {
-    if (activeTab === 'all') return true;
-    if (activeTab === 'images') return msg.fileType?.startsWith('image/');
-    if (activeTab === 'docs') return msg.fileType && !msg.fileType.startsWith('image/');
-    return true;
-  });
+  // Filter messages based on active tab
+  const filteredMessages = useCallback(() => {
+    return messages.filter(msg => {
+      if (activeTab === 'all') return true;
+      if (activeTab === 'images') return msg.fileType?.startsWith('image/');
+      if (activeTab === 'docs') return msg.fileType && !msg.fileType.startsWith('image/');
+      return true;
+    });
+  }, [messages, activeTab]);
 
+  // Handle chat initialization and subscription
   useEffect(() => {
     if (!chatId) {
       setStatus({ loading: false, error: 'No chat ID provided' });
       return;
     }
 
-    const chatRef = doc(db, 'chats', chatId);
     let unsubscribe = null;
 
-    const setupChat = async () => {
+    const initializeChat = async () => {
       try {
-        const docSnap = await getDoc(chatRef);
-
-        if (!docSnap.exists()) {
-          await setDoc(chatRef, {
-            participants: [auth.currentUser?.uid],
-            messages: [],
-            createdAt: serverTimestamp(),
-            lastUpdated: serverTimestamp(),
-            name: 'New Chat'
-          });
-        } else {
-          if (docSnap.data().name) {
-            setChatName(docSnap.data().name);
-          }
+        setStatus({ loading: true, error: null });
+        
+        const { chatRef, chatData } = await chatService.initializeChat(chatId);
+        
+        if (chatData?.name) {
+          setChatName(chatData.name);
         }
 
-        unsubscribe = onSnapshot(chatRef, async (doc) => {
-          if (doc.exists()) {
-            const messagesData = doc.data().messages || [];
-            setMessages(messagesData.map(msg => ({
-              ...msg,
-              timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date()
-            })));
-
-            const uniqueSenderIds = [...new Set(messagesData.map(msg => msg.senderId))];
-            const newSenderIds = uniqueSenderIds.filter(id => !userData[id]);
-            if (newSenderIds.length > 0) {
-              await fetchUserData(newSenderIds);
-            }
-
-            if (doc.data().participants?.length === 2) {
-              const otherUserId = doc.data().participants.find(id => id !== auth.currentUser?.uid);
-              if (otherUserId && userData[otherUserId]) {
-                setChatName(userData[otherUserId]);
-              }
-            }
-          }
+        unsubscribe = chatService.subscribeToChatUpdates(chatRef, ({ messages: newMessages, participants }) => {
+          setMessages(newMessages);
+          updateUserData(newMessages);
+          updateChatName(participants);
         });
 
         setStatus({ loading: false, error: null });
-      } catch (err) {
-        console.error('Failed to setup chat:', err);
+      } catch (error) {
+        console.error('Chat initialization error:', error);
         setStatus({ loading: false, error: 'Failed to load chat' });
       }
     };
 
-    const fetchUserData = async (userIds) => {
-      try {
+    const updateUserData = async (messagesData) => {
+      const uniqueSenderIds = [...new Set(messagesData.map(msg => msg.senderId))];
+      const newSenderIds = uniqueSenderIds.filter(id => !userData[id] && id !== auth.currentUser?.uid);
+      
+      if (newSenderIds.length > 0) {
         const usersData = {};
-        for (const uid of userIds) {
-          if (uid && uid !== auth.currentUser?.uid) {
-            const userDoc = await getDoc(doc(db, 'users', uid));
-            if (userDoc.exists()) {
-              usersData[uid] = userDoc.data().name || 'Unknown User';
-            } else {
-              usersData[uid] = 'Unknown User';
-            }
-          }
+        for (const uid of newSenderIds) {
+          usersData[uid] = await chatService.getUserData(uid);
         }
         setUserData(prev => ({ ...prev, ...usersData }));
-      } catch (err) {
-        console.error('Error fetching user data:', err);
       }
     };
 
-    setupChat();
+    const updateChatName = (participants) => {
+      if (participants?.length === 2) {
+        const otherUserId = chatService.getOtherParticipant(participants, auth.currentUser?.uid);
+        if (otherUserId && userData[otherUserId]) {
+          setChatName(userData[otherUserId]);
+        }
+      }
+    };
+
+    initializeChat();
 
     return () => {
       if (unsubscribe) unsubscribe();
     };
   }, [chatId, userData]);
 
-  // Check if user is near bottom
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (isUserAtBottom()) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, activeTab]);
+
+  // Check if user is near bottom of chat
   const isUserAtBottom = () => {
     const container = messagesContainerRef.current;
     if (!container) return true;
-
-    const threshold = 100; // px from bottom
+    const threshold = 100;
     const position = container.scrollTop + container.clientHeight;
     const height = container.scrollHeight;
     return height - position <= threshold;
   };
 
-  // Scroll only if user is at bottom
-  useEffect(() => {
-    if (isUserAtBottom()) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [filteredMessages]);
-
+  // Handle file attachment
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
     setAttachment(file);
+    setAttachmentType(file.type.startsWith('image/') ? 'image' : 'document');
 
     if (file.type.startsWith('image/')) {
-      setAttachmentType('image');
       const reader = new FileReader();
-      reader.onload = (event) => {
-        setPreviewUrl(event.target.result);
-      };
+      reader.onload = (event) => setPreviewUrl(event.target.result);
       reader.readAsDataURL(file);
     } else {
-      setAttachmentType('document');
       setPreviewUrl(null);
     }
   };
 
+  // Remove attachment
   const removeAttachment = () => {
     setAttachment(null);
     setPreviewUrl(null);
     setAttachmentType(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const uploadFile = async () => {
-    if (!attachment) return null;
-
-    try {
-      const storageRef = ref(storage, `chat_attachments/${chatId}/${Date.now()}_${attachment.name}`);
-      const snapshot = await uploadBytes(storageRef, attachment);
-      const downloadUrl = await getDownloadURL(snapshot.ref);
-
-      return {
-        url: downloadUrl,
-        name: attachment.name,
-        type: attachment.type,
-        size: attachment.size
-      };
-    } catch (error) {
-      console.error('Error uploading file:', error);
-      throw error;
-    }
-  };
-
+  // Send message handler
   const sendMessage = async (e) => {
     e.preventDefault();
     if ((!newMessage.trim() && !attachment) || !auth.currentUser) return;
 
     try {
       setStatus({ loading: true, error: null });
-      const chatRef = doc(db, 'chats', chatId);
-      const docSnap = await getDoc(chatRef);
-
-      const currentMessages = Array.isArray(docSnap.data()?.messages)
-        ? docSnap.data().messages
-        : [];
-
+      
       const timestamp = new Date().toISOString();
       let fileData = null;
 
       if (attachment) {
-        fileData = await uploadFile();
+        fileData = await chatService.uploadAttachment(chatId, attachment);
       }
 
-      const newMsg = {
+      const messageData = {
         text: newMessage,
         senderId: auth.currentUser.uid,
-        timestamp: timestamp,
+        timestamp,
         ...(fileData && {
           fileUrl: fileData.url,
           fileName: fileData.name,
@@ -210,32 +163,55 @@ export default function ChatRoom() {
         })
       };
 
-      setMessages(prev => [...prev, { ...newMsg, timestamp: new Date(timestamp) }]);
+      // Optimistic update
+      setMessages(prev => [...prev, { ...messageData, timestamp: new Date(timestamp) }]);
+      await chatService.sendMessage(chatId, messageData);
 
-      await updateDoc(chatRef, {
-        messages: [...currentMessages, newMsg],
-        lastUpdated: serverTimestamp()
-      });
-
+      // Update sender info if needed
       if (!userData[auth.currentUser.uid]) {
-        const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
-        const userName = userDoc.exists() ? userDoc.data().name : 'You';
-        setUserData(prev => ({
-          ...prev,
-          [auth.currentUser.uid]: userName
-        }));
+        const userName = await chatService.getUserData(auth.currentUser.uid);
+        setUserData(prev => ({ ...prev, [auth.currentUser.uid]: userName }));
       }
 
       setNewMessage('');
       removeAttachment();
       setStatus({ loading: false, error: null });
-    } catch (err) {
-      console.error('Message send failed:', err);
-      setStatus({ loading: false, error: 'Failed to send message. Please try again.' });
+    } catch (error) {
+      console.error('Message send error:', error);
+      setStatus({ loading: false, error: 'Failed to send message' });
+      // Revert optimistic update
       setMessages(prev => prev.slice(0, -1));
     }
   };
 
+  // Media viewer controls
+  const renderMessageContent = (msg) => {
+    if (msg.fileUrl) {
+      return msg.fileType.startsWith('image/') ? (
+        <section className="media-content" onClick={() => openMediaViewer(msg)}>
+          <img src={msg.fileUrl} alt="Shared content" />
+          {msg.text && <p className="media-caption">{msg.text}</p>}
+        </section>
+      ) : (
+        <section className="document-content">
+          <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" className="document-link">
+            <svg viewBox="0 0 24 24" className="document-icon">
+              <path fill="currentColor" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" />
+              <path fill="currentColor" d="M14 3v5h5" />
+            </svg>
+            <section className="document-info">
+              <p className="document-name" title={msg.fileName}>{msg.fileName}</p>
+              <p className="document-size">{(msg.fileSize / 1024).toFixed(1)} KB</p>
+            </section>
+          </a>
+          {msg.text && <p className="document-caption">{msg.text}</p>}
+        </section>
+      );
+    }
+    return <p>{msg.text}</p>;
+  };
+
+  // Define openMediaViewer function (was unused warning)
   const openMediaViewer = (media) => {
     setSelectedMedia(media);
     setShowMediaViewer(true);
@@ -246,175 +222,234 @@ export default function ChatRoom() {
     setSelectedMedia(null);
   };
 
+  // Render attachment preview
   const renderAttachmentPreview = () => {
     if (!attachment) return null;
 
-    if (attachmentType === 'image') {
-      return (
-        <div className="attachment-preview">
-          <div className="preview-container">
+    return (
+      <figure className="attachment-preview">
+        {attachmentType === 'image' ? (
+          <section className="preview-container">
             <img src={previewUrl} alt="Preview" className="image-preview" />
-            <button onClick={removeAttachment} className="remove-attachment">×</button>
-          </div>
-        </div>
-      );
-    } else {
-      return (
-        <div className="attachment-preview">
-          <div className="document-preview">
-            <div className="document-icon">
-              <svg viewBox="0 0 24 24">
-                <path fill="currentColor" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" />
-                <path fill="currentColor" d="M14 3v5h5" />
-              </svg>
-            </div>
-            <div className="document-info">
+            <button onClick={removeAttachment} className="remove-attachment" aria-label="Remove attachment">×</button>
+          </section>
+        ) : (
+          <section className="document-preview">
+            <svg viewBox="0 0 24 24" className="document-icon">
+              <path fill="currentColor" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" />
+              <path fill="currentColor" d="M14 3v5h5" />
+            </svg>
+            <section className="document-info">
               <p className="document-name" title={attachment.name}>{attachment.name}</p>
               <p className="document-size">{(attachment.size / 1024).toFixed(1)} KB</p>
-            </div>
-            <button onClick={removeAttachment} className="remove-attachment">×</button>
-          </div>
-        </div>
-      );
-    }
+            </section>
+            <button onClick={removeAttachment} className="remove-attachment" aria-label="Remove attachment">×</button>
+          </section>
+        )}
+      </figure>
+    );
   };
 
-  const renderMessageContent = (msg) => {
-    if (msg.fileUrl) {
-      if (msg.fileType.startsWith('image/')) {
-        return (
-          <div className="media-content" onClick={() => openMediaViewer(msg)}>
-            <img src={msg.fileUrl} alt="Shared content" />
-            {msg.text && <p className="media-caption">{msg.text}</p>}
-          </div>
-        );
-      } else {
-        return (
-          <div className="document-content">
-            <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" className="document-link">
-              <div className="document-icon">
-                <svg viewBox="0 0 24 24">
-                  <path fill="currentColor" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" />
-                  <path fill="currentColor" d="M14 3v5h5" />
-                </svg>
-              </div>
-              <div className="document-info">
-                <p className="document-name" title={msg.fileName}>{msg.fileName}</p>
-                <p className="document-size">{(msg.fileSize / 1024).toFixed(1)} KB</p>
-              </div>
-            </a>
-            {msg.text && <p className="document-caption">{msg.text}</p>}
-          </div>
-        );
-      }
-    }
-    return <p>{msg.text}</p>;
-  };
-
+  // Loading and error states using semantic elements
   if (status.loading && messages.length === 0) {
     return (
-      <div className="loading-container">
-        <div className="loading-spinner"></div>
+      <article className="loading-container">
+        <progress aria-label="Loading chat messages"></progress>
         <p>Loading chat...</p>
-      </div>
+      </article>
     );
   }
 
   if (status.error) {
     return (
-      <div className="error-container">
-        <div className="error-message">
+      <article className="error-container">
+        <section className="error-message">
           <p>{status.error}</p>
           <button onClick={() => window.location.reload()}>Retry</button>
-        </div>
-      </div>
+        </section>
+      </article>
     );
   }
 
   return (
-    <div className="chat-app">
-      <div className="chat-header">
-        <h2>{chatName}</h2>
-        <div className="status-indicator">
-          <span className="status-dot"></span>
-          <span>Online</span>
-        </div>
-      </div>
+    <article className="chat-app">
+      {/* Chat header */}
+       <header className="chat-header" style={{
+      padding: '1rem',
+      backgroundColor: 'var(--primary-blue)',
+      color: 'var(--white)',
+      flexShrink: 0
+    }}>
+      <h1 style={{
+        fontSize: '1.1rem',
+        fontWeight: 600,
+        margin: 0
+      }}>inChat</h1>
+      <p className="status-indicator">
+        <span className="status-dot" aria-hidden="true"></span>
+        <span>Online</span>
+      </p>
+    </header>
 
-      <div className="media-tabs">
-        <button className={activeTab === 'all' ? 'active' : ''} onClick={() => setActiveTab('all')}>All Messages</button>
-        <button className={activeTab === 'images' ? 'active' : ''} onClick={() => setActiveTab('images')}>Photos & Videos</button>
-        <button className={activeTab === 'docs' ? 'active' : ''} onClick={() => setActiveTab('docs')}>Documents</button>
-      </div>
+      {/* Media tabs */}
+      <nav className="media-tabs" aria-label="Message filters">
+        <menu>
+          <li>
+            <button 
+              className={activeTab === 'all' ? 'active' : ''} 
+              onClick={() => setActiveTab('all')}
+              aria-current={activeTab === 'all' ? 'page' : undefined}
+            >
+              All Messages
+            </button>
+          </li>
+          <li>
+            <button 
+              className={activeTab === 'images' ? 'active' : ''} 
+              onClick={() => setActiveTab('images')}
+              aria-current={activeTab === 'images' ? 'page' : undefined}
+            >
+              Photos & Videos
+            </button>
+          </li>
+          <li>
+            <button 
+              className={activeTab === 'docs' ? 'active' : ''} 
+              onClick={() => setActiveTab('docs')}
+              aria-current={activeTab === 'docs' ? 'page' : undefined}
+            >
+              Documents
+            </button>
+          </li>
+        </menu>
+      </nav>
 
-      <div className="messages-container" ref={messagesContainerRef}>
-        {filteredMessages.map((msg, i) => (
-          <div key={i} className={`message-bubble ${msg.senderId === auth.currentUser?.uid ? 'sent' : 'received'}`}>
-            <div className="message-meta">
-              <span className="sender-name">
-                {msg.senderId === auth.currentUser?.uid ? 'You' : userData[msg.senderId] || 'Unknown'}
-              </span>
-              <span className="message-time">
-                {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </span>
-            </div>
-            <div className="message-content">
-              {renderMessageContent(msg)}
-            </div>
-          </div>
-        ))}
-        <div ref={messagesEndRef} className="scroll-anchor"></div>
-      </div>
+      {/* Messages container */}
+      <section 
+        className="messages-container" 
+        ref={messagesContainerRef}
+        aria-live="polite"
+        aria-atomic="false"
+      >
+        <ol className="messages-list">
+          {filteredMessages().map((msg, i) => (
+            <li 
+              key={i} 
+              className={`message-bubble ${msg.senderId === auth.currentUser?.uid ? 'sent' : 'received'}`}
+            >
+              <header className="message-meta">
+                <span className="sender-name">
+                  {msg.senderId === auth.currentUser?.uid ? 'You' : userData[msg.senderId] || 'Unknown'}
+                </span>
+                <time 
+                  className="message-time" 
+                  dateTime={msg.timestamp.toISOString()}
+                >
+                  {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </time>
+              </header>
+              <article className="message-content">
+                {renderMessageContent(msg)}
+              </article>
+            </li>
+          ))}
+        </ol>
+        <span ref={messagesEndRef} className="scroll-anchor" aria-hidden="true"></span>
+      </section>
 
+      {/* Media viewer modal */}
       {showMediaViewer && (
-        <div className="media-viewer-overlay">
-          <div className="media-viewer-content">
-            <button className="close-viewer" onClick={closeMediaViewer}>×</button>
+        <dialog 
+          className="media-viewer-overlay"
+          open
+          aria-labelledby="media-viewer-heading"
+        >
+          <article className="media-viewer-content">
+            <header>
+              <h2 id="media-viewer-heading" className="visually-hidden">Media Viewer</h2>
+              <button 
+                className="close-viewer" 
+                onClick={closeMediaViewer}
+                aria-label="Close media viewer"
+              >
+                ×
+              </button>
+            </header>
+            
             {selectedMedia.fileType.startsWith('image/') ? (
-              <img src={selectedMedia.fileUrl} alt="Full size" />
+              <figure>
+                <img src={selectedMedia.fileUrl} alt="" />
+                {selectedMedia.text && (
+                  <figcaption className="media-caption-viewer">
+                    {selectedMedia.text}
+                  </figcaption>
+                )}
+              </figure>
             ) : (
-              <div className="document-viewer">
+              <section className="document-viewer">
                 <iframe 
                   src={`https://docs.google.com/viewer?url=${encodeURIComponent(selectedMedia.fileUrl)}&embedded=true`} 
-                  title={selectedMedia.fileName}
+                  title={`Preview of ${selectedMedia.fileName}`}
                 ></iframe>
-                <a href={selectedMedia.fileUrl} target="_blank" rel="noopener noreferrer" className="download-button">
+                <a 
+                  href={selectedMedia.fileUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="download-button"
+                >
                   Download File
                 </a>
-              </div>
+              </section>
             )}
-            {selectedMedia.text && <div className="media-caption-viewer"><p>{selectedMedia.text}</p></div>}
-          </div>
-        </div>
+          </article>
+        </dialog>
       )}
 
+      {/* Message input form */}
       <form onSubmit={sendMessage} className="message-input-container">
         {renderAttachmentPreview()}
-        <div className="input-row">
+        <section className="input-row">
+          <label htmlFor="message-input" className="visually-hidden">Type your message</label>
           <input
+            id="message-input"
             type="text"
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             placeholder="Type a message..."
             disabled={status.loading}
           />
-          <div className="action-buttons">
-            <button type="button" className="attach-button" onClick={() => fileInputRef.current.click()}>
-              📎
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileChange}
-                style={{ display: 'none' }}
-                accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
-              />
-            </button>
-            <button type="submit" disabled={status.loading || (!newMessage.trim() && !attachment)} className={status.loading ? 'loading' : ''}>
-              {status.loading ? '...' : '➤'}
-            </button>
-          </div>
-        </div>
+          <menu className="action-buttons">
+            <li>
+              <button 
+                type="button" 
+                className="attach-button" 
+                onClick={() => fileInputRef.current.click()}
+                aria-label="Attach file"
+              >
+                📎
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  className="visually-hidden"
+                  accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
+                  aria-label="File attachment"
+                />
+              </button>
+            </li>
+            <li>
+              <button 
+                type="submit" 
+                disabled={status.loading || (!newMessage.trim() && !attachment)} 
+                className={status.loading ? 'loading' : ''}
+                aria-label="Send message"
+              >
+                {status.loading ? '...' : '➤'}
+              </button>
+            </li>
+          </menu>
+        </section>
       </form>
-    </div>
+    </article>
   );
 }

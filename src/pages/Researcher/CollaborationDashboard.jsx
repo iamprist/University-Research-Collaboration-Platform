@@ -31,7 +31,7 @@ export default function CollaborationDashboard() {
         aria-label="Project collaboration tools"
       >
         <header className="panel-header">
-          <h2 id="dashboard-heading">Project Collaboration</h2>
+          <h2 id="dashboard-heading">inTracking</h2>
         </header>
 
         <nav className="tabs" role="tablist" aria-label="Collaboration tabs">

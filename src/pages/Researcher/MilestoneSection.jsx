@@ -1,43 +1,31 @@
 import { useState, useEffect } from 'react';
-import { doc, updateDoc, onSnapshot } from 'firebase/firestore';
-import { db } from '../../config/firebaseConfig';
+import { milestoneService } from './milestoneService';
 import jsPDF from 'jspdf';
-import { v4 as uuidv4 } from 'uuid';
+import './MilestoneSection.css';
 
-export default function MilestonesSection({ chatId, projectCreated, researchComplete }) {
-  const [milestones, setMilestones] = useState([]);
+export default function MilestonesSection({ chatId, projectCreated }) {
+  const [milestoneData, setMilestoneData] = useState({
+    milestones: [],
+    researchComplete: false,
+    researchCompletedAt: null
+  });
   const [showMilestoneForm, setShowMilestoneForm] = useState(false);
   const [milestoneInput, setMilestoneInput] = useState({ title: '', description: '' });
 
   useEffect(() => {
     if (!chatId) return;
-    const chatRef = doc(db, 'chats', chatId);
-    const unsubscribe = onSnapshot(chatRef, (docSnap) => {
-      if (docSnap.exists()) {
-        setMilestones(docSnap.data().milestones || []);
-      }
-    });
+    const unsubscribe = milestoneService.subscribeToMilestones(chatId, setMilestoneData);
     return () => unsubscribe();
   }, [chatId]);
 
-  const projectFinished = milestones.length > 0 && milestones.every(m => m.done)
+  const { milestones, researchComplete } = milestoneData;
+  const allMilestonesDone = milestones.length > 0 && milestones.every(m => m.done);
+  const projectFinished = allMilestonesDone 
     ? Math.max(...milestones.map(m => m.doneAt ? new Date(m.doneAt).getTime() : 0))
     : null;
 
   const toggleMilestoneDone = async (id) => {
-    const chatRef = doc(db, 'chats', chatId);
-    const updated = milestones.map(m => {
-      if (m.id === id) {
-        if (!m.done) {
-          return { ...m, done: true, doneAt: new Date().toISOString() };
-        } else {
-          const { doneAt, ...rest } = m;
-          return { ...rest, done: false };
-        }
-      }
-      return m;
-    });
-    await updateDoc(chatRef, { milestones: updated });
+    await milestoneService.toggleMilestone(chatId, id, milestones);
   };
 
   const handleExportMilestonesPDF = () => {
@@ -110,71 +98,66 @@ export default function MilestonesSection({ chatId, projectCreated, researchComp
   const handleAddMilestone = async (e) => {
     e.preventDefault();
     if (!milestoneInput.title) return;
-    const chatRef = doc(db, 'chats', chatId);
-    const newMilestone = {
-      id: uuidv4(),
+    await milestoneService.addMilestone(chatId, {
       title: milestoneInput.title,
-      description: milestoneInput.description,
-      done: false,
-      createdAt: new Date().toISOString(),
-    };
-    await updateDoc(chatRef, {
-      milestones: [...milestones, newMilestone],
+      description: milestoneInput.description
     });
     setMilestoneInput({ title: '', description: '' });
     setShowMilestoneForm(false);
   };
 
   const handleDeleteMilestone = async (id) => {
-    const chatRef = doc(db, 'chats', chatId);
-    const updated = milestones.filter(m => m.id !== id);
-    await updateDoc(chatRef, { milestones: updated });
+    await milestoneService.deleteMilestone(chatId, id, milestones);
   };
 
   const handleMarkResearchComplete = async () => {
-    if (!chatId) return;
-    const chatRef = doc(db, 'chats', chatId);
-    await updateDoc(chatRef, {
-      researchComplete: true,
-      researchCompletedAt: new Date().toISOString(),
-    });
+    await milestoneService.markResearchComplete(chatId);
   };
 
   const handleUnmarkResearchComplete = async () => {
-    if (!chatId) return;
-    const chatRef = doc(db, 'chats', chatId);
-    await updateDoc(chatRef, {
-      researchComplete: false,
-      researchCompletedAt: null,
-    });
+    await milestoneService.unmarkResearchComplete(chatId);
   };
 
-  const allMilestonesDone = milestones.length > 0 && milestones.every(m => m.done);
-
   return (
-    <div className="funding-section">
+    <section className="milestones-container">
       <h3>Research Milestones</h3>
-      <div>
-        <strong>Project Created:</strong>{' '}
-        {projectCreated ? new Date(projectCreated).toLocaleString() : 'N/A'}
-        <br />
-        <strong>Project Finished:</strong>{' '}
-        {researchComplete
-          ? 'Marked complete by researcher'
-          : milestones.length > 0
-            ? 'Not yet finished'
-            : 'N/A'}
-      </div>
-      <div style={{ marginBottom: '1rem', marginTop: '1rem' }}>
-        <button onClick={() => setShowMilestoneForm(v => !v)}>
-          {showMilestoneForm ? 'Cancel' : 'Add Milestone'}
-        </button>
-        <button onClick={handleExportMilestonesPDF} style={{ marginLeft: 8 }}>
-          Export as PDF
-        </button>
-      </div>
+      
+      <dl className="project-timeline">
+        <dt className="timeline-label">Project Created:</dt>
+        <dd className="timeline-value">
+          {projectCreated ? new Date(projectCreated).toLocaleString() : 'N/A'}
+        </dd>
+        <dt className="timeline-label">Project Finished:</dt>
+        <dd className="timeline-value">
+          {researchComplete 
+            ? 'Marked complete by researcher' 
+            : milestones.length > 0 
+              ? 'Not yet finished' 
+              : 'N/A'}
+        </dd>
+      </dl>
+
+      <menu className="milestone-actions">
+        <li>
+          <button 
+            className={`toggle-button ${showMilestoneForm ? 'cancel' : ''}`}
+            onClick={() => setShowMilestoneForm(v => !v)}
+          >
+            {showMilestoneForm ? 'Cancel' : 'Add Milestone'}
+          </button>
+        </li>
+        <li>
+          <button 
+            className="export-button"
+            onClick={handleExportMilestonesPDF}
+          >
+            Export as PDF
+          </button>
+        </li>
+      </menu>
+
       {showMilestoneForm && (
-        <form onSubmit={handleAddMilestone} className="funding-form">
+        <form onSubmit={handleAddMilestone} className="milestone-form">
           <input
             type="text"
             placeholder="Milestone Title"
@@ -188,86 +171,63 @@ export default function MilestonesSection({ chatId, projectCreated, researchComp
             value={milestoneInput.description}
             onChange={e => setMilestoneInput({ ...milestoneInput, description: e.target.value })}
           />
-          <button type="submit">Add</button>
+          <button type="submit" className="submit-button">
+            Add Milestone
+          </button>
         </form>
       )}
-      <ul>
-        {milestones.length === 0 && (
-          <li>No milestones yet.</li>
-        )}
-        {milestones.map(m => (
-          <li key={m.id} style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem'
-          }}>
-            <input
-              type="checkbox"
-              checked={m.done}
-              onChange={() => toggleMilestoneDone(m.id)}
-              style={{ marginRight: 8 }}
-            />
-            <span
-              style={{
-                textDecoration: m.done ? 'line-through' : 'none',
-                color: m.done ? '#38A169' : undefined
-              }}
-            >
-              <strong>{m.title}</strong>
-              {m.description && <> – {m.description}</>}
-              <br />
-              <small>
-                Created: {m.createdAt ? new Date(m.createdAt).toLocaleString() : 'N/A'}
-                {m.done && m.doneAt && (
-                  <> | Finished: {new Date(m.doneAt).toLocaleString()}</>
-                )}
-              </small>
-            </span>
-            <button
-              style={{
-                marginLeft: 'auto',
-                background: '#FF6B6B',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '0.5rem',
-                padding: '0.2rem 0.7rem',
-                cursor: 'pointer'
-              }}
-              onClick={() => handleDeleteMilestone(m.id)}
-              title="Delete"
-              type="button"
-            >
-              Delete
-            </button>
-          </li>
-        ))}
-      </ul>
-      {allMilestonesDone && (
-        <div style={{
-          marginTop: '1rem',
-          color: '#38A169',
-          fontWeight: 'bold',
-          textAlign: 'center'
-        }}>
-          🎉All milestones complete!
-        </div>
+
+      {milestones.length === 0 ? (
+        <p className="no-milestones">No milestones yet.</p>
+      ) : (
+        <ul className="milestones-list">
+          {milestones.map(m => (
+            <li key={m.id} className={`milestone-item ${m.done ? 'completed' : ''}`}>
+              <input
+                type="checkbox"
+                checked={m.done}
+                onChange={() => toggleMilestoneDone(m.id)}
+                id={`milestone-${m.id}`}
+              />
+              <label htmlFor={`milestone-${m.id}`}>
+                <article className="milestone-details">
+                  <h4 className="milestone-title">{m.title}</h4>
+                  {m.description && (
+                    <p className="milestone-description">{m.description}</p>
+                  )}
+                  <footer className="milestone-meta">
+                    <time>Created: {m.createdAt ? new Date(m.createdAt).toLocaleString() : 'N/A'}</time>
+                    {m.done && m.doneAt && (
+                      <time>Completed: {new Date(m.doneAt).toLocaleString()}</time>
+                    )}
+                  </footer>
+                </article>
+              </label>
+              <button
+                className="delete-button"
+                onClick={() => handleDeleteMilestone(m.id)}
+                title="Delete milestone"
+                aria-label="Delete milestone"
+              >
+                ×
+              </button>
+            </li>
+          ))}
+        </ul>
       )}
-      <div style={{ marginTop: '2rem', textAlign: 'center' }}>
-        {!researchComplete && (
+
+      {allMilestonesDone && !researchComplete && (
+        <aside className="all-complete-banner">
+          🎉 All milestones complete!
+        </aside>
+      )}
+
+      <footer className="research-completion">
+        {!researchComplete ? (
           <button
             onClick={handleMarkResearchComplete}
-            style={{
-              background: milestones.length === 0 || !allMilestonesDone ? '#ccc' : '#38A169',
-              color: '#fff',
-              fontWeight: 600,
-              padding: '0.6rem 1.5rem',
-              borderRadius: '0.5rem',
-              border: 'none',
-              fontSize: '1rem',
-              cursor: milestones.length === 0 || !allMilestonesDone ? 'not-allowed' : 'pointer',
-              opacity: milestones.length === 0 || !allMilestonesDone ? 0.7 : 1
-            }}
-            disabled={milestones.length === 0 || !allMilestonesDone}
+            disabled={!allMilestonesDone}
+            className={`complete-button ${!allMilestonesDone ? 'disabled' : ''}`}
             title={
               milestones.length === 0
                 ? 'Add at least one milestone first'
@@ -278,31 +238,18 @@ export default function MilestonesSection({ chatId, projectCreated, researchComp
           >
             Mark Research as Complete
           </button>
-        )}
-        {researchComplete && (
-          <div>
-            <span style={{ color: '#38A169', fontWeight: 600 }}>
-              Research marked as complete
-            </span>
+        ) : (
+          <p className="completion-status">
+            <span className="completed-text">Research marked as complete</span>
             <button
               onClick={handleUnmarkResearchComplete}
-              style={{
-                marginLeft: 16,
-                background: '#FF6B6B',
-                color: '#fff',
-                fontWeight: 600,
-                padding: '0.5rem 1.2rem',
-                borderRadius: '0.5rem',
-                border: 'none',
-                fontSize: '1rem',
-                cursor: 'pointer'
-              }}
+              className="unmark-button"
             >
               Unmark as Complete
             </button>
-          </div>
+          </p>
         )}
-      </div>
-    </div>
+      </footer>
+    </section>
   );
 }
