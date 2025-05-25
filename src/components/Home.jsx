@@ -1,7 +1,6 @@
 // Home Component for Inerk Hub
 import React from "react";
 import { Link } from "react-router-dom";
-import BannerBackground from "../assets/home-banner-background.png";
 import BannerImage from "../assets/home-banner-image.png";
 import Navbar from "../components/Navbar";
 import { FiArrowRight } from "react-icons/fi";
@@ -11,7 +10,8 @@ const Home = () => {
     <section className="home-container">
       <Navbar />
       <section className="home-banner-container">
-        <figure className="home-bannerImage-container">        <img
+        <figure className="home-bannerImage-container">
+          <img
           src="/favicon.ico"
           alt="Inerk Hub Logo"
           style={{
