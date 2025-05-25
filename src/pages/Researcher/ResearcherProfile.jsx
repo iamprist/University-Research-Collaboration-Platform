@@ -24,7 +24,11 @@ const ResearcherProfile = () => {
   const [userId, setUserId] = useState(null);
   // Loading and error state
   const [loading, setLoading] = useState(true);
-  
+  // State for profile not found
+  const [profileNotFound, setProfileNotFound] = useState(false);
+  // Error state for Firestore errors
+  const [error, setError] = useState(false);
+
   // State for dropdown menu anchor
   const [menuAnchorEl, setMenuAnchorEl] = useState(null);
 
@@ -59,24 +63,18 @@ const ResearcherProfile = () => {
 
       try {
         setLoading(true);
+        setError(false);
         const userDocRef = doc(db, 'researcherProfiles', userId);
         const userDoc = await getDoc(userDocRef);
 
         if (!userDoc.exists()) {
-          navigate('/researcher-edit-profile'); // Redirect if doc doesn't exist
+          setProfileNotFound(true);
+          setProfile(null);
           return;
         }
 
         const profileData = userDoc.data();
-        const requiredFields = ['name', 'email', 'researchArea']; // Customize required fields
-        const isProfileIncomplete = requiredFields.some(field => !profileData[field]);
-
-        if (isProfileIncomplete) {
-          navigate('/researcher-edit-profile'); // Redirect if missing required fields
-          return;
-        }
-
-        // Only set profile if everything is valid
+        // Do not treat missing fields as 'not found', just use fallback values
         setProfile({
           title: profileData.title || '',
           name: profileData.name || '',
@@ -89,9 +87,11 @@ const ResearcherProfile = () => {
           otherCountry: profileData.otherCountry || '',
           profilePicture: profileData.profilePicture || null,
         });
+        setProfileNotFound(false);
       } catch (error) {
         console.error('Error fetching profile:', error);
-        navigate('/researcher-edit-profile'); // Redirect on error (silently)
+        setError(true);
+        setProfile(null);
       } finally {
         setLoading(false);
       }
@@ -109,7 +109,25 @@ const ResearcherProfile = () => {
     );
   }
 
+  if (error) {
+    return (
+      <Box className="loading-container" sx={{ p: 6, textAlign: 'center' }}>
+        <Typography>Failed to load profile</Typography>
+      </Box>
+    );
+  }
 
+  if (profileNotFound) {
+    return (
+      <Box className="loading-container" sx={{ p: 6, textAlign: 'center' }}>
+        <Typography>Profile not found</Typography>
+      </Box>
+    );
+  }
+
+  if (!profile) {
+    return null;
+  }
 
   // Render profile UI
   return (
@@ -306,10 +324,10 @@ const ResearcherProfile = () => {
 
           <Box className="profile-details" sx={{ p: 3, color: '#4a5568' }}>
             <Typography>
-              <strong>Email:</strong> {profile.email}
+              <strong>Email:</strong> {profile.email || 'N/A'}
             </Typography>
             <Typography>
-              <strong>Research Area:</strong> {profile.researchArea}
+              <strong>Research Area:</strong> {profile.researchArea || 'N/A'}
             </Typography>
           </Box>
 
@@ -317,7 +335,7 @@ const ResearcherProfile = () => {
             <Typography variant="h6" sx={{ mb: 1 }}>
               Biography
             </Typography>
-            <Typography>{profile.biography}</Typography>
+            <Typography>{profile.biography || 'No biography provided.'}</Typography>
           </Box>
 
           <Box className="profile-actions" sx={{ p: 3, borderTop: '1px solid #e3e8ee', display: 'flex', justifyContent: 'flex-end' }}>

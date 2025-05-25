@@ -1,7 +1,6 @@
 /* eslint-disable jsx-a11y/anchor-is-valid */
 import React, { useState } from "react";
 import { Link } from "react-router-dom"; // Import Link from React Router
-import Logo from "../assets/Logo.svg";
 import { HiOutlineBars3 } from "react-icons/hi2";
 import Box from "@mui/material/Box";
 import Drawer from "@mui/material/Drawer";
@@ -30,9 +29,19 @@ const Navbar = () => {
 
   return (
     <nav>
-      <figure className="nav-logo-container">
-        <img src={Logo} alt="Inerk Hub Logo" />
-      </figure>
+<figure className="nav-logo-container">
+  <img
+    src="/favicon.ico"
+    alt="Inerk Hub Logo"
+    style={{
+      width: 48, // Increased from 36 to 48
+      height: 48, // Increased from 36 to 48
+      borderRadius: "50%",
+      border: "2px solid #B1EDE8",
+      objectFit: "cover"
+    }}
+  />
+</figure>
       <menu className="navbar-links-container">
         <Link to="/">Home</Link>
         <Link to="/about" state={{ fromNavbar: true }}>About</Link>
