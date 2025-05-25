@@ -1,44 +1,89 @@
 // ListingDetailPage.jsx - Displays detailed information about a research listing
 import { useParams, useNavigate } from 'react-router-dom';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../config/firebaseConfig';
 import { useEffect, useState } from 'react';
 import './ListingDetailPage.css';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
-import { Box, Typography, Button, IconButton, CircularProgress } from '@mui/material';
+import { Box, Typography, Button, IconButton, CircularProgress, Chip, Avatar } from '@mui/material';
 
 const ListingDetailPage = () => {
-  // Get listing ID from URL params
   const { id } = useParams();
   const navigate = useNavigate();
-  // State for listing data
   const [listing, setListing] = useState(null);
-  // Loading state
   const [loading, setLoading] = useState(true);
-  // State for lead researcher info
   const [researcher, setResearcher] = useState(null);
+  const [collaborators, setCollaborators] = useState([]);
+  const [collaboratorsLoading, setCollaboratorsLoading] = useState(false);
 
-  // Fetch listing and researcher info on mount or when id changes
   useEffect(() => {
     const fetchData = async () => {
       try {
+        setLoading(true);
+        
+        // 1. Fetch listing data
         const docRef = doc(db, "research-listings", id);
         const docSnap = await getDoc(docRef);
 
-        if (docSnap.exists()) {
-          const listingData = { id: docSnap.id, ...docSnap.data() };
-          setListing(listingData);
+        if (!docSnap.exists()) {
+          setLoading(false);
+          return;
+        }
 
-          // Fetch lead researcher info if available
-          if (listingData.userId) {
-            const researcherDoc = await getDoc(doc(db, "users", listingData.userId));
-            if (researcherDoc.exists()) {
-              setResearcher(researcherDoc.data());
-            }
+        const listingData = { id: docSnap.id, ...docSnap.data() };
+        setListing(listingData);
+
+        // 2. Fetch lead researcher info if available
+        if (listingData.userId) {
+          const researcherDoc = await getDoc(doc(db, "users", listingData.userId));
+          if (researcherDoc.exists()) {
+            setResearcher(researcherDoc.data());
           }
         }
+
+        // 3. Fetch collaborators
+        setCollaboratorsLoading(true);
+        try {
+          const collaboratorsQuery = query(
+            collection(db, "collaborations"),
+            where("listingId", "==", id),
+            where("status", "==", "active")
+          );
+          
+          const collaboratorsSnapshot = await getDocs(collaboratorsQuery);
+          console.log(`Found ${collaboratorsSnapshot.size} collaborators`);
+
+          const collaboratorsData = [];
+          for (const collabDoc of collaboratorsSnapshot.docs) {
+            const collabData = collabDoc.data();
+            console.log('Collaboration data:', collabData);
+            
+            try {
+              const userDoc = await getDoc(doc(db, "users", collabData.collaboratorId));
+              if (userDoc.exists()) {
+                console.log('Found user:', userDoc.data());
+                collaboratorsData.push({
+                  id: userDoc.id,
+                  ...userDoc.data()
+                });
+              } else {
+                console.warn(`User not found for collaboratorId: ${collabData.collaboratorId}`);
+              }
+            } catch (userError) {
+              console.error('Error fetching user:', userError);
+            }
+          }
+          
+          setCollaborators(collaboratorsData);
+          console.log('Final collaborators data:', collaboratorsData);
+        } catch (collabError) {
+          console.error('Error fetching collaborators:', collabError);
+        } finally {
+          setCollaboratorsLoading(false);
+        }
+
       } catch (error) {
-        console.error("Error fetching data:", error);
+        console.error("Error fetching listing data:", error);
       } finally {
         setLoading(false);
       }
@@ -47,7 +92,6 @@ const ListingDetailPage = () => {
     fetchData();
   }, [id]);
 
-  // Show loading spinner while fetching data
   if (loading) return (
     <Box className="loading-container">
       <CircularProgress sx={{ color: '#64CCC5', mb: 2 }} />
@@ -55,7 +99,6 @@ const ListingDetailPage = () => {
     </Box>
   );
 
-  // Show not found message if listing doesn't exist
   if (!listing) return (
     <Box className="not-found">
       <Typography variant="h4">Listing not found</Typography>
@@ -63,10 +106,9 @@ const ListingDetailPage = () => {
     </Box>
   );
 
-  // Render listing details UI
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#f5f7fa' }}>
-      {/* Header styled like CollaboratePage */}
+      {/* Header */}
       <Box
         sx={{
           display: 'flex',
@@ -88,8 +130,10 @@ const ListingDetailPage = () => {
           <Typography variant="h4" sx={{ fontWeight: 600, color: '#FFFFFF', mb: 0.5 }}>
             {listing.title}
           </Typography>
+          
+          {/* Lead Researcher */}
           {researcher && (
-            <Box>
+            <Box sx={{ mb: 1 }}>
               <Typography variant="subtitle1" sx={{ color: '#B1EDE8', fontWeight: 500 }}>
                 Lead Researcher: {researcher.title} {researcher.name}
               </Typography>
@@ -98,7 +142,42 @@ const ListingDetailPage = () => {
               </Typography>
             </Box>
           )}
+          
+          {/* Collaborators */}
+          <Box sx={{ mt: 2 }}>
+            {collaboratorsLoading ? (
+              <CircularProgress size={20} sx={{ color: '#B1EDE8' }} />
+            ) : collaborators.length > 0 ? (
+              <>
+                <Typography variant="subtitle2" sx={{ color: '#B1EDE8', fontWeight: 500, mb: 1 }}>
+                  Collaborators:
+                </Typography>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                  {collaborators.map((collaborator) => (
+                    <Chip
+                      key={collaborator.id}
+                      avatar={collaborator.photoURL ? <Avatar src={collaborator.photoURL} /> : undefined}
+                      label={`${collaborator.title || ''} ${collaborator.name}`.trim()}
+                      sx={{
+                        backgroundColor: '#64CCC5',
+                        color: '#132238',
+                        '& .MuiChip-label': {
+                          overflow: 'visible',
+                          whiteSpace: 'normal'
+                        }
+                      }}
+                    />
+                  ))}
+                </Box>
+              </>
+            ) : (
+              <Typography variant="subtitle2" sx={{ color: '#B1EDE8', fontStyle: 'italic' }}>
+                No active collaborators yet
+              </Typography>
+            )}
+          </Box>
         </Box>
+        
         <Button
           variant="contained"
           onClick={() => navigate('/researcher-dashboard')}
@@ -112,8 +191,6 @@ const ListingDetailPage = () => {
           Back to Dashboard
         </Button>
       </Box>
-
-      {/* Details */}
       <Box className="listing-container">
         <Box className="listing-details">
           <Box className="detail-section">
