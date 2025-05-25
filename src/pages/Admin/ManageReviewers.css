@@ -1,0 +1,200 @@
+.manage-reviewers-container {
+  min-height: 100vh;
+  background: #1a2e40;
+  color: white;
+  padding: 2rem 0;
+}
+
+.manage-reviewers-article {
+  max-width: 960px;
+  margin: 2rem auto;
+  padding: 1.5rem;
+  background-color: #1a2e40;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.manage-reviewers-heading {
+  font-size: 2rem;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.manage-reviewers-description {
+  text-align: center;
+  color: #cbd5e0;
+  margin-bottom: 1.5rem;
+}
+
+.manage-reviewers-search-input {
+  width: 100%;
+  max-width: 350px;
+  margin: 0 auto 1.2rem auto;
+  display: block;
+  padding: 0.5rem 1rem;
+  border-radius: 0.4rem;
+  border: 1px solid #4a5568;
+  background: #243447;
+  color: #fff;
+  font-size: 1rem;
+  outline: none;
+}
+
+.manage-reviewers-card {
+  background-color: #243447;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.manage-reviewers-card-name {
+  color: #64CCC5;
+  margin-bottom: 0.5rem;
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.manage-reviewers-card-email {
+  color: #A0AEC0;
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.manage-reviewers-publications-list {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.manage-reviewers-publication-link,
+.manage-reviewers-cv-link {
+  color: #64CCC5;
+  text-decoration: underline;
+}
+
+.manage-reviewers-no-data {
+  text-align: center;
+  color: #a0aec0;
+  margin-top: 1rem;
+}
+
+.manage-reviewers-button {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 1rem;
+  margin-right: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.manage-reviewers-approve {
+  background-color: #64CCC5;
+  color: #132238;
+}
+
+.manage-reviewers-reject,
+.manage-reviewers-revoke {
+  background-color: #FF6B6B;
+  color: #fff;
+}
+
+.manage-reviewers-delete {
+  background-color: #E53E3E;
+  color: #fff;
+}
+
+.manage-reviewers-pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
+  gap: 0.5rem;
+}
+
+.manage-reviewers-pagination-btn {
+  padding: 0.5rem 1rem;
+  margin: 0 0.25rem;
+  border-radius: 0.25rem;
+  background-color: #4a5568;
+  color: #cbd5e0;
+  border: none;
+  cursor: pointer;
+}
+
+.manage-reviewers-pagination-btn.active {
+  background-color: #4299e1;
+  color: #fff;
+}
+
+.manage-reviewers-modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.manage-reviewers-modal {
+  background: #243447;
+  padding: 2rem;
+  border-radius: 0.5rem;
+  min-width: 320px;
+  max-width: 90vw;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+  color: #fff;
+}
+
+.manage-reviewers-modal-label {
+  color: #64CCC5;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.manage-reviewers-modal-textarea {
+  width: 100%;
+  border-radius: 0.4rem;
+  border: 1.5px solid #64CCC5;
+  background: #132238;
+  color: #fff;
+  padding: 0.7rem;
+  margin-bottom: 1.2rem;
+  font-size: 1rem;
+  resize: vertical;
+}
+
+.manage-reviewers-modal-button-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.manage-reviewers-modal-cancel {
+  background: #4a5568;
+  color: #fff;
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.5rem 1.2rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.manage-reviewers-modal-confirm {
+  background: #FF6B6B;
+  color: #fff;
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.5rem 1.2rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.manage-reviewers-modal-confirm:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}

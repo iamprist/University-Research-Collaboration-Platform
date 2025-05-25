@@ -7,3 +7,9 @@ global.fetch = fetch;
 global.Response = Response;
 global.Headers = Headers;
 global.Request = Request;
+
+global.ResizeObserver = class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};

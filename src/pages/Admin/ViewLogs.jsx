@@ -3,6 +3,7 @@ import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from "../../config/firebaseConfig";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import './ViewLogs.css';
 
 // Component for viewing and exporting system logs
 export default function ViewLogs() {
@@ -41,104 +42,6 @@ export default function ViewLogs() {
   const indexOfFirstLog = indexOfLastLog - logsPerPage;
   const currentLogs = filteredLogs.slice(indexOfFirstLog, indexOfLastLog);
   const totalPages = Math.max(1, Math.ceil(filteredLogs.length / logsPerPage));
-
-  // Inline styles for layout and appearance
-  const styles = {
-    container: {
-      backgroundColor: "#1A2E40",
-      minHeight: "100vh",
-      padding: "0.1rem",
-      fontFamily: "Inter, sans-serif",
-      color: "#FFFFFF",
-    },
-    input: {
-      padding: "0.75rem",
-      width: "100%",
-      maxWidth: "300px",
-      border: "1px solid #D1D5DB",
-      borderRadius: "0.5rem",
-      fontSize: "1rem",
-      marginBottom: "1.5rem",
-      display: "block",
-      textAlign: "left",
-    },
-    tableContainer: {
-      backgroundColor: "#2B3E50",
-      borderRadius: "1rem",
-      padding: "1.5rem",
-      boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-      maxWidth: "100%",
-      margin: "0 auto",
-      marginTop: "2rem",
-      overflowX: "auto",
-    },
-    table: {
-      width: "100%",
-      borderCollapse: "collapse",
-      fontSize: "0.97rem",
-      minWidth: "1000px",
-    },
-    th: {
-      borderBottom: "2px solid #D1D5DB",
-      padding: "0.75rem",
-      backgroundColor: "#364E68",
-      color: "#B1EDE8",
-      textAlign: "left",
-    },
-    td: {
-      borderBottom: "1px solid #D1D5DB",
-      padding: "0.75rem",
-      color: "#FFFFFF",
-    },
-    noResults: {
-      textAlign: "center",
-      padding: "1rem",
-      color: "#888",
-    },
-    pagination: {
-      display: "flex",
-      justifyContent: "center",
-      marginTop: "1.5rem",
-      flexWrap: "wrap",
-    },
-    pageButton: {
-      margin: "0.5rem",
-      padding: "0.5rem 1rem",
-      border: "1px solid #D1D5DB",
-      borderRadius: "0.5rem",
-      backgroundColor: "#FFFFFF",
-      color: "#132238",
-      cursor: "pointer",
-      fontSize: "1rem",
-    },
-    activePageButton: {
-      backgroundColor: "#64CCC5",
-      color: "#FFFFFF",
-    },
-    nextButton: {
-      margin: "0.5rem",
-      padding: "0.5rem 1rem",
-      border: "1px solid #D1D5DB",
-      borderRadius: "0.5rem",
-      backgroundColor: "#FFFFFF",
-      color: "#132238",
-      cursor: "pointer",
-      fontSize: "1rem",
-      fontWeight: "bold",
-    },
-    exportButton: {
-      backgroundColor: "red",
-      color: "white",
-      padding: "0.75rem 1rem",
-      border: "none",
-      borderRadius: "0.5rem",
-      cursor: "pointer",
-      fontSize: "1rem",
-      float: "right",
-      marginBottom: "1rem",
-      marginRight: "1rem",
-    }
-  };
 
   // Export all logs as a PDF file using jsPDF and autoTable
   const exportLogsAsPDF = () => {
@@ -188,54 +91,54 @@ export default function ViewLogs() {
   };
 
   return (
-    <section style={styles.container}>
+    <section className="viewlogs-container">
       {/* Export logs as PDF button */}
-      <button style={styles.exportButton} onClick={exportLogsAsPDF}>
+      <button className="viewlogs-export-btn" onClick={exportLogsAsPDF}>
         Export Logs
       </button>
       {/* Search input for filtering logs */}
       <input
         type="text"
         placeholder="Search logs..."
-        style={styles.input}
+        className="viewlogs-search-input"
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
       />
 
       {/* Logs table */}
-      <section style={styles.tableContainer}>
-        <table style={styles.table}>
+      <section className="viewlogs-table-container">
+        <table className="viewlogs-table">
           <thead>
             <tr>
-              <th style={styles.th}>Timestamp</th>
-              <th style={styles.th}>User Role</th>
-              <th style={styles.th}>User Name</th>
-              <th style={styles.th}>Action</th>
-              <th style={styles.th}>Target</th>
-              <th style={styles.th}>Details</th>
-              <th style={styles.th}>IP Address</th>
+              <th className="viewlogs-th">Timestamp</th>
+              <th className="viewlogs-th">User Role</th>
+              <th className="viewlogs-th">User Name</th>
+              <th className="viewlogs-th">Action</th>
+              <th className="viewlogs-th">Target</th>
+              <th className="viewlogs-th">Details</th>
+              <th className="viewlogs-th">IP Address</th>
             </tr>
           </thead>
           <tbody>
             {currentLogs.length > 0 ? (
               currentLogs.map((log) => (
                 <tr key={log.id}>
-                  <td style={styles.td}>
+                  <td className="viewlogs-td">
                     {log.timestamp?.toDate
                       ? log.timestamp.toDate().toLocaleString()
                       : "N/A"}
                   </td>
-                  <td style={styles.td}>{log.role || "N/A"}</td>
-                  <td style={styles.td}>{log.userName || "N/A"}</td>
-                  <td style={styles.td}>{log.action}</td>
-                  <td style={styles.td}>{log.target}</td>
-                  <td style={styles.td}>{log.details}</td>
-                  <td style={styles.td}>{log.ip || "N/A"}</td>
+                  <td className="viewlogs-td">{log.role || "N/A"}</td>
+                  <td className="viewlogs-td">{log.userName || "N/A"}</td>
+                  <td className="viewlogs-td">{log.action}</td>
+                  <td className="viewlogs-td">{log.target}</td>
+                  <td className="viewlogs-td">{log.details}</td>
+                  <td className="viewlogs-td">{log.ip || "N/A"}</td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan="7" style={styles.noResults}>
+                <td colSpan="7" className="viewlogs-no-results">
                   No logs found.
                 </td>
               </tr>
@@ -245,9 +148,9 @@ export default function ViewLogs() {
       </section>
 
       {/* Pagination controls */}
-      <section style={styles.pagination}>
+      <section className="viewlogs-pagination">
         {pageGroup > 0 && (
-          <button style={styles.nextButton} onClick={handlePreviousGroup}>
+          <button className="viewlogs-next-btn" onClick={handlePreviousGroup}>
             Previous
           </button>
         )}
@@ -256,10 +159,7 @@ export default function ViewLogs() {
           return (
             <button
               key={pageNumber}
-              style={{
-                ...styles.pageButton,
-                ...(currentPage === pageNumber ? styles.activePageButton : {}),
-              }}
+              className={`viewlogs-page-btn${currentPage === pageNumber ? " active" : ""}`}
               onClick={() => setCurrentPage(pageNumber)}
             >
               {pageNumber}
@@ -267,7 +167,7 @@ export default function ViewLogs() {
           );
         })}
         {endPage < totalPages && (
-          <button style={styles.nextButton} onClick={handleNextGroup}>
+          <button className="viewlogs-next-btn" onClick={handleNextGroup}>
             Next
           </button>
         )}

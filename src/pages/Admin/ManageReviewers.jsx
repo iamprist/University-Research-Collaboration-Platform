@@ -9,6 +9,7 @@ import {
   query,
   where,
 } from "firebase/firestore";
+import './ManageReviewers.css'; // <-- Import the CSS file
 
 // Main component for managing reviewer accounts and applications
 export default function ManageReviewers() {
@@ -215,121 +216,19 @@ export default function ManageReviewers() {
       .includes(revokedSearchTerm.trim().toLowerCase())
   );
 
-  // Consistent styles with ManageAdmins and ManageResearchers
-  const styles = {
-    container: {
-      minHeight: "100vh",
-      background: "#1a2e40",
-      color: "white",
-      padding: "2rem 0",
-    },
-    article: {
-      maxWidth: "960px",
-      margin: "2rem auto",
-      padding: "1.5rem",
-      backgroundColor: "#1a2e40",
-      borderRadius: "0.5rem",
-      boxShadow: "0 2px 10px rgba(0, 0, 0, 0.3)",
-    },
-    heading: {
-      fontSize: "2rem",
-      fontWeight: "bold",
-      textAlign: "center",
-      marginBottom: "1.5rem",
-    },
-    description: {
-      textAlign: "center",
-      color: "#cbd5e0",
-      marginBottom: "1.5rem",
-    },
-    searchInput: {
-      width: "100%",
-      maxWidth: "350px",
-      margin: "0 auto 1.2rem auto",
-      display: "block",
-      padding: "0.5rem 1rem",
-      borderRadius: "0.4rem",
-      border: "1px solid #4a5568",
-      background: "#243447",
-      color: "#fff",
-      fontSize: "1rem",
-      outline: "none",
-    },
-    card: {
-      backgroundColor: "#243447",
-      padding: "1rem",
-      borderRadius: "0.5rem",
-      marginBottom: "1rem",
-      color: "#FFFFFF",
-      boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
-    },
-    cardName: {
-      color: "#64CCC5",
-      marginBottom: "0.5rem",
-      fontWeight: "bold",
-      fontSize: "1.1rem",
-    },
-    cardEmail: {
-      color: "#A0AEC0",
-      fontSize: "0.95rem",
-      margin: 0,
-    },
-    button: {
-      padding: "0.5rem 1rem",
-      border: "none",
-      borderRadius: "0.5rem",
-      cursor: "pointer",
-      fontWeight: "bold",
-      fontSize: "1rem",
-      marginRight: "0.5rem",
-      marginTop: "0.5rem",
-    },
-    approveButton: {
-      backgroundColor: "#64CCC5",
-      color: "#132238",
-    },
-    rejectButton: {
-      backgroundColor: "#FF6B6B",
-      color: "#fff",
-    },
-    revokeButton: {
-      backgroundColor: "#FF6B6B",
-      color: "#fff",
-    },
-    deleteButton: {
-      backgroundColor: "#E53E3E",
-      color: "#fff",
-    },
-    pagination: {
-      display: "flex",
-      justifyContent: "center",
-      marginTop: "1rem",
-      gap: "0.5rem",
-    },
-    paginationBtn: (active) => ({
-      padding: "0.5rem 1rem",
-      margin: "0 0.25rem",
-      borderRadius: "0.25rem",
-      backgroundColor: active ? "#4299e1" : "#4a5568",
-      color: active ? "#fff" : "#cbd5e0",
-      border: "none",
-      cursor: "pointer",
-    }),
-  };
-
   return (
-    <section style={styles.container}>
+    <section className="manage-reviewers-container">
       {/* Pending Applications Section */}
-      <article style={styles.article}>
-        <h2 style={styles.heading}>Reviewer Applications</h2>
-        <p style={styles.description}>
+      <article className="manage-reviewers-article">
+        <h2 className="manage-reviewers-heading">Reviewer Applications</h2>
+        <p className="manage-reviewers-description">
           Below is the list of all pending reviewer applications:
         </p>
         {/* Search input for pending reviewers */}
         <input
           type="text"
           placeholder="Search by reviewer name..."
-          style={styles.searchInput}
+          className="manage-reviewers-search-input"
           value={searchTerm}
           onChange={e => {
             setSearchTerm(e.target.value);
@@ -338,33 +237,33 @@ export default function ManageReviewers() {
         />
         {/* List of pending reviewers */}
         {loading ? (
-          <p style={{ textAlign: "center", color: "#a0aec0" }}>Loading applications...</p>
+          <p className="manage-reviewers-no-data">Loading applications...</p>
         ) : filteredReviewers.length === 0 ? (
-          <p style={{ textAlign: "center", color: "#a0aec0" }}>No pending applications.</p>
+          <p className="manage-reviewers-no-data">No pending applications.</p>
         ) : (
           <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
             {paginate(filteredReviewers, pendingPage).map((reviewers) => (
               <li key={reviewers.id} style={{ marginBottom: "1rem" }}>
-                <article style={styles.card}>
+                <article className="manage-reviewers-card">
                   <header>
-                    <div style={styles.cardName}>{reviewers.name || "N/A"}</div>
+                    <div className="manage-reviewers-card-name">{reviewers.name || "N/A"}</div>
                   </header>
-                  <p style={styles.cardEmail}><strong>Email:</strong> {reviewers.email || "N/A"}</p>
-                  <p style={styles.cardEmail}><strong>Institution:</strong> {reviewers.institution || "N/A"}</p>
-                  <p style={styles.cardEmail}><strong>Expertise:</strong> {Array.isArray(reviewers.expertiseTags) ? reviewers.expertiseTags.join(", ") : "N/A"}</p>
-                  <p style={styles.cardEmail}><strong>Years Experience:</strong> {reviewers.yearsExperience || "N/A"}</p>
+                  <p className="manage-reviewers-card-email"><strong>Email:</strong> {reviewers.email || "N/A"}</p>
+                  <p className="manage-reviewers-card-email"><strong>Institution:</strong> {reviewers.institution || "N/A"}</p>
+                  <p className="manage-reviewers-card-email"><strong>Expertise:</strong> {Array.isArray(reviewers.expertiseTags) ? reviewers.expertiseTags.join(", ") : "N/A"}</p>
+                  <p className="manage-reviewers-card-email"><strong>Years Experience:</strong> {reviewers.yearsExperience || "N/A"}</p>
                   {/* Publications and CV links */}
                   {reviewers.publications && reviewers.publications.length > 0 && (
-                    <section style={styles.cardEmail}>
+                    <section className="manage-reviewers-card-email">
                       <strong>Publications:</strong>
-                      <ul style={{ margin: 0, paddingLeft: 18 }}>
+                      <ul className="manage-reviewers-publications-list">
                         {reviewers.publications.map((pub, idx) => (
                           <li key={idx}>
                             <a
                               href={pub}
                               target="_blank"
                               rel="noopener noreferrer"
-                              style={{ color: "#64CCC5", textDecoration: "underline" }}
+                              className="manage-reviewers-publication-link"
                             >
                               View Publications
                             </a>
@@ -374,29 +273,29 @@ export default function ManageReviewers() {
                     </section>
                   )}
                   {reviewers.cvUrl && (
-                    <p style={styles.cardEmail}>
+                    <p className="manage-reviewers-card-email">
                       <strong>CV:</strong>{" "}
                       <a
                         href={reviewers.cvUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        style={{ color: "#64CCC5", textDecoration: "underline" }}
+                        className="manage-reviewers-cv-link"
                       >
                         View CV
                       </a>
                     </p>
                   )}
-                  <p style={styles.cardEmail}><strong>Applied:</strong> {reviewers.createdAt ? new Date(reviewers.createdAt.seconds ? reviewers.createdAt.seconds * 1000 : reviewers.createdAt).toLocaleDateString() : "N/A"}</p>
+                  <p className="manage-reviewers-card-email"><strong>Applied:</strong> {reviewers.createdAt ? new Date(reviewers.createdAt.seconds ? reviewers.createdAt.seconds * 1000 : reviewers.createdAt).toLocaleDateString() : "N/A"}</p>
                   {/* Approve and Reject buttons */}
                   <button
                     onClick={() => handleApprove(reviewers.id)}
-                    style={{ ...styles.button, ...styles.approveButton }}
+                    className="manage-reviewers-button manage-reviewers-approve"
                   >
                     Approve
                   </button>
                   <button
                     onClick={() => handleReject(reviewers.id)}
-                    style={{ ...styles.button, ...styles.rejectButton }}
+                    className="manage-reviewers-button manage-reviewers-reject"
                   >
                     Reject
                   </button>
@@ -406,12 +305,12 @@ export default function ManageReviewers() {
           </ul>
         )}
         {/* Pagination for pending reviewers */}
-        <nav style={styles.pagination} aria-label="Pending reviewer pagination">
+        <nav className="manage-reviewers-pagination" aria-label="Pending reviewer pagination">
           {Array.from({ length: Math.ceil(filteredReviewers.length / itemsPerPage) }, (_, i) => (
             <button
               key={i}
               onClick={() => setPendingPage(i + 1)}
-              style={styles.paginationBtn(pendingPage === i + 1)}
+              className={`manage-reviewers-pagination-btn${pendingPage === i + 1 ? " active" : ""}`}
               aria-current={pendingPage === i + 1 ? "page" : undefined}
             >
               {i + 1}
@@ -422,31 +321,16 @@ export default function ManageReviewers() {
 
       {/* Reject Reason Modal */}
       {showRejectModal && (
-        <dialog open style={{
-          position: "fixed",
-          top: 0, left: 0, right: 0, bottom: 0,
-          background: "rgba(0,0,0,0.5)",
-          zIndex: 1000,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center"
-        }}>
+        <dialog open className="manage-reviewers-modal-overlay">
           <form
-            style={{
-              background: "#243447",
-              padding: "2rem",
-              borderRadius: "0.5rem",
-              minWidth: 320,
-              maxWidth: "90vw",
-              boxShadow: "0 4px 24px rgba(0,0,0,0.3)"
-            }}
+            className="manage-reviewers-modal"
             onSubmit={e => {
               e.preventDefault();
               confirmReject();
             }}
           >
             <h3 style={{ marginBottom: "1rem", color: "#fff" }}>Reject Reviewer</h3>
-            <label htmlFor="reject-reason" style={{ color: "#64CCC5", fontWeight: 600, display: "block", marginBottom: 8 }}>
+            <label htmlFor="reject-reason" className="manage-reviewers-modal-label">
               Please provide a reason for rejection:
             </label>
             <textarea
@@ -454,21 +338,11 @@ export default function ManageReviewers() {
               value={rejectReason}
               onChange={e => setRejectReason(e.target.value)}
               rows={4}
-              style={{
-                width: "100%",
-                borderRadius: "0.4rem",
-                border: "1.5px solid #64CCC5",
-                background: "#132238",
-                color: "#fff",
-                padding: "0.7rem",
-                marginBottom: "1.2rem",
-                fontSize: "1rem",
-                resize: "vertical"
-              }}
+              className="manage-reviewers-modal-textarea"
               placeholder="Enter reason..."
             />
             {/* Modal action buttons */}
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem" }}>
+            <div className="manage-reviewers-modal-button-row">
               <button
                 type="button"
                 onClick={() => {
@@ -476,31 +350,14 @@ export default function ManageReviewers() {
                   setRejectReason("");
                   setRejectingReviewerId(null);
                 }}
-                style={{
-                  background: "#4a5568",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "0.5rem",
-                  padding: "0.5rem 1.2rem",
-                  fontWeight: 600,
-                  cursor: "pointer"
-                }}
+                className="manage-reviewers-modal-cancel"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={!rejectReason.trim()}
-                style={{
-                  background: "#FF6B6B",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "0.5rem",
-                  padding: "0.5rem 1.2rem",
-                  fontWeight: 600,
-                  cursor: rejectReason.trim() ? "pointer" : "not-allowed",
-                  opacity: rejectReason.trim() ? 1 : 0.7
-                }}
+                className="manage-reviewers-modal-confirm"
               >
                 Confirm Reject
               </button>
@@ -510,13 +367,13 @@ export default function ManageReviewers() {
       )}
 
       {/* Current Reviewers Section */}
-      <article style={styles.article}>
-        <h2 style={styles.heading}>Current Reviewers</h2>
+      <article className="manage-reviewers-article">
+        <h2 className="manage-reviewers-heading">Current Reviewers</h2>
         {/* Search input for current reviewers */}
         <input
           type="text"
           placeholder="Search by reviewer name..."
-          style={styles.searchInput}
+          className="manage-reviewers-search-input"
           value={currentSearchTerm}
           onChange={e => {
             setCurrentSearchTerm(e.target.value);
@@ -525,31 +382,31 @@ export default function ManageReviewers() {
         />
         {/* List of current reviewers */}
         {filteredCurrentReviewers.length === 0 ? (
-          <p style={{ textAlign: "center", color: "#a0aec0" }}>No current reviewers.</p>
+          <p className="manage-reviewers-no-data">No current reviewers.</p>
         ) : (
           <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
             {paginate(filteredCurrentReviewers, currentPage).map((reviewer) => (
               <li key={reviewer.id} style={{ marginBottom: "1rem" }}>
-                <article style={styles.card}>
+                <article className="manage-reviewers-card">
                   <header>
-                    <div style={styles.cardName}>{reviewer.name || "N/A"}</div>
+                    <div className="manage-reviewers-card-name">{reviewer.name || "N/A"}</div>
                   </header>
-                  <p style={styles.cardEmail}><strong>Email:</strong> {reviewer.email || "N/A"}</p>
-                  <p style={styles.cardEmail}><strong>Institution:</strong> {reviewer.institution || "N/A"}</p>
-                  <p style={styles.cardEmail}><strong>Expertise:</strong> {Array.isArray(reviewer.expertiseTags) ? reviewer.expertiseTags.join(", ") : "N/A"}</p>
-                  <p style={styles.cardEmail}><strong>Years Experience:</strong> {reviewer.yearsExperience || "N/A"}</p>
+                  <p className="manage-reviewers-card-email"><strong>Email:</strong> {reviewer.email || "N/A"}</p>
+                  <p className="manage-reviewers-card-email"><strong>Institution:</strong> {reviewer.institution || "N/A"}</p>
+                  <p className="manage-reviewers-card-email"><strong>Expertise:</strong> {Array.isArray(reviewer.expertiseTags) ? reviewer.expertiseTags.join(", ") : "N/A"}</p>
+                  <p className="manage-reviewers-card-email"><strong>Years Experience:</strong> {reviewer.yearsExperience || "N/A"}</p>
                   {/* Publications and CV links */}
                   {reviewer.publications && reviewer.publications.length > 0 && (
-                    <section style={styles.cardEmail}>
+                    <section className="manage-reviewers-card-email">
                       <strong>Publications:</strong>
-                      <ul style={{ margin: 0, paddingLeft: 18 }}>
+                      <ul className="manage-reviewers-publications-list">
                         {reviewer.publications.map((pub, idx) => (
                           <li key={idx}>
                             <a
                               href={pub}
                               target="_blank"
                               rel="noopener noreferrer"
-                              style={{ color: "#64CCC5", textDecoration: "underline" }}
+                              className="manage-reviewers-publication-link"
                             >
                               View Publications
                             </a>
@@ -559,23 +416,23 @@ export default function ManageReviewers() {
                     </section>
                   )}
                   {reviewer.cvUrl && (
-                    <p style={styles.cardEmail}>
+                    <p className="manage-reviewers-card-email">
                       <strong>CV:</strong>{" "}
                       <a
                         href={reviewer.cvUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        style={{ color: "#64CCC5", textDecoration: "underline" }}
+                        className="manage-reviewers-cv-link"
                       >
                         View CV
                       </a>
                     </p>
                   )}
-                  <p style={styles.cardEmail}><strong>Joined:</strong> {reviewer.createdAt ? new Date(reviewer.createdAt.seconds ? reviewer.createdAt.seconds * 1000 : reviewer.createdAt).toLocaleDateString() : "N/A"}</p>
+                  <p className="manage-reviewers-card-email"><strong>Joined:</strong> {reviewer.createdAt ? new Date(reviewer.createdAt.seconds ? reviewer.createdAt.seconds * 1000 : reviewer.createdAt).toLocaleDateString() : "N/A"}</p>
                   {/* Revoke button */}
                   <button
                     onClick={() => handleRevoke(reviewer.id)}
-                    style={{ ...styles.button, ...styles.revokeButton }}
+                    className="manage-reviewers-button manage-reviewers-revoke"
                   >
                     Revoke
                   </button>
@@ -585,12 +442,12 @@ export default function ManageReviewers() {
           </ul>
         )}
         {/* Pagination for current reviewers */}
-        <nav style={styles.pagination} aria-label="Current reviewer pagination">
+        <nav className="manage-reviewers-pagination" aria-label="Current reviewer pagination">
           {Array.from({ length: Math.ceil(filteredCurrentReviewers.length / itemsPerPage) }, (_, i) => (
             <button
               key={i}
               onClick={() => setCurrentPage(i + 1)}
-              style={styles.paginationBtn(currentPage === i + 1)}
+              className={`manage-reviewers-pagination-btn${currentPage === i + 1 ? " active" : ""}`}
               aria-current={currentPage === i + 1 ? "page" : undefined}
             >
               {i + 1}
@@ -601,31 +458,16 @@ export default function ManageReviewers() {
 
       {/* Revoke Reason Modal */}
       {showRevokeModal && (
-        <dialog open style={{
-          position: "fixed",
-          top: 0, left: 0, right: 0, bottom: 0,
-          background: "rgba(0,0,0,0.5)",
-          zIndex: 1000,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center"
-        }}>
+        <dialog open className="manage-reviewers-modal-overlay">
           <form
-            style={{
-              background: "#243447",
-              padding: "2rem",
-              borderRadius: "0.5rem",
-              minWidth: 320,
-              maxWidth: "90vw",
-              boxShadow: "0 4px 24px rgba(0,0,0,0.3)"
-            }}
+            className="manage-reviewers-modal"
             onSubmit={e => {
               e.preventDefault();
               confirmRevoke();
             }}
           >
             <h3 style={{ marginBottom: "1rem", color: "#fff" }}>Revoke Reviewer</h3>
-            <label htmlFor="revoke-reason" style={{ color: "#64CCC5", fontWeight: 600, display: "block", marginBottom: 8 }}>
+            <label htmlFor="revoke-reason" className="manage-reviewers-modal-label">
               Please provide a reason for revoking:
             </label>
             <textarea
@@ -633,21 +475,11 @@ export default function ManageReviewers() {
               value={revokeReason}
               onChange={e => setRevokeReason(e.target.value)}
               rows={4}
-              style={{
-                width: "100%",
-                borderRadius: "0.4rem",
-                border: "1.5px solid #64CCC5",
-                background: "#132238",
-                color: "#fff",
-                padding: "0.7rem",
-                marginBottom: "1.2rem",
-                fontSize: "1rem",
-                resize: "vertical"
-              }}
+              className="manage-reviewers-modal-textarea"
               placeholder="Enter reason..."
             />
             {/* Modal action buttons */}
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem" }}>
+            <div className="manage-reviewers-modal-button-row">
               <button
                 type="button"
                 onClick={() => {
@@ -655,31 +487,14 @@ export default function ManageReviewers() {
                   setRevokeReason("");
                   setRevokingReviewerId(null);
                 }}
-                style={{
-                  background: "#4a5568",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "0.5rem",
-                  padding: "0.5rem 1.2rem",
-                  fontWeight: 600,
-                  cursor: "pointer"
-                }}
+                className="manage-reviewers-modal-cancel"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={!revokeReason.trim()}
-                style={{
-                  background: "#FF6B6B",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "0.5rem",
-                  padding: "0.5rem 1.2rem",
-                  fontWeight: 600,
-                  cursor: revokeReason.trim() ? "pointer" : "not-allowed",
-                  opacity: revokeReason.trim() ? 1 : 0.7
-                }}
+                className="manage-reviewers-modal-confirm"
               >
                 Confirm Revoke
               </button>
@@ -692,16 +507,16 @@ export default function ManageReviewers() {
       <div style={{ height: "2.5rem" }} />
 
       {/* Revoked/Rejected Reviewers Section */}
-      <article style={styles.article}>
-        <h2 style={styles.heading}>Revoked or Rejected Reviewers</h2>
-        <p style={styles.description}>
+      <article className="manage-reviewers-article">
+        <h2 className="manage-reviewers-heading">Revoked or Rejected Reviewers</h2>
+        <p className="manage-reviewers-description">
           Below is the list of all reviewers who have been revoked or rejected:
         </p>
         {/* Search input for revoked reviewers */}
         <input
           type="text"
           placeholder="Search by reviewer name..."
-          style={styles.searchInput}
+          className="manage-reviewers-search-input"
           value={revokedSearchTerm}
           onChange={e => {
             setRevokedSearchTerm(e.target.value);
@@ -710,31 +525,31 @@ export default function ManageReviewers() {
         />
         {/* List of revoked/rejected reviewers */}
         {filteredRevokedReviewers.length === 0 ? (
-          <p style={{ textAlign: "center", color: "#a0aec0" }}>No revoked reviewers found.</p>
+          <p className="manage-reviewers-no-data">No revoked reviewers found.</p>
         ) : (
           <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
             {paginate(filteredRevokedReviewers, revokedPage).map((reviewer) => (
               <li key={reviewer.id} style={{ marginBottom: "1rem" }}>
-                <article style={styles.card}>
+                <article className="manage-reviewers-card">
                   <header>
-                    <div style={styles.cardName}>{reviewer.name || "N/A"}</div>
+                    <div className="manage-reviewers-card-name">{reviewer.name || "N/A"}</div>
                   </header>
-                  <p style={styles.cardEmail}><strong>Email:</strong> {reviewer.email || "N/A"}</p>
-                  <p style={styles.cardEmail}><strong>Institution:</strong> {reviewer.institution || "N/A"}</p>
-                  <p style={styles.cardEmail}><strong>Expertise:</strong> {Array.isArray(reviewer.expertiseTags) ? reviewer.expertiseTags.join(", ") : "N/A"}</p>
-                  <p style={styles.cardEmail}><strong>Years Experience:</strong> {reviewer.yearsExperience || "N/A"}</p>
+                  <p className="manage-reviewers-card-email"><strong>Email:</strong> {reviewer.email || "N/A"}</p>
+                  <p className="manage-reviewers-card-email"><strong>Institution:</strong> {reviewer.institution || "N/A"}</p>
+                  <p className="manage-reviewers-card-email"><strong>Expertise:</strong> {Array.isArray(reviewer.expertiseTags) ? reviewer.expertiseTags.join(", ") : "N/A"}</p>
+                  <p className="manage-reviewers-card-email"><strong>Years Experience:</strong> {reviewer.yearsExperience || "N/A"}</p>
                   {/* Publications and CV links */}
                   {reviewer.publications && reviewer.publications.length > 0 && (
-                    <section style={styles.cardEmail}>
+                    <section className="manage-reviewers-card-email">
                       <strong>Publications:</strong>
-                      <ul style={{ margin: 0, paddingLeft: 18 }}>
+                      <ul className="manage-reviewers-publications-list">
                         {reviewer.publications.map((pub, idx) => (
                           <li key={idx}>
                             <a
                               href={pub}
                               target="_blank"
                               rel="noopener noreferrer"
-                              style={{ color: "#64CCC5" }}
+                              className="manage-reviewers-publication-link"
                             >
                               {pub}
                             </a>
@@ -744,27 +559,27 @@ export default function ManageReviewers() {
                     </section>
                   )}
                   {reviewer.cvUrl && (
-                    <p style={styles.cardEmail}>
+                    <p className="manage-reviewers-card-email">
                       <strong>CV:</strong>{" "}
                       <a
                         href={reviewer.cvUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        style={{ color: "#64CCC5", textDecoration: "underline" }}
+                        className="manage-reviewers-cv-link"
                       >
                         View CV
                       </a>
                     </p>
                   )}
-                  <p style={styles.cardEmail}><strong>Status:</strong> {reviewer.status || reviewer.role || "N/A"}</p>
-                  <p style={styles.cardEmail}>
+                  <p className="manage-reviewers-card-email"><strong>Status:</strong> {reviewer.status || reviewer.role || "N/A"}</p>
+                  <p className="manage-reviewers-card-email">
                     <strong>Reason:</strong> {reviewer.reason ? reviewer.reason : <span style={{ color: "#888" }}>—</span>}
                   </p>
-                  <p style={styles.cardEmail}><strong>Joined:</strong> {reviewer.createdAt ? new Date(reviewer.createdAt.seconds ? reviewer.createdAt.seconds * 1000 : reviewer.createdAt).toLocaleDateString() : "N/A"}</p>
+                  <p className="manage-reviewers-card-email"><strong>Joined:</strong> {reviewer.createdAt ? new Date(reviewer.createdAt.seconds ? reviewer.createdAt.seconds * 1000 : reviewer.createdAt).toLocaleDateString() : "N/A"}</p>
                   {/* Delete button for revoked/rejected reviewers */}
                   <button
                     onClick={() => handleDeleteReviewer(reviewer.id)}
-                    style={{ ...styles.button, ...styles.deleteButton }}
+                    className="manage-reviewers-button manage-reviewers-delete"
                   >
                     Delete
                   </button>
@@ -774,12 +589,12 @@ export default function ManageReviewers() {
           </ul>
         )}
         {/* Pagination for revoked/rejected reviewers */}
-        <nav style={styles.pagination} aria-label="Revoked reviewer pagination">
+        <nav className="manage-reviewers-pagination" aria-label="Revoked reviewer pagination">
           {Array.from({ length: Math.ceil(filteredRevokedReviewers.length / itemsPerPage) }, (_, i) => (
             <button
               key={i}
               onClick={() => setRevokedPage(i + 1)}
-              style={styles.paginationBtn(revokedPage === i + 1)}
+              className={`manage-reviewers-pagination-btn${revokedPage === i + 1 ? " active" : ""}`}
               aria-current={revokedPage === i + 1 ? "page" : undefined}
             >
               {i + 1}

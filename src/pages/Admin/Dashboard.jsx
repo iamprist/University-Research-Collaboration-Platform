@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../../config/firebaseConfig";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import './Dashboard.css'; // <-- Import the new CSS file
 
 // Dashboard component for admin analytics and stats
 export default function Dashboard() {
@@ -94,83 +95,40 @@ export default function Dashboard() {
     fetchData();
   }, []);
 
-  // Inline styles for dashboard layout and cards
-  const styles = {
-    container: {
-      backgroundColor: "#1A2E40",
-      minHeight: "100vh",
-      padding: "2rem",
-      fontFamily: "Inter, sans-serif",
-      color: "#FFFFFF",
-    },
-    dashboard: {
-      display: "flex",
-      flexWrap: "wrap",
-      gap: "2rem",
-      marginBottom: "2rem",
-      justifyContent: "center",
-    },
-    card: {
-      background: "#2B3E50",
-      borderRadius: "1rem",
-      padding: "1.5rem 2rem",
-      minWidth: "180px",
-      textAlign: "center",
-      boxShadow: "0 2px 8px rgba(0,0,0,0.10)",
-      color: "#B1EDE8",
-      fontWeight: "600",
-      fontSize: "1.2rem",
-    },
-    chartCard: {
-      background: "#2B3E50",
-      borderRadius: "1rem",
-      padding: "1.5rem",
-      minWidth: "350px",
-      flex: 1,
-      boxShadow: "0 2px 8px rgba(0,0,0,0.10)",
-      color: "#B1EDE8",
-      fontWeight: "600",
-      fontSize: "1.1rem",
-      marginBottom: "2rem",
-      maxWidth: "600px",
-      height: "320px",
-    },
-  };
-
   // Show loading state while fetching data
   if (loading) {
-    return <section style={styles.container}>Loading...</section>;
+    return <section className="dashboard-container">Loading...</section>;
   }
 
   return (
-    <section style={styles.container}>
+    <section className="dashboard-container">
       {/* Dashboard metric cards */}
-      <section style={styles.dashboard}>
-        <article style={styles.card}>
+      <section className="dashboard-metrics">
+        <article className="dashboard-card">
           <header>Total Users</header>
-          <p style={{ fontSize: "2rem", color: "#64CCC5" }}>{totalUsers}</p>
+          <p className="dashboard-card-value">{totalUsers}</p>
         </article>
-        <article style={styles.card}>
+        <article className="dashboard-card">
           <header>Logins</header>
-          <p style={{ fontSize: "2rem", color: "#64CCC5" }}>{totalLogins}</p>
+          <p className="dashboard-card-value">{totalLogins}</p>
         </article>
-        <article style={styles.card}>
+        <article className="dashboard-card">
           <header>Logouts</header>
-          <p style={{ fontSize: "2rem", color: "#64CCC5" }}>{totalLogouts}</p>
+          <p className="dashboard-card-value">{totalLogouts}</p>
         </article>
-        <article style={styles.card}>
+        <article className="dashboard-card">
           <header>Listings Posted</header>
-          <p style={{ fontSize: "2rem", color: "#64CCC5" }}>{totalListings}</p>
+          <p className="dashboard-card-value">{totalListings}</p>
         </article>
-        <article style={styles.card}>
+        <article className="dashboard-card">
           <header>Reviewer Applications</header>
-          <p style={{ fontSize: "2rem", color: "#64CCC5" }}>{totalReviewerApps}</p>
+          <p className="dashboard-card-value">{totalReviewerApps}</p>
         </article>
       </section>
 
       {/* Engagement line chart for logs per day */}
-      <section style={styles.chartCard}>
-        <header style={{ marginBottom: "1rem" }}>Engagement (Logs per Day)</header>
+      <section className="dashboard-chart-card">
+        <header className="dashboard-chart-header">Engagement (Logs per Day)</header>
         <ResponsiveContainer width="100%" height={200}>
           <LineChart data={engagementData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#364E68" />

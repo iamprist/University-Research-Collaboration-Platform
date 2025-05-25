@@ -1,0 +1,98 @@
+.viewlogs-container {
+  background-color: #1A2E40;
+  min-height: 100vh;
+  padding: 0.1rem;
+  font-family: Inter, sans-serif;
+  color: #FFFFFF;
+}
+
+.viewlogs-export-btn {
+  background-color: red;
+  color: white;
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-size: 1rem;
+  float: right;
+  margin-bottom: 1rem;
+  margin-right: 1rem;
+}
+
+.viewlogs-search-input {
+  padding: 0.75rem;
+  width: 100%;
+  max-width: 300px;
+  border: 1px solid #D1D5DB;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  margin-bottom: 1.5rem;
+  display: block;
+  text-align: left;
+}
+
+.viewlogs-table-container {
+  background-color: #2B3E50;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  max-width: 100%;
+  margin: 0 auto;
+  margin-top: 2rem;
+  overflow-x: auto;
+}
+
+.viewlogs-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.97rem;
+  min-width: 1000px;
+}
+
+.viewlogs-th {
+  border-bottom: 2px solid #D1D5DB;
+  padding: 0.75rem;
+  background-color: #364E68;
+  color: #B1EDE8;
+  text-align: left;
+}
+
+.viewlogs-td {
+  border-bottom: 1px solid #D1D5DB;
+  padding: 0.75rem;
+  color: #FFFFFF;
+}
+
+.viewlogs-no-results {
+  text-align: center;
+  padding: 1rem;
+  color: #888;
+}
+
+.viewlogs-pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.viewlogs-page-btn,
+.viewlogs-next-btn {
+  margin: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid #D1D5DB;
+  border-radius: 0.5rem;
+  background-color: #FFFFFF;
+  color: #132238;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.viewlogs-page-btn.active {
+  background-color: #64CCC5;
+  color: #FFFFFF;
+}
+
+.viewlogs-next-btn {
+  font-weight: bold;
+}
