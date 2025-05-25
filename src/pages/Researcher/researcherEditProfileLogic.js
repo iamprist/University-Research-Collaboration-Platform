@@ -1,6 +1,8 @@
+/* global globalThis */
 // researcherEditProfileLogic.js
 // Backend logic for EditProfile (data fetching, updating, and auth)
-import { useState, useEffect } from 'react';
+
+import { useState, useEffect, useCallback } from 'react';
 import { db, auth, storage } from '../../config/firebaseConfig';
 import { getDoc, doc, setDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -8,43 +10,49 @@ import { useNavigate } from 'react-router-dom';
 
 export const useEditProfileLogic = () => {
   const navigate = useNavigate();
+
   const [profile, setProfile] = useState({
     title: '',
     name: '',
     email: '',
     researchArea: '',
     biography: '',
-    profilePicture: null
+    profilePicture: null,
   });
+
   const [userId, setUserId] = useState(null);
 
+  // 1. TOKEN / AUTH GUARD
   useEffect(() => {
-    const checkAuthToken = async () => {
-      const token = localStorage.getItem('authToken');
-      if (!token) {
+    const token = globalThis.localStorage?.getItem?.('authToken');
+    if (!token) {
+      navigate('/signin');
+      return;
+    }
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user) {
+        setUserId(user.uid);
+      } else {
+        globalThis.localStorage?.removeItem?.('authToken');
         navigate('/signin');
-        return;
       }
-      const unsubscribe = auth.onAuthStateChanged((user) => {
-        if (user) {
-          setUserId(user.uid);
-        } else {
-          localStorage.removeItem('authToken');
-          navigate('/signin');
-        }
-      });
-      return () => unsubscribe();
+    });
+    // Make sure unsubscribe exists before returning it
+    return () => {
+      if (unsubscribe && typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
     };
-    checkAuthToken();
   }, [navigate]);
 
+  // 2. FETCH EXISTING PROFILE DATA
   useEffect(() => {
-    const fetchProfile = async () => {
-      if (!userId) return;
+    if (!userId) return;
+    (async () => {
       try {
         const profileDocRef = doc(db, 'researcherProfiles', userId);
         const userDoc = await getDoc(profileDocRef);
-        if (userDoc.exists()) {
+        if (userDoc && typeof userDoc.exists === 'function' && userDoc.exists()) {
           const data = userDoc.data();
           setProfile({
             title: data.title || '',
@@ -52,59 +60,86 @@ export const useEditProfileLogic = () => {
             email: data.email || '',
             researchArea: data.researchArea || '',
             biography: data.biography || '',
-            profilePicture: data.profilePicture || null
+            profilePicture: data.profilePicture || null,
           });
         }
-      } catch (error) {
-        console.error('Error fetching profile:', error);
+      } catch (err) {
+        console.error('Error fetching profile:', err);
       }
-    };
-    fetchProfile();
+    })();
   }, [userId]);
 
-  const handleChange = (e) => {
-    const { name, value, files } = e.target;
+  // 3. FIELD CHANGE HANDLER
+  const handleChange = ({ target: { name, value, files } }) => {
     if (name === 'profilePicture') {
-      setProfile({ ...profile, profilePicture: files[0] });
+      setProfile((prev) => ({ ...prev, profilePicture: files[0] }));
     } else {
-      setProfile({ ...profile, [name]: value });
+      setProfile((prev) => ({ ...prev, [name]: value }));
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!userId) {
-      console.error('User ID is not set.');
-      return;
-    }
-    try {
-      let profileData = { ...profile };
-      if (profile.profilePicture instanceof File) {
-        const storageRef = ref(storage, `profilePictures/${userId}`);
-        await uploadBytes(storageRef, profile.profilePicture);
-        const downloadURL = await getDownloadURL(storageRef);
-        profileData.profilePicture = downloadURL;
-      } else if (typeof profile.profilePicture === 'undefined') {
-        profileData.profilePicture = null;
+  // 4. FORM SUBMIT HANDLER
+  const handleSubmit = useCallback(
+    async (e) => {
+      e.preventDefault();
+      let effectiveUid = userId ?? auth?.currentUser?.uid ?? null;
+      if (!effectiveUid) {
+        console.error('User ID is not set.');
+        return false;
       }
-      Object.keys(profileData).forEach((key) => {
-        if (typeof profileData[key] === 'undefined') {
-          profileData[key] = null;
+      if (!userId) setUserId(effectiveUid);
+      try {
+        let profileData = { ...profile };
+        if (
+          profile.profilePicture &&
+          (profile.profilePicture instanceof File ||
+            profile.profilePicture instanceof Blob)
+        ) {
+          const storageRef = ref(storage, `profilePictures/${effectiveUid}`);
+          await uploadBytes(storageRef, profile.profilePicture);
+          const downloadURL = await getDownloadURL(storageRef);
+          profileData.profilePicture = downloadURL;
+        } else if (typeof profile.profilePicture === 'undefined') {
+          profileData.profilePicture = null;
         }
-      });
-      await setDoc(doc(db, 'researcherProfiles', userId), profileData, { merge: true });
-    
-    navigate('/researcher-profile');
-  } catch (error) {
-    console.error('Error updating your profile:', error);
-  }
-};
+        Object.keys(profileData).forEach((k) => {
+          if (typeof profileData[k] === 'undefined') profileData[k] = null;
+        });
+        await setDoc(doc(db, 'researcherProfiles', effectiveUid), profileData, {
+          merge: true,
+        });
+        navigate('/researcher-profile');
+        return true;
+      } catch (err) {
+        console.error('Error updating your profile:', err);
+        return false;
+      }
+    },
+    [profile, userId, navigate]
+  );
 
+  // 5. LOG-OUT HANDLER
+  const handleLogout = useCallback(async () => {
+    try {
+      await auth.signOut();
+    } catch (err) {
+      console.error('Error signing out:', err);
+    } finally {
+      // Always clear the token, even if signOut throws
+      if (typeof globalThis.localStorage?.removeItem === 'function') {
+        globalThis.localStorage?.removeItem?.('authToken');
+      }
+      navigate('/signin');
+    }
+  }, [navigate]);
+
+  // 6. PUBLIC API
   return {
     profile,
     setProfile,
     userId,
     handleChange,
-    handleSubmit
+    handleSubmit,
+    handleLogout,
   };
 };
