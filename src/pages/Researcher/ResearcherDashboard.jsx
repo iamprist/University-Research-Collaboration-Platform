@@ -608,26 +608,34 @@ const handleDeclineReviewRequest = async (requestId) => {
             <MenuIcon />
           </IconButton>
 
-          <Menu
-            anchorEl={anchorEl}
-            open={Boolean(anchorEl)}
-            onClose={() => setAnchorEl(null)}
-            PaperProps={{
-              sx: {
-                bgcolor: 'var(--dark-blue)',
-                minWidth: 200,
-                color: 'var(--light-blue)',
-                borderRadius: '0.8rem'
-              }
-            }}
-          >
-            <MenuItem onClick={() => navigate('/researcher-profile')}>View Profile</MenuItem>
-            <MenuItem onClick={handleAddListing}>New Research</MenuItem>
-            <MenuItem onClick={() => navigate('/friends')}>Friends</MenuItem>
-            <MenuItem onClick={handleCollaborate}>Collaborate</MenuItem>
-            <MenuItem onClick={() => setShowContactForm(true)}>Chat with Us</MenuItem>
-            <MenuItem onClick={handleLogout}>Logout</MenuItem>
-          </Menu>
+         <Menu
+  anchorEl={anchorEl}
+  open={Boolean(anchorEl)}
+  onClose={() => setAnchorEl(null)}
+  PaperProps={{
+    sx: {
+      bgcolor: 'var(--dark-blue)',
+      minWidth: 200,
+      color: 'var(--light-blue)',
+      borderRadius: '0.8rem'
+    }
+  }}
+>
+  <MenuItem onClick={() => {
+    if (hasProfile) {
+      navigate('/researcher-profile');
+    } else {
+      navigate('/researcher-edit-profile');
+    }
+  }}>
+    View Profile
+  </MenuItem>
+  <MenuItem onClick={handleAddListing}>New Research</MenuItem>
+  <MenuItem onClick={() => navigate('/friends')}>Friends</MenuItem>
+  <MenuItem onClick={handleCollaborate}>Collaborate</MenuItem>
+  <MenuItem onClick={() => setShowContactForm(true)}>Chat with Us</MenuItem>
+  <MenuItem onClick={handleLogout}>Logout</MenuItem>
+</Menu>
         </nav>
       </header>
 
