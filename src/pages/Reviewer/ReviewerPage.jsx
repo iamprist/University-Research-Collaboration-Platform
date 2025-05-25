@@ -5,8 +5,10 @@ import MuiAlert from '@mui/material/Alert'
 import ReviewerRecommendations from '../../components/ReviewerRecommendations'
 import MyReviewRequests from '../../components/MyReviewRequests'
 import { useReviewerDashboard } from './reviewerDashboardLogic'
+import { useNavigate } from 'react-router-dom'
 
 export default function ReviewerPage() {
+  const navigate = useNavigate()
   const {
     status,
     reason,
@@ -128,7 +130,10 @@ export default function ReviewerPage() {
           }}
         >
           <MenuItem
-            onClick={() => setMenuAnchorEl(null)}
+            onClick={() => {
+              setMenuAnchorEl(null)
+              navigate('/reviewer-profile')
+            }}
             sx={{
               color: 'var(--accent-teal)',
               borderRadius: '0.5rem',
@@ -403,7 +408,7 @@ export default function ReviewerPage() {
                       mt: 2,
                       '&:hover': { bgcolor: '#5AA9A3', color: 'var(--white)' }
                     }}
-                    // onClick handler for navigation should be handled in the hook if needed
+                    onClick={() => navigate('/apply-reviewer')}
                   >
                     Apply to be a Reviewer
                   </Button>
