@@ -13,15 +13,18 @@ import {
   orderBy,
   updateDoc,
   addDoc,
-  serverTimestamp,
-  arrayUnion
+  serverTimestamp
 } from 'firebase/firestore';
 import axios from 'axios';
+import { deleteDoc } from 'firebase/firestore';
+
 
 export const useResearcherDashboard = () => {
   const navigate = useNavigate();
 
   // State variables
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+const [listingToDelete, setListingToDelete] = useState(null);
   const [allListings, setAllListings] = useState([]);
   const [myListings, setMyListings] = useState([]);
   const [userId, setUserId] = useState(null);
@@ -356,7 +359,27 @@ export const useResearcherDashboard = () => {
       console.error('Error during logout:', error);
     }
   };
-
+const handleDeleteListing = async () => {
+  if (!listingToDelete) return false;
+  try {
+    await deleteDoc(doc(db, 'research-listings', listingToDelete));
+    await logEvent({
+      userId,
+      role: 'Researcher',
+      userName,
+      action: 'Delete Listing',
+      details: 'Deleted a research listing',
+      ip: ipAddress,
+      target: listingToDelete
+    });
+    setListingToDelete(null);
+    setDeleteDialogOpen(false);
+    return true;
+  } catch (error) {
+    console.error('Error deleting listing:', error);
+    return false;
+  }
+};
   // Return all state and handlers for the component to use
   return {
     // State
@@ -378,6 +401,10 @@ export const useResearcherDashboard = () => {
     anchorEl,
     ipAddress,
     selectedMessage,
+    deleteDialogOpen,
+  setDeleteDialogOpen,
+  listingToDelete,
+  setListingToDelete,
     // Handlers
     handleSearch,
     handleMessageClick,
@@ -393,6 +420,9 @@ export const useResearcherDashboard = () => {
     setShowErrorModal,
     setSelectedMessage,
     // For testability: allow tests to set userId directly
-    setUserId
+    setUserId,
+    handleAcceptCollab,
+    handleRejectCollab,
+  handleDeleteListing
   };
 };
