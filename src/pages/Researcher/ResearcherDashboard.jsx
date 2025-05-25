@@ -7,7 +7,7 @@ import axios from "axios";
 import Footer from '../../components/Footer';
 import ContactForm from '../../components/ContactForm';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
-
+import { useResearcherDashboard } from './researcherDashboardLogic';
 // MUI Components
 import { 
   Button,
@@ -149,7 +149,14 @@ const ResearcherDashboard = () => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedMessage, setSelectedMessage] = useState(null);
   const navigate = useNavigate();const [reviewRequests, setReviewRequests] = useState([]);
+const { 
 
+  deleteDialogOpen,
+  setDeleteDialogOpen,
+  listingToDelete,
+  setListingToDelete,
+  handleDeleteListing
+} = useResearcherDashboard();
 useEffect(() => {
   if (!userId) return;
   const q = query(
@@ -605,6 +612,57 @@ const handleDeclineReviewRequest = async (requestId) => {
               }}
             />
             {/* Error Modal */}
+
+            <Dialog
+  open={deleteDialogOpen}
+  onClose={() => setDeleteDialogOpen(false)}
+  PaperProps={{
+    sx: {
+      bgcolor: '#1a2a42',
+      color: '#B1EDE8',
+      borderRadius: 2,
+      p: 2
+    }
+  }}
+>
+  <DialogTitle>Confirm Deletion</DialogTitle>
+  <DialogContent>
+    <Typography variant="body1" sx={{ mb: 2 }}>
+      Are you sure you want to delete this listing? This action cannot be undone.
+    </Typography>
+    <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+      <Button
+        variant="outlined"
+        onClick={() => setDeleteDialogOpen(false)}
+        sx={{
+          color: '#B1EDE8',
+          borderColor: '#B1EDE8',
+          '&:hover': {
+            borderColor: '#9dd8d3'
+          }
+        }}
+      >
+        Cancel
+      </Button>
+      <Button
+        variant="contained"
+        color="error"
+        onClick={async () => {
+          const success = await handleDeleteListing();
+          if (success) {
+            setMyListings(prev => prev.filter(listing => listing.id !== listingToDelete));
+          }
+        }}
+        sx={{
+          bgcolor: '#d32f2f',
+          '&:hover': { bgcolor: '#b71c1c' }
+        }}
+      >
+        Delete
+      </Button>
+    </Box>
+  </DialogContent>
+</Dialog>
             {showErrorModal && (
               <Dialog
                 open={showErrorModal}
@@ -717,33 +775,47 @@ const handleDeclineReviewRequest = async (requestId) => {
           <h2 style={{ marginBottom: 24, fontSize: '1.7rem' }}>Your Research</h2>
           <section style={{ display: 'flex', flexWrap: 'wrap', gap: 24 }}>
             {filteredListings.map((item, idx) => (
-              <article key={`my-${item.id}-${idx}`} style={{ flex: '1 1 30%', background: '#132238', color: '#B1EDE8', borderRadius: 16, padding: 24, marginBottom: 24 }}>
-                <h3>{item.title}</h3>
-                <p>{item.summary}</p>
-                <section style={{ display: 'flex', gap: 8 }}>
-                  <Button
-                    variant="contained"
-                    onClick={() => navigate(`/listing/${item.id}`)}
-                    sx={{
-                      bgcolor: '#2a3a57',
-                      '&:hover': { bgcolor: '#3a4a67' }
-                    }}
-                  >
-                    View Listing
-                  </Button>
-                  <Button
-                    variant="contained"
-                    onClick={() => navigate(`/collaboration/${item.id}`)}
-                    sx={{
-                      bgcolor: '#B1EDE8',
-                      color: '#132238',
-                      '&:hover': { bgcolor: '#9dd8d3' }
-                    }}
-                  >
-                    Collaboration Room
-                  </Button>
-                </section>
-              </article>
+             <article key={`my-${item.id}-${idx}`} style={{ flex: '1 1 30%', background: '#132238', color: '#B1EDE8', borderRadius: 16, padding: 24, marginBottom: 24 }}>
+  <h3>{item.title}</h3>
+  <p>{item.summary}</p>
+  <section style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+    <Button
+      variant="contained"
+      onClick={() => navigate(`/listing/${item.id}`)}
+      sx={{
+        bgcolor: '#2a3a57',
+        '&:hover': { bgcolor: '#3a4a67' }
+      }}
+    >
+      View Listing
+    </Button>
+    <Button
+      variant="contained"
+      onClick={() => navigate(`/collaboration/${item.id}`)}
+      sx={{
+        bgcolor: '#B1EDE8',
+        color: '#132238',
+        '&:hover': { bgcolor: '#9dd8d3' }
+      }}
+    >
+      Collaboration Room
+    </Button>
+   <Button
+  variant="contained"
+  color="error"
+  onClick={() => {
+    setListingToDelete(item.id);
+    setDeleteDialogOpen(true);
+  }}
+  sx={{
+    bgcolor: '#d32f2f',
+    '&:hover': { bgcolor: '#b71c1c' }
+  }}
+>
+  Delete
+</Button>
+  </section>
+</article>
             ))}
           </section>
         </section>
