@@ -21,10 +21,17 @@ import {
   DialogTitle,
   DialogContent,
   TextField,
-  Box
+  Box,
+  Card,
+  CardContent,
+  CardActions,
+  Stack
 } from '@mui/material';
 import { Notifications, Menu as MenuIcon, Close } from '@mui/icons-material';
 import CollaborationRequestsPanel from '../../components/CollaborationRequestsPanel';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+
+import ReviewsDialog from '../../components/ReviewsDialog';
 
 const MessageNotification = ({ messages, unreadCount, onMessageClick, selectedMessage, onAccept, onReject, onCloseSelected }) => {
   const [anchorEl, setAnchorEl] = useState(null);
@@ -149,6 +156,10 @@ const ResearcherDashboard = () => {
   const [ipAddress, setIpAddress] = useState("");
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedMessage, setSelectedMessage] = useState(null);
+  const [cardMenuAnchor, setCardMenuAnchor] = useState(null);
+  const [cardMenuProjectId, setCardMenuProjectId] = useState(null);
+  const [showReviewersDialog, setShowReviewersDialog] = useState(false);
+  const [reviewersDialogProjectId, setReviewersDialogProjectId] = useState(null);
   const navigate = useNavigate();const [reviewRequests, setReviewRequests] = useState([]);
 const { 
 
@@ -508,6 +519,26 @@ const handleDeclineReviewRequest = async (requestId) => {
     }))
   ];
 
+  // Handler for 3-dot menu
+  const handleOpenCardMenu = (event, projectId) => {
+    setCardMenuAnchor(event.currentTarget);
+    setCardMenuProjectId(projectId);
+  };
+  const handleCloseCardMenu = () => {
+    setCardMenuAnchor(null);
+    setCardMenuProjectId(null);
+  };
+  const handleViewReviewers = (projectId) => {
+    setShowReviewersDialog(true);
+    setReviewersDialogProjectId(projectId);
+    handleCloseCardMenu();
+  };
+  const handleDeleteProject = (projectId) => {
+    setListingToDelete(projectId);
+    setDeleteDialogOpen(true);
+    handleCloseCardMenu();
+  };
+
   return (
     <main style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
@@ -774,90 +805,239 @@ const handleDeclineReviewRequest = async (requestId) => {
         {/* Listings Grid */}
         <section style={{ maxWidth: 1200, margin: '0 auto' }}>
           <h2 style={{ marginBottom: 24, fontSize: '1.7rem' }}>Your Research</h2>
-          <section style={{ display: 'flex', flexWrap: 'wrap', gap: 24 }}>
+          <Stack direction="row" spacing={2} sx={{
+            width: "100%",
+            overflowX: "auto",
+            pb: 2,
+            '&::-webkit-scrollbar': { height: 8 },
+            '&::-webkit-scrollbar-thumb': { bgcolor: '#e3e8ee', borderRadius: 4 },
+          }}>
             {filteredListings.map((item, idx) => (
-             <article key={`my-${item.id}-${idx}`} style={{ flex: '1 1 30%', background: '#132238', color: '#B1EDE8', borderRadius: 16, padding: 24, marginBottom: 24 }}>
-  <h3>{item.title}</h3>
-  <p>{item.summary}</p>
-  <section style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-    <Button
-      variant="contained"
-      onClick={() => navigate(`/listing/${item.id}`)}
-      sx={{
-        bgcolor: '#2a3a57',
-        '&:hover': { bgcolor: '#3a4a67' }
-      }}
-    >
-      View Listing
-    </Button>
-    <Button
-      variant="contained"
-      onClick={() => navigate(`/collaboration/${item.id}`)}
-      sx={{
-        bgcolor: '#B1EDE8',
-        color: '#132238',
-        '&:hover': { bgcolor: '#9dd8d3' }
-      }}
-    >
-      Collaboration Room
-    </Button>
-   <Button
-  variant="contained"
-  color="error"
-  onClick={() => {
-    setListingToDelete(item.id);
-    setDeleteDialogOpen(true);
-  }}
-  sx={{
-    bgcolor: '#d32f2f',
-    '&:hover': { bgcolor: '#b71c1c' }
-  }}
->
-  Delete
-</Button>
-  </section>
-</article>
+              <Card
+                key={`my-${item.id}-${idx}`}
+                sx={{
+                  maxWidth: 350,
+                  minWidth: 280,
+                  bgcolor: "#fff",
+                  color: "#222",
+                  borderRadius: "1.2rem",
+                  boxShadow: "0 6px 24px rgba(30, 60, 90, 0.12), 0 1.5px 4px rgba(30, 60, 90, 0.10)",
+                  border: "1px solid #e3e8ee",
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "space-between",
+                  m: 0,
+                  position: "relative",
+                  transition: "box-shadow 0.2s, transform 0.2s",
+                  '&:hover': {
+                    boxShadow: "0 12px 32px rgba(30, 60, 90, 0.18), 0 2px 8px rgba(30, 60, 90, 0.12)",
+                    transform: "translateY(-4px) scale(1.03)",
+                    borderColor: "#B1EDE8",
+                  },
+                }}
+              >
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', p: 1, pt: 2, pb: 0 }}>
+                  <IconButton
+                    size="small"
+                    onClick={e => handleOpenCardMenu(e, item.id)}
+                  >
+                    <MoreVertIcon />
+                  </IconButton>
+                </Box>
+                <CardContent sx={{ flex: 1, pt: 0 }}>
+                  <h4 style={{
+                    color: "var(--dark-blue)",
+                    fontWeight: 700,
+                    fontSize: "1.2rem",
+                    marginBottom: 8
+                  }}>
+                    {item.title}
+                  </h4>
+                  <Typography sx={{ mb: 1, color: "#222" }}>
+                    By: <strong>{item.researcherName}</strong>
+                  </Typography>
+                  <Typography sx={{ color: "#444", mt: 0.5 }}>
+                    {item.summary}
+                  </Typography>
+                </CardContent>
+                <CardActions sx={{ pt: 0 }}>
+                  <Stack direction="row" spacing={2} sx={{ width: "100%" }}>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      sx={{
+                        bgcolor: 'var(--light-blue)',
+                        color: 'var(--dark-blue)',
+                        borderRadius: '1.5rem',
+                        fontWeight: 600,
+                        px: 2,
+                        py: 0.5,
+                        minWidth: 0,
+                        boxShadow: '0 2px 10px rgba(100,204,197,0.08)',
+                        textTransform: "none",
+                        '&:hover': { bgcolor: '#5AA9A3', color: 'var(--white)' },
+                        flex: 1
+                      }}
+                      onClick={() => navigate(`/listing/${item.id}`)}
+                    >
+                      View Listing
+                    </Button>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      sx={{
+                        bgcolor: 'var(--light-blue)',
+                        color: 'var(--dark-blue)',
+                        borderRadius: '1.5rem',
+                        fontWeight: 600,
+                        px: 2,
+                        py: 0.5,
+                        minWidth: 0,
+                        boxShadow: '0 2px 10px rgba(100,204,197,0.08)',
+                        textTransform: "none",
+                        '&:hover': { bgcolor: '#5AA9A3', color: 'var(--white)' },
+                        flex: 1
+                      }}
+                      onClick={() => navigate(`/collaboration/${item.id}`)}
+                    >
+                      Collaboration Room
+                    </Button>
+                  </Stack>
+                </CardActions>
+              </Card>
             ))}
-          </section>
+          </Stack>
+          {/* 3-dot menu for research cards */}
+          <Menu
+            anchorEl={cardMenuAnchor}
+            open={Boolean(cardMenuAnchor)}
+            onClose={handleCloseCardMenu}
+          >
+            <MenuItem onClick={() => handleDeleteProject(cardMenuProjectId)}>
+              Delete Project
+            </MenuItem>
+            <MenuItem onClick={() => handleViewReviewers(cardMenuProjectId)}>
+              View Reviewers
+            </MenuItem>
+          </Menu>
+          {/* Reviews Dialog (shows ratings & comments) */}
+          <ReviewsDialog
+            open={showReviewersDialog}
+            onClose={() => setShowReviewersDialog(false)}
+            projectId={reviewersDialogProjectId}
+          />
         </section>
 
         {/* Collaborations Section */}
         <section style={{ marginTop: 48, maxWidth: 1200, marginLeft: 'auto', marginRight: 'auto' }}>
           <h2 style={{ marginBottom: 24, fontSize: '1.7rem'}}>Your Collaborations</h2>
-          <section style={{ display: 'flex', flexWrap: 'wrap', gap: 24 }}>
+          <Stack direction="row" spacing={2} sx={{
+            width: "100%",
+            overflowX: "auto",
+            pb: 2,
+            '&::-webkit-scrollbar': { height: 8 },
+            '&::-webkit-scrollbar-thumb': { bgcolor: '#e3e8ee', borderRadius: 4 },
+          }}>
             {collabListings.map((listing, idx) => (
-              <article key={`collab-${listing.id}-${idx}`} style={{ flex: '1 1 30%', background: '#132238', color: '#B1EDE8', borderRadius: 16, padding: 24, marginBottom: 24 }}>
-                <h3>{listing.title}</h3>
-                <p>{listing.summary}</p>
-                <section style={{ display: 'flex', gap: 8 }}>
-                  <Button
-                    variant="contained"
-                    onClick={() => navigate(`/listing/${listing.id}`)}
+              <Card
+                key={`collab-${listing.id}-${idx}`}
+                sx={{
+                 maxWidth: 350,
+                  minWidth: 280,
+                  bgcolor: "#fff",
+                  color: "#222",
+                  borderRadius: "1.2rem",
+                  boxShadow: "0 6px 24px rgba(30, 60, 90, 0.12), 0 1.5px 4px rgba(30, 60, 90, 0.10)",
+                  border: "1px solid #e3e8ee",
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "space-between",
+                  m: 0,
+                  transition: "box-shadow 0.2s, transform 0.2s",
+                  '&:hover': {
+                    boxShadow: "0 12px 32px rgba(30, 60, 90, 0.18), 0 2px 8px rgba(30, 60, 90, 0.12)",
+                    transform: "translateY(-4px) scale(1.03)",
+                    borderColor: "#B1EDE8",
+                  },
+                }}
+              >
+                <CardContent sx={{ flex: 1, pt: 2 }}>
+                  <h4 style={{
+                    color: "var(--dark-blue)",
+                    fontWeight: 700,
+                    fontSize: "1.2rem",
+                    marginBottom: 8
+                  }}>
+                    {listing.title}
+                  </h4>
+                  <Typography
                     sx={{
-                      bgcolor: '#2a3a57',
-                      '&:hover': { bgcolor: '#3a4a67' }
+                      color: "#444",
+                      mt: 0.5,
+                      maxWidth: "100%",
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2, // show 2 lines max
+                      WebkitBoxOrient: "vertical",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis"
                     }}
                   >
-                    View Project
-                  </Button>
-                  <Button
-                    variant="contained"
-                    onClick={() => navigate(`/collaboration/${listing.id}`)}
-                    sx={{
-                      bgcolor: '#B1EDE8',
-                      color: '#132238',
-                      '&:hover': { bgcolor: '#9dd8d3' }
-                    }}
-                  >
-                    Collaboration Room
-                  </Button>
-                </section>
-              </article>
+                    {listing.summary}
+                    {listing.summary && listing.summary.length > 80 && (
+                      <span style={{ color: "#5AA9A3", marginLeft: 4 }}>…read more</span>
+                    )}
+                  </Typography>
+                </CardContent>
+                <CardActions sx={{ pt: 0 }}>
+                  <Stack direction="row" spacing={2} sx={{ width: "100%" }}>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      sx={{
+                        bgcolor: 'var(--light-blue)',
+                        color: 'var(--dark-blue)',
+                        borderRadius: '1.5rem',
+                        fontWeight: 600,
+                        px: 2,
+                        py: 0.5,
+                        minWidth: 0,
+                        boxShadow: '0 2px 10px rgba(100,204,197,0.08)',
+                        textTransform: "none",
+                        '&:hover': { bgcolor: '#5AA9A3', color: 'var(--white)' },
+                        flex: 1
+                      }}
+                      onClick={() => navigate(`/listing/${listing.id}`)}
+                    >
+                      View Project
+                    </Button>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      sx={{
+                        bgcolor: 'var(--light-blue)',
+                        color: 'var(--dark-blue)',
+                        borderRadius: '1.5rem',
+                        fontWeight: 600,
+                        px: 2,
+                        py: 0.5,
+                        minWidth: 0,
+                        boxShadow: '0 2px 10px rgba(100,204,197,0.08)',
+                        textTransform: "none",
+                        '&:hover': { bgcolor: '#5AA9A3', color: 'var(--white)' },
+                        flex: 1
+                      }}
+                      onClick={() => navigate(`/collaboration/${listing.id}`)}
+                    >
+                      Collaboration Room
+                    </Button>
+                  </Stack>
+                </CardActions>
+              </Card>
             ))}
-          </section>
+          </Stack>
         </section>
-
-  <section style={{ maxWidth: 800, margin: '32px auto' }}>
+        {/* Collaboration Requests Section */}
+<section style={{ maxWidth: 800, margin: '32px auto' }}>
   <h2 style={{ marginBottom: 24, fontSize: '1.7rem' }}>Collaboration Requests</h2>
   <Paper sx={{ p: 2, bgcolor: '#1a2a42', color: '#B1EDE8' }}>
     <CollaborationRequestsPanel />
