@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { db, auth } from '../../config/firebaseConfig'
 import { doc, getDoc, updateDoc } from 'firebase/firestore'
-import { Box, Button, IconButton, Menu, MenuItem, Typography, TextField, Avatar, InputLabel, FormControlLabel, Radio, RadioGroup, Link } from '@mui/material'
+import { Box, Button, IconButton, Menu, MenuItem, Typography, TextField, Avatar, InputLabel } from '@mui/material'
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos'
 import MenuIcon from '@mui/icons-material/Menu'
 
 
-const expertiseOptions = [
+/*const expertiseOptions = [
   { value: 'PHYS', label: 'Physics' },
   { value: 'CHEM', label: 'Chemistry' },
   { value: 'BIO', label: 'Biology' },
@@ -19,7 +19,7 @@ const expertiseOptions = [
   { value: 'FIN', label: 'Finance' },
   { value: 'MKT', label: 'Marketing' },
   { value: 'HRM', label: 'Human Resources' },
-];
+];*/
 
 export default function EditReviewerProfile() {
   const navigate = useNavigate()
