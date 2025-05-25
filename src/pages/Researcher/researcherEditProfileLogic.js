@@ -42,8 +42,8 @@ export const useEditProfileLogic = () => {
     const fetchProfile = async () => {
       if (!userId) return;
       try {
-        const userDocRef = doc(db, 'users', userId);
-        const userDoc = await getDoc(userDocRef);
+        const profileDocRef = doc(db, 'researcherProfiles', userId);
+        const userDoc = await getDoc(profileDocRef);
         if (userDoc.exists()) {
           const data = userDoc.data();
           setProfile({
@@ -92,12 +92,13 @@ export const useEditProfileLogic = () => {
           profileData[key] = null;
         }
       });
-      await setDoc(doc(db, 'users', userId), profileData);
-      navigate('/researcher-profile');
-    } catch (error) {
-      console.error('Error updating your profile:', error);
-    }
-  };
+      await setDoc(doc(db, 'researcherProfiles', userId), profileData, { merge: true });
+    
+    navigate('/researcher-profile');
+  } catch (error) {
+    console.error('Error updating your profile:', error);
+  }
+};
 
   return {
     profile,

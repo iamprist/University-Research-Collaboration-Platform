@@ -1,11 +1,14 @@
-// EditProfile.jsx - Allows researchers to edit and update their profile information
+// EditProfile.jsx - Updated with name field and improved UI
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './ResearcherDashboard.css';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import MenuIcon from '@mui/icons-material/Menu';
 import Footer from '../../components/Footer';
-import { Box, Button, IconButton, Menu, MenuItem, Typography, TextField, Select, InputLabel, FormControl, Avatar } from '@mui/material';
+import { 
+  Box, Button, IconButton, Menu, MenuItem, Typography, 
+  TextField, Select, InputLabel, FormControl, Avatar
+} from '@mui/material';
 import { useEditProfileLogic } from './researcherEditProfileLogic';
 import { auth } from '../../config/firebaseConfig';
 
@@ -18,24 +21,38 @@ const researchAreas = [
   'Geography', 'Philosophy', 'Linguistics', 'Communication', 'Other'
 ];
 
-// Researcher titles for dropdown
 const titles = [
   'Dr', 'Prof', 'Mr', 'Ms', 'Mrs', 'Mx', 'Other'
 ];
 
 const EditProfile = () => {
   const navigate = useNavigate();
-  // State for menu anchor (dropdown menu)
   const [menuAnchorEl, setMenuAnchorEl] = useState(null);
+  const [errors, setErrors] = useState({
+    name: false,
+    email: false
+  });
 
-  // Use backend logic hook
   const {
     profile,
     handleChange: logicHandleChange,
     handleSubmit: logicHandleSubmit
   } = useEditProfileLogic();
 
-  // Redirect to sign-in if not authenticated
+  const handleSubmitWithValidation = (e) => {
+    e.preventDefault();
+    const newErrors = {
+      name: !profile.name,
+      email: !profile.email || !/^\S+@\S+\.\S+$/.test(profile.email)
+    };
+    
+    setErrors(newErrors);
+    
+    if (!Object.values(newErrors).some(error => error)) {
+      logicHandleSubmit(e);
+    }
+  };
+
   useEffect(() => {
     const token = localStorage.getItem('authToken');
     if (!token) {
@@ -55,182 +72,114 @@ const EditProfile = () => {
 
   return (
     <Box component="main" sx={{ minHeight: '100vh', bgcolor: '#f5f7fa' }}>
-      {/* HEADER: Navigation and menu */}
+      {/* Header */}
       <Box
         component="header"
-        className="researcher-header"
         sx={{
           display: 'flex',
-          justifyContent: 'space-around',
+          justifyContent: 'space-between',
           alignItems: 'center',
           bgcolor: 'var(--dark-blue)',
           color: 'var(--white)',
-          borderBottom: '2px solid var(--light-blue)',
-          p: '1.5rem 2rem',
-          width: '100%',
-          maxWidth: '100vw',
+          p: '1.5rem',
+          px: { xs: '1.5rem', md: '3rem' }
         }}
       >
-        <IconButton
-          className="back-button"
-          onClick={() => navigate(-1)}
-          sx={{
-            color: 'var(--white)',
-            mr: '1.5rem',
-          }}
-        >
+        <IconButton onClick={() => navigate(-1)} sx={{ color: 'var(--white)' }}>
           <ArrowBackIosIcon />
         </IconButton>
-        <Box className="header-title" sx={{ flex: 1 }}>
-          <Typography variant="h4" sx={{ fontWeight: 700, fontSize: '1.5rem', textAlign: 'center', letterSpacing: '0.04em' }}>
+        <Box sx={{ textAlign: 'center' }}>
+          <Typography variant="h5" sx={{ fontWeight: 600 }}>
             Edit Your Profile
           </Typography>
-          <Typography sx={{ fontSize: '0.9rem', fontStyle: 'italic', textAlign: 'center', mt: 0.5 }}>
+          <Typography variant="body2" sx={{ opacity: 0.8 }}>
             Update your research profile information
           </Typography>
         </Box>
-        {/* Dropdown menu for navigation */}
-        <Box className="dropdown-menu-container" sx={{ position: 'relative' }}>
-          <Button
-            className="menu-toggle-btn"
-            onClick={(e) => setMenuAnchorEl(e.currentTarget)}
-            sx={{
-              bgcolor: 'var(--light-blue)',
-              color: 'var(--dark-blue)',
-              borderRadius: '1.5rem',
-              fontWeight: 600,
-              px: 3,
-              py: 1.2,
-              boxShadow: '0 2px 10px rgba(100,204,197,0.2)',
-              '&:hover': { bgcolor: '#5AA9A3', color: 'var(--white)' },
-            }}
-          >
-            <MenuIcon />
-          </Button>
-          <Menu
-            anchorEl={menuAnchorEl}
-            open={Boolean(menuAnchorEl)}
-            onClose={() => setMenuAnchorEl(null)}
-            PaperProps={{
-              sx: {
-                bgcolor: 'var(--dark-blue)',
-                color: 'var(--accent-teal)',
-                borderRadius: '0.8rem',
-                minWidth: 200,
-                mt: 1,
-                boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
-              },
-            }}
-            anchorOrigin={{
-              vertical: 'bottom',
-              horizontal: 'right',
-            }}
-            transformOrigin={{
-              vertical: 'top',
-              horizontal: 'right',
-            }}
-          >
-            {/* Menu navigation options */}
+        <IconButton 
+          onClick={(e) => setMenuAnchorEl(e.currentTarget)}
+          sx={{ color: 'var(--white)' }}
+        >
+          <MenuIcon />
+        </IconButton>
+        
+        <Menu
+          anchorEl={menuAnchorEl}
+          open={Boolean(menuAnchorEl)}
+          onClose={() => setMenuAnchorEl(null)}
+          PaperProps={{
+            sx: {
+              bgcolor: 'var(--dark-blue)',
+              color: 'var(--accent-teal)',
+              borderRadius: '0.8rem',
+              minWidth: 200,
+              mt: 1,
+            },
+          }}
+        >
+          {[
+            { label: 'Add Listing', path: '/researcher/add-listing' },
+            { label: 'Dashboard', path: '/researcher-dashboard' },
+            { label: 'Friends', path: '/friends' },
+            { label: 'Collaborate', path: '/researcher/collaborate' }
+          ].map((item) => (
             <MenuItem
+              key={item.label}
               onClick={() => {
                 setMenuAnchorEl(null);
-                navigate('/researcher/add-listing');
+                navigate(item.path);
               }}
               sx={{
-                color: 'var(--accent-teal)',
-                borderRadius: '0.5rem',
-                px: 2,
-                py: 1,
-                fontSize: '1.1rem',
                 '&:hover': { bgcolor: 'var(--light-blue)', color: 'var(--dark-blue)' },
               }}
             >
-              Add Listing
+              {item.label}
             </MenuItem>
-            <MenuItem
-              onClick={() => {
-                setMenuAnchorEl(null);
-                navigate('/researcher-dashboard');
-              }}
-              sx={{
-                color: 'var(--accent-teal)',
-                borderRadius: '0.5rem',
-                px: 2,
-                py: 1,
-                fontSize: '1.1rem',
-                '&:hover': { bgcolor: 'var(--light-blue)', color: 'var(--dark-blue)' },
-              }}
-            >
-              Dashboard
-            </MenuItem>
-            <MenuItem
-              onClick={() => {
-                setMenuAnchorEl(null);
-                navigate('/friends');
-              }}
-              sx={{
-                color: 'var(--accent-teal)',
-                borderRadius: '0.5rem',
-                px: 2,
-                py: 1,
-                fontSize: '1.1rem',
-                '&:hover': { bgcolor: 'var(--light-blue)', color: 'var(--dark-blue)' },
-              }}
-            >
-              Friends
-            </MenuItem>
-            <MenuItem
-              onClick={() => {
-                setMenuAnchorEl(null);
-                navigate('/researcher/collaborate');
-              }}
-              sx={{
-                color: 'var(--accent-teal)',
-                borderRadius: '0.5rem',
-                px: 2,
-                py: 1,
-                fontSize: '1.1rem',
-                '&:hover': { bgcolor: 'var(--light-blue)', color: 'var(--dark-blue)' },
-              }}
-            >
-              Collaborate
-            </MenuItem>
-          </Menu>
-        </Box>
+          ))}
+        </Menu>
       </Box>
 
-      {/* FORM: Edit profile fields */}
-      <Box sx={{ maxWidth: '700px', margin: '2rem auto', px: '1.5rem' }}>
-        <form onSubmit={logicHandleSubmit}>
-          <Box
-            sx={{
-              background: '#1A2E40',
-              borderRadius: '1rem',
-              boxShadow: '0 4px 6px rgba(0,0,0,0.12)',
-              p: '2rem',
-              color: '#FFFFFF',
-            }}
-          >
-            {/* Profile Picture Upload */}
-            <Box sx={{ mb: '1.5rem' }}>
-              <Typography sx={{ display: 'block', mb: '0.5rem', color: '#64CCC5', fontWeight: 600 }}>
-                Profile Picture
-              </Typography>
-              <Button
-                variant="outlined"
-                component="label"
+      {/* Profile Form */}
+      <Box sx={{ 
+        maxWidth: '800px', 
+        margin: '2rem auto', 
+        px: { xs: '1rem', sm: '2rem' },
+        pb: 4
+      }}>
+        <form onSubmit={handleSubmitWithValidation}>
+          <Box sx={{
+            background: '#1A2E40',
+            borderRadius: '16px',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+            p: { xs: '1.5rem', sm: '2.5rem' },
+            color: '#FFFFFF',
+          }}>
+            {/* Profile Picture Section */}
+            <Box sx={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              alignItems: 'center', 
+              mb: 4 
+            }}>
+              <Avatar
+                src={typeof profile.profilePicture === 'string' ? profile.profilePicture : ''}
                 sx={{
-                  width: '100%',
-                  bgcolor: '#132238',
-                  border: '1.5px solid #64CCC5',
-                  borderRadius: '0.5rem',
-                  color: '#FFFFFF',
-                  py: '0.7rem',
-                  mb: 1,
-                  '&:hover': { bgcolor: '#18304a', borderColor: '#64CCC5' },
+                  width: 120,
+                  height: 120,
+                  mb: 2,
+                  border: '2px solid #64CCC5'
+                }}
+              />
+              <Button
+                component="label"
+                variant="contained"
+                sx={{
+                  bgcolor: '#64CCC5',
+                  color: '#132238',
+                  '&:hover': { bgcolor: '#5AA9A3' },
                 }}
               >
-                Upload
+                Upload Photo
                 <input
                   type="file"
                   name="profilePicture"
@@ -239,214 +188,173 @@ const EditProfile = () => {
                   onChange={logicHandleChange}
                 />
               </Button>
-              {typeof profile.profilePicture === 'string' && (
-                <Avatar
-                  src={profile.profilePicture}
-                  alt="Profile"
-                  sx={{
-                    mt: 2,
-                    width: 80,
-                    height: 80,
-                    borderRadius: '0.5rem',
-                    mx: 'auto',
-                  }}
-                />
-              )}
             </Box>
 
-            {/* Title Dropdown */}
-            <Box sx={{ mb: '1.5rem' }}>
-              <InputLabel
-                htmlFor="title"
-                sx={{ display: 'block', mb: '0.5rem', color: '#64CCC5', fontWeight: 600 }}
-              >
-                Title
-              </InputLabel>
+            {/* Personal Information Section */}
+            <Typography variant="h6" sx={{ 
+              color: '#64CCC5', 
+              mb: 2, 
+              borderBottom: '1px solid #64CCC5',
+              pb: 1
+            }}>
+              Personal Information
+            </Typography>
+
+            <Box sx={{ display: 'grid', gridTemplateColumns: { sm: '1fr 1fr' }, gap: 3, mb: 3 }}>
+              {/* Title Field */}
               <FormControl fullWidth>
+                <InputLabel sx={{ color: '#64CCC5' }}>Title</InputLabel>
                 <Select
-                  id="title"
                   name="title"
                   value={profile.title || ''}
                   onChange={logicHandleChange}
                   sx={{
-                    width: '100%',
                     bgcolor: '#132238',
-                    border: '1.5px solid #64CCC5',
-                    borderRadius: '0.5rem',
                     color: '#FFFFFF',
-                    py: '0.7rem',
                     '& .MuiSelect-icon': { color: '#64CCC5' },
                   }}
-                  MenuProps={{
-                    PaperProps: {
-                      sx: {
-                        bgcolor: '#132238',
-                        color: '#FFFFFF',
-                      },
-                    },
-                  }}
                 >
-                  <MenuItem value="">
-                    <em>-- Select Title --</em>
-                  </MenuItem>
+                  <MenuItem value=""><em>None</em></MenuItem>
                   {titles.map((t) => (
-                    <MenuItem key={t} value={t}>
-                      {t}
-                    </MenuItem>
+                    <MenuItem key={t} value={t}>{t}</MenuItem>
                   ))}
                 </Select>
               </FormControl>
+
+              {/* Name Field */}
+              <TextField
+                name="name"
+                label="Full Name"
+                value={profile.name || ''}
+                onChange={logicHandleChange}
+                error={errors.name}
+                helperText={errors.name ? "Name is required" : ""}
+                fullWidth
+                sx={{
+                  '& .MuiInputBase-root': { bgcolor: '#132238' },
+                  '& .MuiInputLabel-root': { color: '#64CCC5' },
+                  '& .MuiOutlinedInput-root': {
+                    '& fieldset': { borderColor: '#64CCC5' },
+                    '&:hover fieldset': { borderColor: '#64CCC5' }
+                  },
+                }}
+              />
             </Box>
 
             {/* Email Field */}
-            <Box sx={{ mb: '1.5rem' }}>
-              <InputLabel
-                htmlFor="email"
-                sx={{ display: 'block', mb: '0.5rem', color: '#64CCC5', fontWeight: 600 }}
-              >
-                Email
-              </InputLabel>
-              <TextField
-                id="email"
-                name="email"
-                type="email"
-                value={profile.email || ''}
+            <TextField
+              name="email"
+              label="Email"
+              type="email"
+              value={profile.email || ''}
+              onChange={logicHandleChange}
+              error={errors.email}
+              helperText={errors.email ? "Valid email is required" : ""}
+              fullWidth
+              sx={{ 
+                mb: 3,
+                '& .MuiInputBase-root': { bgcolor: '#132238' },
+                '& .MuiInputLabel-root': { color: '#64CCC5' },
+                '& .MuiOutlinedInput-root': {
+                  '& fieldset': { borderColor: '#64CCC5' },
+                  '&:hover fieldset': { borderColor: '#64CCC5' }
+                },
+              }}
+            />
+
+            {/* Research Information Section */}
+            <Typography variant="h6" sx={{ 
+              color: '#64CCC5', 
+              mb: 2, 
+              mt: 4,
+              borderBottom: '1px solid #64CCC5',
+              pb: 1
+            }}>
+              Research Information
+            </Typography>
+
+            {/* Research Area */}
+            <FormControl fullWidth sx={{ mb: 3 }}>
+              <InputLabel sx={{ color: '#64CCC5' }}>Research Area</InputLabel>
+              <Select
+                name="researchArea"
+                value={profile.researchArea || ''}
                 onChange={logicHandleChange}
-                required
-                fullWidth
-                variant="outlined"
                 sx={{
-                  input: {
-                    bgcolor: '#132238',
-                    color: '#FFFFFF',
-                    borderRadius: '0.5rem',
-                    padding: '0.7rem',
-                  },
-                  '& fieldset': {
-                    border: '1.5px solid #64CCC5',
-                  },
+                  bgcolor: '#132238',
+                  color: '#FFFFFF',
+                  '& .MuiSelect-icon': { color: '#64CCC5' },
                 }}
-              />
-            </Box>
-
-            {/* Research Area Dropdown */}
-            <Box sx={{ mb: '1.5rem' }}>
-              <InputLabel
-                htmlFor="researchArea"
-                sx={{ display: 'block', mb: '0.5rem', color: '#64CCC5', fontWeight: 600 }}
               >
-                Research Area
-              </InputLabel>
-              <FormControl fullWidth>
-                <Select
-                  id="researchArea"
-                  name="researchArea"
-                  value={profile.researchArea || ''}
-                  onChange={logicHandleChange}
-                  sx={{
-                    bgcolor: '#132238',
-                    border: '1.5px solid #64CCC5',
-                    borderRadius: '0.5rem',
-                    color: '#FFFFFF',
-                    py: '0.7rem',
-                    '& .MuiSelect-icon': { color: '#64CCC5' },
-                  }}
-                  MenuProps={{
-                    PaperProps: {
-                      sx: {
-                        bgcolor: '#132238',
-                        color: '#FFFFFF',
-                      },
-                    },
-                  }}
-                >
-                  <MenuItem value="">
-                    <em>-- Select Research Area --</em>
-                  </MenuItem>
-                  {researchAreas.map((area) => (
-                    <MenuItem key={area} value={area}>
-                      {area}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Box>
+                <MenuItem value=""><em>Select your field</em></MenuItem>
+                {researchAreas.map((area) => (
+                  <MenuItem key={area} value={area}>{area}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
 
-            {/* Biography Field */}
-            <Box sx={{ mb: '1.5rem' }}>
-              <InputLabel
-                htmlFor="biography"
-                sx={{ display: 'block', mb: '0.5rem', color: '#64CCC5', fontWeight: 600 }}
-              >
-                Biography
-              </InputLabel>
-              <TextField
-                id="biography"
-                name="biography"
-                value={profile.biography || ''}
-                onChange={logicHandleChange}
-                multiline
-                minRows={6}
-                fullWidth
-                variant="outlined"
-                sx={{
-                  textarea: {
-                    bgcolor: '#132238',
-                    color: '#FFFFFF',
-                    borderRadius: '0.5rem',
-                    padding: '0.7rem',
-                  },
-                  '& fieldset': {
-                    border: '1.5px solid #64CCC5',
-                  },
-                }}
-              />
-            </Box>
+            {/* Biography */}
+            <TextField
+              name="biography"
+              label="Biography"
+              value={profile.biography || ''}
+              onChange={logicHandleChange}
+              multiline
+              rows={6}
+              fullWidth
+              sx={{ 
+                mb: 3,
+                '& .MuiInputBase-root': { bgcolor: '#132238' },
+                '& .MuiInputLabel-root': { color: '#64CCC5' },
+                '& .MuiOutlinedInput-root': {
+                  '& fieldset': { borderColor: '#64CCC5' },
+                  '&:hover fieldset': { borderColor: '#64CCC5' }
+                },
+              }}
+            />
 
-            {/* Actions: Cancel and Save buttons */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+            {/* Form Actions */}
+            <Box sx={{ 
+              display: 'flex', 
+              justifyContent: 'space-between',
+              mt: 4,
+              gap: 2
+            }}>
               <Button
                 type="button"
                 onClick={() => navigate(-1)}
+                variant="outlined"
                 sx={{
-                  backgroundColor: '#B1EDE8',
-                  color: '#132238',
-                  border: 'none',
-                  px: '1.7rem',
-                  py: '0.3rem',
-                  borderRadius: '0.5rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
+                  color: '#64CCC5',
+                  borderColor: '#64CCC5',
+                  px: 4,
                   '&:hover': {
-                    backgroundColor: '#A0E1DB',
-                  },
+                    borderColor: '#5AA9A3',
+                    color: '#5AA9A3'
+                  }
                 }}
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
+                variant="contained"
                 sx={{
-                  backgroundColor: '#B1EDE8',
+                  bgcolor: '#64CCC5',
                   color: '#132238',
-                  border: 'none',
-                  px: '1rem',
-                  py: '0.7rem',
-                  borderRadius: '0.5rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
+                  px: 4,
                   '&:hover': {
-                    backgroundColor: '#A0E1DB',
-                  },
+                    bgcolor: '#5AA9A3'
+                  }
                 }}
               >
-                Save Changes
+                Save Profile
               </Button>
             </Box>
           </Box>
         </form>
       </Box>
-      {/* Footer component */}
+      
       <Footer />
     </Box>
   );

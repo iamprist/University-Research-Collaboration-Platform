@@ -59,7 +59,7 @@ const ResearcherProfile = () => {
 
       try {
         setLoading(true);
-        const userDocRef = doc(db, 'users', userId);
+        const userDocRef = doc(db, 'researcherProfiles', userId);
         const userDoc = await getDoc(userDocRef);
 
         if (userDoc.exists()) {
