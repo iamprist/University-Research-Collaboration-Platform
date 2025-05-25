@@ -236,25 +236,33 @@ const [listingToDelete, setListingToDelete] = useState(null);
   };
 
   // Mark a message as read in Firestore
-  const markMessageAsRead = async (messageId) => {
-    try {
-      await updateDoc(doc(db, 'users', userId, 'messages', messageId), {
-        read: true
-      });
-    } catch (error) {
-      console.error('Error marking message as read:', error);
-    }
-  };
+const markMessageAsRead = async (messageId) => {
+  if (!userId || !messageId) return;
+  try {
+    await updateDoc(doc(db, 'users', userId, 'messages', messageId), {
+      read: true
+    });
+  } catch (error) {
+    console.error('Error marking message as read:', error);
+    throw error; // Re-throw to allow handleMessageClick to handle it
+  }
+};
 
   // Handle clicking a notification message
-  const handleMessageClick = async (message) => {
+const handleMessageClick = async (message) => {
+  if (!message || !message.id) return;
+  
+  try {
     await markMessageAsRead(message.id);
+    
     if (!userId) return;
+    
     if (message.type === 'collaboration-request') {
-      setSelectedMessage(message); // Only set selected message, do not navigate
+      setSelectedMessage(message);
       return;
     }
-    setSelectedMessage(message); // For other message types, still set selected
+    
+    setSelectedMessage(message);
     switch (message.type) {
       case 'review-request':
         navigate(`/review-requests/${message.relatedId}`);
@@ -265,7 +273,12 @@ const [listingToDelete, setListingToDelete] = useState(null);
       default:
         break;
     }
-  };
+  } catch (error) {
+    // This ensures we don't set selectedMessage on error
+    console.error('Error marking message as read:', error);
+    setSelectedMessage(null); // Ensure selectedMessage is cleared on error
+  }
+};
 
   // Accept/reject handlers for collaboration-request messages
   const handleAcceptCollab = async (message) => {
@@ -309,7 +322,7 @@ const [listingToDelete, setListingToDelete] = useState(null);
     clearTimeout(dropdownTimeout.current);
   };
   const handleInputChange = (e) => {
-    setSearchTerm(e.target.value);
+    setSearchTerm(e?.target?.value || '');
     setDropdownVisible(false);
     clearTimeout(dropdownTimeout.current);
   };

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../../config/firebaseConfig";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import './Dashboard.css'; // <-- Import the new CSS file
+import './Dashboard.css';
 
 // Dashboard component for admin analytics and stats
 export default function Dashboard() {
@@ -14,6 +14,7 @@ export default function Dashboard() {
   const [totalReviewerApps, setTotalReviewerApps] = useState(0);
   const [engagementData, setEngagementData] = useState([]); // Data for engagement chart
   const [loading, setLoading] = useState(true);
+  const [logs, setLogs] = useState([]); // <-- Add this line
 
   // Fetch all dashboard data on mount
   useEffect(() => {
@@ -24,10 +25,11 @@ export default function Dashboard() {
         // Fetch logs for login/logout and engagement
         const logsCollection = collection(db, "logs");
         const logsSnapshot = await getDocs(logsCollection);
-        const logs = logsSnapshot.docs.map((doc) => ({
+        const logsData = logsSnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
+        setLogs(logsData); // <-- Set logs state here
 
         // Fetch reviewer applications
         const reviewersCollection = collection(db, "reviewers");
@@ -52,8 +54,8 @@ export default function Dashboard() {
         // Calculate unique users by email
         const uniqueUsers = new Set(users.map((user) => user.email)).size;
         // Count login and logout actions
-        const logins = logs.filter((log) => log.action === "Login").length;
-        const logouts = logs.filter((log) => log.action === "Logout").length;
+        const logins = logsData.filter((log) => log.action === "Login").length;
+        const logouts = logsData.filter((log) => log.action === "Logout").length;
         // Count total listings
         const listings = listingsSnapshot.size;
         // Count reviewer applications in progress
@@ -76,7 +78,7 @@ export default function Dashboard() {
         // Aggregate logs per day for engagement chart
         const engagement = days.map((date) => ({
           date,
-          count: logs.filter(
+          count: logsData.filter(
             (log) =>
               log.timestamp &&
               log.timestamp.toDate &&
@@ -129,27 +131,35 @@ export default function Dashboard() {
       {/* Engagement line chart for logs per day */}
       <section className="dashboard-chart-card">
         <header className="dashboard-chart-header">Engagement (Logs per Day)</header>
-        <ResponsiveContainer width="100%" height={200}>
-          <LineChart data={engagementData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#364E68" />
-            <XAxis dataKey="date" stroke="#B1EDE8" fontSize={12} />
-            <YAxis allowDecimals={false} stroke="#B1EDE8" fontSize={12} />
-            <Tooltip
-              contentStyle={{ background: "#2B3E50", border: "none", color: "#B1EDE8" }}
-              labelStyle={{ color: "#64CCC5" }}
-              formatter={(value) => [value, "Logs"]}
-              labelFormatter={(label) => `Date: ${label}`}
-            />
-            <Line
-              type="monotone"
-              dataKey="count"
-              stroke="#64CCC5"
-              strokeWidth={3}
-              dot={{ r: 5, stroke: "#2B3E50", strokeWidth: 2, fill: "#64CCC5" }}
-              activeDot={{ r: 8 }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
+        {/* Chart rendering here */}
+        {logs && logs.length === 0 && (
+          <div style={{ textAlign: "center", marginTop: "1rem" }}>
+            No logs found
+          </div>
+        )}
+        {logs && logs.length > 0 && (
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart data={engagementData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#364E68" />
+              <XAxis dataKey="date" stroke="#B1EDE8" fontSize={12} />
+              <YAxis allowDecimals={false} stroke="#B1EDE8" fontSize={12} />
+              <Tooltip
+                contentStyle={{ background: "#2B3E50", border: "none", color: "#B1EDE8" }}
+                labelStyle={{ color: "#64CCC5" }}
+                formatter={(value) => [value, "Logs"]}
+                labelFormatter={(label) => `Date: ${label}`}
+              />
+              <Line
+                type="monotone"
+                dataKey="count"
+                stroke="#64CCC5"
+                strokeWidth={3}
+                dot={{ r: 5, stroke: "#2B3E50", strokeWidth: 2, fill: "#64CCC5" }}
+                activeDot={{ r: 8 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        )}
       </section>
     </section>
   );
