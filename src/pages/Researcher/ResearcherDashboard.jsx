@@ -528,11 +528,11 @@ const handleDeclineReviewRequest = async (requestId) => {
       src="/favicon.ico"
       alt="Favicon"
       style={{
-        width: 28,
-        height: 28,
+        width: 44,           // Increased from 28 to 44 for better visibility
+        height: 44,
         marginRight: 12,
-        borderRadius: '50%', // Makes the favicon a circle
-        border: '2px solid #B1EDE8', // Optional: adds a border for better visibility
+        borderRadius: '50%',
+        border: '2px solid #B1EDE8',
         objectFit: 'cover'
       }}
     />
