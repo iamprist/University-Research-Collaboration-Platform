@@ -2,7 +2,7 @@ import React from 'react';
 
 const ContactForm = ({ onClose }) => (
   <form>
-    <p>Contact form goes here.</p>
+    <p>Please contact us at InnerkHub@gmail.com</p>
     <button type="button" onClick={onClose}>Close</button>
   </form>
 );

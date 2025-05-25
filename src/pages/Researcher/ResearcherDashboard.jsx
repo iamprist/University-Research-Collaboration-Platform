@@ -389,10 +389,10 @@ const handleDeclineReviewRequest = async (requestId) => {
   };
 
   const handleMessageClick = (message) => {
-    // If it's a review-request, maybe open a dialog or scroll to the section
     if (message.type === 'review-request') {
-      // Optionally scroll to the Pending Review Requests section or show a dialog
-      document.querySelector('h2').scrollIntoView({ behavior: 'smooth' });
+      if (pendingReviewRef.current) {
+        pendingReviewRef.current.scrollIntoView({ behavior: 'smooth' });
+      }
       setSelectedMessage(null);
       return;
     }
@@ -542,6 +542,8 @@ const handleDeclineReviewRequest = async (requestId) => {
     setShowReviewersDialog(true);
     setCardMenuAnchor(null);
   };
+
+  const pendingReviewRef = useRef(null);
 
   return (
     <main style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -1088,7 +1090,7 @@ const handleDeclineReviewRequest = async (requestId) => {
     <CollaborationRequestsPanel />
   </Paper>
 </section>
-<section style={{ maxWidth: 800, margin: '32px auto' }}>
+<section ref={pendingReviewRef} style={{ maxWidth: 800, margin: '32px auto' }}>
   <h2>Pending Review Requests</h2>
   {reviewRequests.length === 0 ? (
     <p>No pending review requests.</p>
@@ -1096,7 +1098,9 @@ const handleDeclineReviewRequest = async (requestId) => {
     reviewRequests.map(req => (
       <Paper key={req.id} sx={{ p: 2, mb: 2, bgcolor: '#1a2a42', color: '#B1EDE8' }}>
         <Typography variant="subtitle1">
-          Reviewer: {req.reviewerName} {req.reviewerEmail && <>({req.reviewerEmail})</>}
+          Reviewer: {req.reviewerName} {req.reviewerEmail && <>(
+            {req.reviewerEmail}
+          )</>}
         </Typography>
         <Typography variant="body2" sx={{ mb: 1 }}>
           Project: <strong>{req.projectTitle}</strong>
