@@ -95,4 +95,66 @@ describe('chatService', () => {
       expect(result).toBe('b');
     });
   });
+
+  describe('Error handling', () => {
+    it('should throw and log error in initializeChat', async () => {
+      const error = new Error('init error');
+      require('firebase/firestore').getDoc.mockRejectedValueOnce(error);
+      const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      await expect(chatService.initializeChat('fail')).rejects.toThrow('init error');
+      expect(spy).toHaveBeenCalledWith('Error initializing chat:', error);
+      spy.mockRestore();
+    });
+    it('should throw and log error in sendMessage', async () => {
+      const error = new Error('send error');
+      require('firebase/firestore').getDoc.mockRejectedValueOnce(error);
+      const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      await expect(chatService.sendMessage('fail', { text: 'fail' })).rejects.toThrow('send error');
+      expect(spy).toHaveBeenCalledWith('Error sending message:', error);
+      spy.mockRestore();
+    });
+    it('should throw and log error in uploadAttachment', async () => {
+      const error = new Error('upload error');
+      require('firebase/storage').uploadBytes.mockRejectedValueOnce(error);
+      const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      await expect(chatService.uploadAttachment('fail', { name: 'f' })).rejects.toThrow('upload error');
+      expect(spy).toHaveBeenCalledWith('Error uploading file:', error);
+      spy.mockRestore();
+    });
+    it('should log and return Unknown User on getUserData error', async () => {
+      const error = new Error('user error');
+      require('firebase/firestore').getDoc.mockRejectedValueOnce(error);
+      const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      const name = await chatService.getUserData('fail');
+      expect(name).toBe('Unknown User');
+      expect(spy).toHaveBeenCalledWith('Error getting user data:', error);
+      spy.mockRestore();
+    });
+    it('should return Unknown User if userId is falsy', async () => {
+      const name = await chatService.getUserData();
+      expect(name).toBe('Unknown User');
+    });
+    it('should handle subscribeToChatUpdates when doc does not exist', () => {
+      const mockOnSnapshot = require('firebase/firestore').onSnapshot;
+      const chatRef = {};
+      const callback = jest.fn();
+      const doc = { exists: () => false, data: () => ({}) };
+      mockOnSnapshot.mockImplementation((ref, cb) => { cb(doc); return 'unsub'; });
+      const unsub = chatService.subscribeToChatUpdates(chatRef, callback);
+      expect(callback).not.toHaveBeenCalled();
+      expect(unsub).toBe('unsub');
+    });
+    it('should handle subscribeToChatUpdates with missing timestamp and participants', () => {
+      const mockOnSnapshot = require('firebase/firestore').onSnapshot;
+      const chatRef = {};
+      const callback = jest.fn();
+      const doc = { exists: () => true, data: () => ({ messages: [{}] }) };
+      mockOnSnapshot.mockImplementation((ref, cb) => { cb(doc); return 'unsub'; });
+      chatService.subscribeToChatUpdates(chatRef, callback);
+      expect(callback).toHaveBeenCalledWith({
+        messages: [{ timestamp: expect.any(Date) }],
+        participants: []
+      });
+    });
+  });
 });
