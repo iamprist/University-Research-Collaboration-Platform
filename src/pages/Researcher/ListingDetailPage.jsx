@@ -1,11 +1,12 @@
 // ListingDetailPage.jsx - Displays detailed information about a research listing
 import { useParams, useNavigate } from 'react-router-dom';
-import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, addDoc } from 'firebase/firestore';
 import { db } from '../../config/firebaseConfig';
 import { useEffect, useState } from 'react';
 import './ListingDetailPage.css';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import { Box, Typography, Button, IconButton, CircularProgress, Chip, Avatar } from '@mui/material';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
 
 const ListingDetailPage = () => {
   const { id } = useParams();
@@ -15,6 +16,20 @@ const ListingDetailPage = () => {
   const [researcher, setResearcher] = useState(null);
   const [collaborators, setCollaborators] = useState([]);
   const [collaboratorsLoading, setCollaboratorsLoading] = useState(false);
+  const [isCollaborator, setIsCollaborator] = useState(false);
+  const [isLeadResearcher, setIsLeadResearcher] = useState(false);
+  const [requestPending, setRequestPending] = useState(false);
+  const [requestLoading, setRequestLoading] = useState(false);
+  const [requestError, setRequestError] = useState('');
+  const auth = getAuth();
+  const [currentUser, setCurrentUser] = useState(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+    });
+    return () => unsubscribe();
+  }, [auth]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -39,6 +54,14 @@ const ListingDetailPage = () => {
           if (researcherDoc.exists()) {
             setResearcher(researcherDoc.data());
           }
+          // Check if current user is lead researcher
+          if (currentUser && listingData.userId === currentUser.uid) {
+            setIsLeadResearcher(true);
+          } else {
+            setIsLeadResearcher(false);
+          }
+        } else {
+          setIsLeadResearcher(false);
         }
 
         // 3. Fetch collaborators
@@ -47,13 +70,13 @@ const ListingDetailPage = () => {
           const collaboratorsQuery = query(
             collection(db, "collaborations"),
             where("listingId", "==", id),
-            where("status", "==", "active")
+            where("status", "in", ["active", "pending"])
           );
-          
           const collaboratorsSnapshot = await getDocs(collaboratorsQuery);
           console.log(`Found ${collaboratorsSnapshot.size} collaborators`);
 
           const collaboratorsData = [];
+          let foundSelf = false;
           for (const collabDoc of collaboratorsSnapshot.docs) {
             const collabData = collabDoc.data();
             console.log('Collaboration data:', collabData);
@@ -72,8 +95,17 @@ const ListingDetailPage = () => {
             } catch (userError) {
               console.error('Error fetching user:', userError);
             }
+
+            if (currentUser && collabData.collaboratorId === currentUser.uid) {
+              if (collabData.status === "active") setIsCollaborator(true);
+              if (collabData.status === "pending") setRequestPending(true);
+              foundSelf = true;
+            }
           }
-          
+          if (!foundSelf) {
+            setIsCollaborator(false);
+            setRequestPending(false);
+          }
           setCollaborators(collaboratorsData);
           console.log('Final collaborators data:', collaboratorsData);
         } catch (collabError) {
@@ -90,8 +122,56 @@ const ListingDetailPage = () => {
     };
 
     fetchData();
-  }, [id]);
+    // eslint-disable-next-line
+  }, [id, currentUser]);
 
+  // Handler for requesting collaboration
+  const handleRequestCollaboration = async () => {
+    setRequestLoading(true);
+    setRequestError('');
+    if (!currentUser) {
+      setRequestError('You must be signed in to request collaboration.');
+      setRequestLoading(false);
+      return;
+    }
+    try {
+      // Check for existing pending request in messages
+      const snap = await getDocs(query(
+        collection(db, "messages"),
+        where("listingId", "==", id),
+        where("from", "==", currentUser.uid),
+        where("type", "==", "collaboration-request"),
+        where("status", "==", "pending")
+      ));
+      if (!snap.empty) {
+        setRequestError('You have already requested collaboration.');
+        setRequestLoading(false);
+        return;
+      }
+      // Defensive: double-check listing.userId is not currentUser.uid
+      if (listing && listing.userId && listing.userId !== currentUser.uid) {
+        await addDoc(collection(db, "messages"), {
+          to: listing.userId,
+          from: currentUser.uid,
+          listingId: id,
+          type: "collaboration-request",
+          status: "pending",
+          content: `${currentUser.displayName || currentUser.email || currentUser.uid} has requested to collaborate on your project: ${listing.title}`,
+          createdAt: new Date(),
+          collaboratorId: currentUser.uid,
+          researcherName: currentUser.displayName || currentUser.email || currentUser.uid
+        });
+        setRequestPending(true);
+      } else {
+        setRequestError('Invalid listing or you cannot request your own project.');
+      }
+    } catch (err) {
+      setRequestError('Failed to send request. Please try again.');
+    }
+    setRequestLoading(false);
+  };
+
+  // Render logic
   if (loading) return (
     <Box className="loading-container">
       <CircularProgress sx={{ color: '#64CCC5', mb: 2 }} />
@@ -130,7 +210,6 @@ const ListingDetailPage = () => {
           <Typography variant="h4" sx={{ fontWeight: 600, color: '#FFFFFF', mb: 0.5 }}>
             {listing.title}
           </Typography>
-          
           {/* Lead Researcher */}
           {researcher && (
             <Box sx={{ mb: 1 }}>
@@ -142,7 +221,6 @@ const ListingDetailPage = () => {
               </Typography>
             </Box>
           )}
-          
           {/* Collaborators */}
           <Box sx={{ mt: 2 }}>
             {collaboratorsLoading ? (
@@ -177,7 +255,6 @@ const ListingDetailPage = () => {
             )}
           </Box>
         </Box>
-        
         <Button
           variant="contained"
           onClick={() => navigate('/researcher-dashboard')}
@@ -199,7 +276,6 @@ const ListingDetailPage = () => {
             </Typography>
             <Typography>{listing.summary}</Typography>
           </Box>
-
           <Box className="detail-grid">
             <Box className="detail-card">
               <Typography variant="subtitle1" sx={{ color: '#132238', fontWeight: 600 }}>Department</Typography>
@@ -232,13 +308,39 @@ const ListingDetailPage = () => {
               </Box>
             )}
           </Box>
-
           {listing.publicationLink && (
             <Box className="external-links">
               <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>Related Publications</Typography>
               <a href={listing.publicationLink} target="_blank" rel="noopener noreferrer">
                 View Publication
               </a>
+            </Box>
+          )}
+          {/* Request to Collaborate Button */}
+          {!loading && currentUser && !isLeadResearcher && !isCollaborator && !requestPending && (
+            <Box sx={{ mt: 3 }}>
+              <Button
+                variant="contained"
+                color="primary"
+                disabled={requestLoading}
+                onClick={handleRequestCollaboration}
+                sx={{ bgcolor: '#64CCC5', color: '#132238', '&:hover': { bgcolor: '#4dbbb2' } }}
+              >
+                {requestLoading ? 'Requesting...' : 'Request to Collaborate'}
+              </Button>
+              {requestError && (
+                <Typography color="error" sx={{ mt: 1 }}>{requestError}</Typography>
+              )}
+            </Box>
+          )}
+          {requestPending && (
+            <Box sx={{ mt: 3 }}>
+              <Chip label="Collaboration Request Pending" color="warning" />
+            </Box>
+          )}
+          {isCollaborator && (
+            <Box sx={{ mt: 3 }}>
+              <Chip label="You are a collaborator" color="success" />
             </Box>
           )}
         </Box>
