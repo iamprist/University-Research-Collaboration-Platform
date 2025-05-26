@@ -27,6 +27,7 @@ import {
 import { Notifications, Menu as MenuIcon, Close } from '@mui/icons-material';
 import CollaborationRequestsPanel from '../../components/CollaborationRequestsPanel';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+import FloatingHelpChat from '../../components/FloatingHelpChat';
 
 const MessageNotification = ({ messages, unreadCount, onMessageClick, selectedMessage, onAccept, onReject, onCloseSelected }) => {
   const [anchorEl, setAnchorEl] = useState(null);
@@ -1131,6 +1132,7 @@ const handleDeclineReviewRequest = async (requestId) => {
       <footer>
         <Footer />
       </footer>
+      <FloatingHelpChat chatId={`support_${auth.currentUser?.uid}`} title="Contact Admin Support" />
     </main>
   );
 };
