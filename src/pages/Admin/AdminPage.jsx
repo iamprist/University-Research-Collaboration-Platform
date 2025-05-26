@@ -35,10 +35,13 @@ export default function AdminPage({ initialTab = "dashboard" }) {
           // Fetch user document
           const userDoc = await getDoc(doc(db, 'users', uid));
           const userData = userDoc.exists() ? userDoc.data() : {};
+          // Get page info from chat doc (e.g., fromPage or lastPage)
+          const chatData = docSnap.data();
           support.push({
             id: docSnap.id,
             uid,
-            name: userData.name || `User: ${uid}`
+            name: userData.name || `User: ${uid}`,
+            fromPage: chatData.fromPage || chatData.lastPage || "Unknown page"
           });
         }
       }
@@ -109,15 +112,22 @@ export default function AdminPage({ initialTab = "dashboard" }) {
         <HelpOutlineIcon fontSize="inherit" />
       </IconButton>
       <Dialog open={open} onClose={() => setOpen(false)} PaperProps={{ sx: { minWidth: 350, maxWidth: 500 } }}>
-        <div style={{ background: '#1a2a42', color: '#B1EDE8', padding: '1rem', fontWeight: 600 }}>
+        <header style={{ background: '#1a2a42', color: '#B1EDE8', padding: '1rem', fontWeight: 600 }}>
           User Support Chats
-        </div>
+        </header>
         <List>
-          {supportChats.length === 0 && <ListItem><ListItemText primary="No support chats yet." /></ListItem>}
+          {supportChats.length === 0 && (
+            <ListItem>
+              <ListItemText primary="No support chats yet." />
+            </ListItem>
+          )}
           {supportChats.map(chat => (
             <ListItem key={chat.id} disablePadding>
               <ListItemButton onClick={() => setSelectedChatId(chat.id)}>
-                <ListItemText primary={chat.name} secondary={chat.uid} />
+                <ListItemText
+                  primary={chat.name}
+                  secondary={`UID: ${chat.uid} | Page: ${chat.fromPage}`}
+                />
               </ListItemButton>
             </ListItem>
           ))}
@@ -125,9 +135,9 @@ export default function AdminPage({ initialTab = "dashboard" }) {
       </Dialog>
       {/* Show chat dialog when a chat is selected */}
       <Dialog open={!!selectedChatId} onClose={() => setSelectedChatId(null)} PaperProps={{ sx: { minWidth: 350, maxWidth: 500 } }}>
-        <div style={{ background: '#1a2a42', color: '#B1EDE8', padding: '1rem', fontWeight: 600 }}>
+        <header style={{ background: '#1a2a42', color: '#B1EDE8', padding: '1rem', fontWeight: 600 }}>
           Support Chat: {selectedChatId}
-        </div>
+        </header>
         {selectedChatId && <ChatRoom chatId={selectedChatId} />}
       </Dialog>
     </section>
