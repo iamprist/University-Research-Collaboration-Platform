@@ -5,6 +5,7 @@ import { collection, getDocs, query, where, doc, getDoc, onSnapshot, orderBy, up
 import './ResearcherDashboard.css';
 import axios from "axios";
 import Footer from '../../components/Footer';
+import ContactForm from '../../components/ContactForm';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import { useResearcherDashboard } from './researcherDashboardLogic';
 // MUI Components
@@ -27,6 +28,7 @@ import {
 import { Notifications, Menu as MenuIcon, Close } from '@mui/icons-material';
 import CollaborationRequestsPanel from '../../components/CollaborationRequestsPanel';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+import FloatingHelpChat from '../../components/FloatingHelpChat';
 
 const MessageNotification = ({ messages, unreadCount, onMessageClick, selectedMessage, onAccept, onReject, onCloseSelected }) => {
   const [anchorEl, setAnchorEl] = useState(null);
@@ -147,6 +149,7 @@ const ResearcherDashboard = () => {
   const [filteredListings, setFilteredListings] = useState([]);
   const [userName, setUserName] = useState('');
   const [messages, setMessages] = useState([]);
+  const [showContactForm, setShowContactForm] = useState(false);
   const [ipAddress, setIpAddress] = useState("");
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedMessage, setSelectedMessage] = useState(null);
@@ -469,28 +472,18 @@ const handleDeclineReviewRequest = async (requestId) => {
   // Accept/reject handlers for collaboration-request messages
   const handleAcceptCollab = async (message) => {
     try {
-      // Mark the message as accepted
-      await updateDoc(doc(db, 'messages', message.id), {
+      // Use message.id as the document ID for the collaboration request
+      await updateDoc(doc(db, 'collaboration-requests', message.id), {
         status: 'accepted',
         respondedAt: new Date()
       });
       // Add to collaborations collection
       await addDoc(collection(db, 'collaborations'), {
-        listingId: message.listingId,
-        collaboratorId: message.collaboratorId,
-        status: 'active',
-        joinedAt: new Date()
-      });
-      // Notify the requester
-      await addDoc(collection(db, 'messages'), {
-        to: message.from,
-        from: message.to,
-        listingId: message.listingId,
-        type: 'collaboration-response',
-        status: 'accepted',
-        content: `Your request to collaborate on this project has been accepted!`,
-        createdAt: new Date(),
-        collaboratorId: message.collaboratorId
+        listingId: message.relatedId,
+        researcherId: userId,
+        collaboratorId: message.senderId || message.requesterId,
+        joinedAt: new Date(),
+        status: 'active'
       });
       setSelectedMessage(null);
     } catch (error) {
@@ -499,21 +492,9 @@ const handleDeclineReviewRequest = async (requestId) => {
   };
   const handleRejectCollab = async (message) => {
     try {
-      // Mark the message as rejected
-      await updateDoc(doc(db, 'messages', message.id), {
+      await updateDoc(doc(db, 'collaboration-requests', message.id), {
         status: 'rejected',
         respondedAt: new Date()
-      });
-      // Notify the requester
-      await addDoc(collection(db, 'messages'), {
-        to: message.from,
-        from: message.to,
-        listingId: message.listingId,
-        type: 'collaboration-response',
-        status: 'rejected',
-        content: `Your request to collaborate on this project has been declined.`,
-        createdAt: new Date(),
-        collaboratorId: message.collaboratorId
       });
       setSelectedMessage(null);
     } catch (error) {
@@ -653,6 +634,7 @@ const handleDeclineReviewRequest = async (requestId) => {
   <MenuItem onClick={handleAddListing}>New Research</MenuItem>
   <MenuItem onClick={() => navigate('/friends')}>Friends</MenuItem>
   <MenuItem onClick={handleCollaborate}>Collaborate</MenuItem>
+  <MenuItem onClick={() => setShowContactForm(true)}>Chat with Us</MenuItem>
   <MenuItem onClick={handleLogout}>Logout</MenuItem>
 </Menu>
         </nav>
@@ -1148,11 +1130,36 @@ const handleDeclineReviewRequest = async (requestId) => {
   )}
 </section>
 
+        {/* Contact Form Dialog */}
+        <Dialog
+          open={showContactForm}
+          onClose={() => setShowContactForm(false)}
+          PaperProps={{
+            sx: {
+              bgcolor: '#1a2a42',
+              color: '#B1EDE8',
+              borderRadius: 2
+            }
+          }}
+        >
+          <DialogTitle>
+            <section style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              Contact Form
+              <IconButton onClick={() => setShowContactForm(false)}>
+                <Close sx={{ color: '#B1EDE8' }} />
+              </IconButton>
+            </section>
+          </DialogTitle>
+          <DialogContent>
+            <ContactForm onClose={() => setShowContactForm(false)} />
+          </DialogContent>
+        </Dialog>
       </section>
 
       <footer>
         <Footer />
       </footer>
+      <FloatingHelpChat chatId={`support_${auth.currentUser?.uid}`} title="Contact Admin Support" />
     </main>
   );
 };
