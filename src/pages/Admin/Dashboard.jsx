@@ -2,7 +2,107 @@ import React, { useState, useEffect } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../../config/firebaseConfig";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import './Dashboard.css';
+
+
+const styles = {
+  container: {
+    backgroundColor: "#1A2E40",
+    minHeight: "100vh",
+    padding: "2rem",
+    fontFamily: "Inter, sans-serif",
+    color: "#FFFFFF",
+    transition: "background 0.3s",
+  },
+  dashboard: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "2rem",
+    marginBottom: "2rem",
+    justifyContent: "center",
+  },
+  card: {
+    background: "#2B3E50",
+    borderRadius: "1rem",
+    padding: "1.5rem 2rem",
+    minWidth: "180px",
+    textAlign: "center",
+    boxShadow: "0 4px 24px 0 rgba(50, 80, 120, 0.15)",
+    color: "#B1EDE8",
+    fontWeight: "600",
+    fontSize: "1.2rem",
+    transition: "transform 0.18s, box-shadow 0.18s",
+    cursor: "default",
+    animation: "fadeInUp 0.7s cubic-bezier(0.23, 1, 0.32, 1)",
+    margin: "0.5rem 0",
+  },
+  cardHover: {
+    transform: "translateY(-6px) scale(1.03)",
+    boxShadow: "0 8px 32px 0 rgba(100, 200, 200, 0.18)",
+  },
+  cardHeader: {
+    fontSize: "1.05rem",
+    fontWeight: "700",
+    color: "#64CCC5",
+    marginBottom: "0.4rem",
+    letterSpacing: "0.5px",
+  },
+  cardValue: {
+    fontSize: "2.2rem",
+    color: "#fff",
+    margin: 0,
+    letterSpacing: "1px",
+    fontWeight: "bold",
+  },
+  chartCard: {
+    background: "#2B3E50",
+    borderRadius: "1rem",
+    padding: "1.5rem",
+    minWidth: "350px",
+    flex: 1,
+    boxShadow: "0 4px 24px 0 rgba(50, 80, 120, 0.12)",
+    color: "#B1EDE8",
+    fontWeight: "600",
+    fontSize: "1.1rem",
+    marginBottom: "2rem",
+    maxWidth: "600px",
+    height: "320px",
+    animation: "fadeInUp 0.7s cubic-bezier(0.23, 1, 0.32, 1)",
+  },
+  chartHeader: {
+    marginBottom: "1rem",
+    fontSize: "1.15rem",
+    color: "#64CCC5",
+    fontWeight: "700",
+    letterSpacing: "0.5px",
+  },
+};
+
+// Add this to the top of your file or in a <style> tag in your component
+const fadeInKeyframes = `
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (max-width: 700px) {
+  .dashboard-responsive {
+    flex-direction: column !important;
+    gap: 1rem !important;
+  }
+}
+`;
+
+function useHover() {
+  const [hovered, setHovered] = React.useState(false);
+  const onMouseEnter = () => setHovered(true);
+  const onMouseLeave = () => setHovered(false);
+  return [hovered, { onMouseEnter, onMouseLeave }];
+}
 
 // Dashboard component for admin analytics and stats
 export default function Dashboard() {
@@ -97,48 +197,64 @@ export default function Dashboard() {
     fetchData();
   }, []);
 
+  // Inject keyframes for fade-in animation and responsive
+  React.useEffect(() => {
+    if (!document.getElementById("dashboard-fadein-keyframes")) {
+      const style = document.createElement("style");
+      style.id = "dashboard-fadein-keyframes";
+      style.innerHTML = fadeInKeyframes;
+      document.head.appendChild(style);
+    }
+  }, []);
+
   // Show loading state while fetching data
   if (loading) {
-    return <section className="dashboard-container">Loading...</section>;
+    return <section style={styles.container}>Loading...</section>;
+  }
+
+  // Responsive class for dashboard section
+  const dashboardSectionProps = {
+    style: styles.dashboard,
+    className: "dashboard-responsive",
+  };
+
+  // Helper to render cards with hover effect
+  function Card({ header, value }) {
+    const [hovered, hoverProps] = useHover();
+    return (
+      <article
+        style={{
+          ...styles.card,
+          ...(hovered ? styles.cardHover : {}),
+        }}
+        {...hoverProps}
+      >
+        <div style={styles.cardHeader}>{header}</div>
+        <p style={styles.cardValue}>{value}</p>
+      </article>
+    );
   }
 
   return (
-    <section className="dashboard-container">
-      {/* Dashboard metric cards */}
-      <section className="dashboard-metrics">
-        <article className="dashboard-card">
-          <header>Total Users</header>
-          <p className="dashboard-card-value">{totalUsers}</p>
-        </article>
-        <article className="dashboard-card">
-          <header>Logins</header>
-          <p className="dashboard-card-value">{totalLogins}</p>
-        </article>
-        <article className="dashboard-card">
-          <header>Logouts</header>
-          <p className="dashboard-card-value">{totalLogouts}</p>
-        </article>
-        <article className="dashboard-card">
-          <header>Listings Posted</header>
-          <p className="dashboard-card-value">{totalListings}</p>
-        </article>
-        <article className="dashboard-card">
-          <header>Reviewer Applications</header>
-          <p className="dashboard-card-value">{totalReviewerApps}</p>
-        </article>
+    <section style={styles.container}>
+      <section {...dashboardSectionProps}>
+        <Card header="Total Users" value={totalUsers} />
+        <Card header="Logins" value={totalLogins} />
+        <Card header="Logouts" value={totalLogouts} />
+        <Card header="Listings Posted" value={totalListings} />
+        <Card header="Reviewer Applications" value={totalReviewerApps} />
       </section>
 
       {/* Engagement line chart for logs per day */}
-      <section className="dashboard-chart-card">
-        <header className="dashboard-chart-header">Engagement (Logs per Day)</header>
-        {/* Chart rendering here */}
+      <section style={styles.chartCard}>
+        <header style={styles.chartHeader}>Engagement (Logs per Day)</header>
         {logs && logs.length === 0 && (
-          <div style={{ textAlign: "center", marginTop: "1rem" }}>
+          <div style={{ textAlign: "center", marginTop: "1rem", color: "#b1ede8" }}>
             No logs found
           </div>
         )}
         {logs && logs.length > 0 && (
-          <ResponsiveContainer width="100%" height={200}>
+          <ResponsiveContainer width="100%" height={220}>
             <LineChart data={engagementData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#364E68" />
               <XAxis dataKey="date" stroke="#B1EDE8" fontSize={12} />

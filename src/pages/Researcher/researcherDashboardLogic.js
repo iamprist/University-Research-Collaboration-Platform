@@ -13,18 +13,14 @@ import {
   orderBy,
   updateDoc,
   addDoc,
-  serverTimestamp
+  serverTimestamp,
+  deleteDoc,
+  writeBatch
 } from 'firebase/firestore';
-import axios from 'axios';
-import { deleteDoc } from 'firebase/firestore';
+import axios from "axios";
 
-
-export const useResearcherDashboard = () => {
-  const navigate = useNavigate();
-
-  // State variables
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-const [listingToDelete, setListingToDelete] = useState(null);
+export function useResearcherDashboard() {
+  // State
   const [allListings, setAllListings] = useState([]);
   const [myListings, setMyListings] = useState([]);
   const [userId, setUserId] = useState(null);
@@ -35,39 +31,82 @@ const [listingToDelete, setListingToDelete] = useState(null);
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const [showNoResults, setShowNoResults] = useState(false);
   const dropdownTimeout = useRef(null);
-  const [showErrorModal, setShowErrorModal] = useState(false);
   const [filteredListings, setFilteredListings] = useState([]);
   const [userName, setUserName] = useState('');
   const [messages, setMessages] = useState([]);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [showContactForm, setShowContactForm] = useState(false);
-  const [ipAddress, setIpAddress] = useState('');
+  const [ipAddress, setIpAddress] = useState("");
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedMessage, setSelectedMessage] = useState(null);
+  const [cardMenuAnchor, setCardMenuAnchor] = useState(null);
+  const [cardMenuId, setCardMenuId] = useState(null);
+  const [showReviewersDialog, setShowReviewersDialog] = useState(false);
+  const [reviewersForProject, setReviewersForProject] = useState([]);
+  const [reviewRequests, setReviewRequests] = useState([]);
+  const [expandedSummaries, setExpandedSummaries] = useState({});
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [listingToDelete, setListingToDelete] = useState(null);
+  const [dropdownHover, setDropdownHover] = useState(false);
+  const pendingReviewRef = useRef(null);
+  const navigate = useNavigate();
 
-  // Fetch user's public IP address
+  // Effects
   useEffect(() => {
-    let isMounted = true;
+    if (!userId) return;
+    const q = query(
+      collection(db, "reviewRequests"),
+      where("researcherId", "==", userId),
+      where("status", "==", "pending")
+    );
+    const unsub = onSnapshot(q, async (snapshot) => {
+      const requests = await Promise.all(snapshot.docs.map(async (docSnap) => {
+        const data = docSnap.data();
+        // Fetch reviewer info
+        let reviewerName = "Unknown Reviewer";
+        let reviewerEmail = "";
+        try {
+          const reviewerDoc = await getDoc(doc(db, "users", data.reviewerId));
+          if (reviewerDoc.exists()) {
+            reviewerName = reviewerDoc.data().name || reviewerName;
+            reviewerEmail = reviewerDoc.data().email || "";
+          }
+        } catch {}
+        // Fetch project info
+        let projectTitle = "Unknown Project";
+        let projectSummary = "";
+        try {
+          const projectDoc = await getDoc(doc(db, "research-listings", data.listingId));
+          if (projectDoc.exists()) {
+            projectTitle = projectDoc.data().title || projectTitle;
+            projectSummary = projectDoc.data().summary || "";
+          }
+        } catch {}
+        return {
+          id: docSnap.id,
+          ...data,
+          reviewerName,
+          reviewerEmail,
+          projectTitle,
+          projectSummary,
+        };
+      }));
+      setReviewRequests(requests);
+    });
+    return () => unsub();
+  }, [userId]);
+
+  useEffect(() => {
     const fetchIpAddress = async () => {
       try {
-        const response = await axios.get('https://api.ipify.org?format=json');
-        // In test mode, use setTimeout to avoid act warnings; otherwise, use microtask
-        if (isMounted) {
-          if (process.env.NODE_ENV === 'test') {
-            setTimeout(() => setIpAddress(response.data.ip), 0);
-          } else {
-            Promise.resolve().then(() => setIpAddress(response.data.ip));
-          }
-        }
+        const response = await axios.get("https://api.ipify.org?format=json");
+        setIpAddress(response.data.ip);
       } catch (error) {
-        console.error('Error fetching IP address:', error);
+        console.error("Error fetching IP address:", error);
       }
     };
     fetchIpAddress();
-    return () => { isMounted = false; };
   }, []);
 
-  // Check authentication and set userId
   useEffect(() => {
     const token = localStorage.getItem('authToken');
     if (!token) {
@@ -81,86 +120,65 @@ const [listingToDelete, setListingToDelete] = useState(null);
         navigate('/signin');
       }
     });
-    return () => {
-      if (typeof unsubscribe === 'function') unsubscribe();
-    };
+    return () => unsubscribe();
   }, [navigate]);
 
-  // Fetch user profile and name
   useEffect(() => {
     if (!userId) return;
-    let isMounted = true;
     const fetchUserProfile = async () => {
       try {
         const userDoc = await getDoc(doc(db, 'users', userId));
-        if (!isMounted) return;
         if (userDoc.exists()) {
           setHasProfile(true);
           setUserName(userDoc.data().name || 'Researcher');
         } else {
           navigate('/researcher-edit-profile');
         }
-      } catch (err) {
-        if (isMounted) setShowErrorModal(true);
-      }
+      } catch (err) {}
     };
     fetchUserProfile();
-    return () => { isMounted = false; };
   }, [userId, navigate]);
 
-  // Listen for messages and collaborations
   useEffect(() => {
     if (!userId) return;
-    let unsubMessages = null;
-    let unsubCollabs = null;
-    try {
-      const messagesRef = collection(db, 'users', userId, 'messages');
-      const messagesQuery = query(messagesRef, orderBy('timestamp', 'desc'));
-      unsubMessages = onSnapshot(messagesQuery, (snapshot) => {
-        const messagesData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          timestamp: doc.data().timestamp?.toDate() || new Date()
-        }));
-        setMessages(messagesData);
-        setUnreadCount(messagesData.filter(msg => !msg.read).length);
-      });
-      const collabQuery = query(
-        collection(db, 'collaborations'),
-        where('collaboratorId', '==', userId)
+    const messagesRef = collection(db, 'users', userId, 'messages');
+    const messagesQuery = query(messagesRef, orderBy('timestamp', 'desc'));
+    const unsubscribeMessages = onSnapshot(messagesQuery, (snapshot) => {
+      const messagesData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        timestamp: doc.data().timestamp?.toDate() || new Date()
+      }));
+      setMessages(messagesData);
+    });
+
+    const collabQuery = query(
+      collection(db, "collaborations"),
+      where("collaboratorId", "==", userId)
+    );
+    const unsubscribeCollabs = onSnapshot(collabQuery, async (snapshot) => {
+      const collabs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const listings = await Promise.all(
+        collabs.map(async collab => {
+          const listingDoc = await getDoc(doc(db, "research-listings", collab.listingId));
+          return listingDoc.exists() ? { id: listingDoc.id, ...listingDoc.data() } : null;
+        })
       );
-      unsubCollabs = onSnapshot(collabQuery, async (snapshot) => {
-        const collabs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        const listings = await Promise.all(
-          collabs.map(async collab => {
-            const listingDoc = await getDoc(doc(db, 'research-listings', collab.listingId));
-            return listingDoc.exists() ? { id: listingDoc.id, ...listingDoc.data() } : null;
-          })
-        );
-        setCollabListings(listings.filter(Boolean));
-      });
-    } catch (err) {
-      // Defensive: log error if snapshot setup fails
-      console.error('Error setting up Firestore listeners:', err);
-    }
+      setCollabListings(listings.filter(Boolean));
+    });
+
     return () => {
-      if (typeof unsubMessages === 'function') unsubMessages();
-      if (typeof unsubCollabs === 'function') unsubCollabs();
+      unsubscribeMessages();
+      unsubscribeCollabs();
     };
   }, [userId]);
 
-  // Fetch all research listings for search
   useEffect(() => {
     if (!userId || !hasProfile) return;
-    let isMounted = true;
     const fetchListings = async () => {
       try {
         const q = query(collection(db, 'research-listings'));
         const querySnapshot = await getDocs(q);
-        if (!querySnapshot || !Array.isArray(querySnapshot.docs)) {
-          setAllListings([]);
-          return;
-        }
         const data = await Promise.all(
           querySnapshot.docs.map(async (docSnap) => {
             const listing = { id: docSnap.id, ...docSnap.data() };
@@ -175,48 +193,52 @@ const [listingToDelete, setListingToDelete] = useState(null);
             }
           })
         );
-        if (isMounted) setAllListings(data);
+        setAllListings(data);
       } catch (error) {
-        console.error('Error fetching listings:', error);
+        console.error("Error fetching listings:", error);
       }
     };
     fetchListings();
-    return () => { isMounted = false; };
   }, [userId, hasProfile]);
 
-  // Fetch only the current user's listings
   useEffect(() => {
     if (!userId || !hasProfile) return;
-    let isMounted = true;
     const fetchMyListings = async () => {
       try {
         const q = query(collection(db, 'research-listings'), where('userId', '==', userId));
         const querySnapshot = await getDocs(q);
-        if (!querySnapshot || !Array.isArray(querySnapshot.docs)) {
-          setMyListings([]);
-          return;
-        }
         const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        if (isMounted) setMyListings(data);
+        setMyListings(data);
       } catch (error) {
-        console.error('Error fetching user listings:', error);
+        console.error("Error fetching user listings:", error);
       }
     };
     fetchMyListings();
-    return () => { isMounted = false; };
   }, [userId, hasProfile]);
 
-  // Update filtered listings when myListings changes
   useEffect(() => {
     setFilteredListings(myListings);
   }, [myListings]);
 
-  // Search handler for research listings
+  // Handlers
+  const handleAcceptReviewRequest = async (requestId) => {
+    await updateDoc(doc(db, "reviewRequests", requestId), {
+      status: "accepted",
+      respondedAt: serverTimestamp(),
+    });
+  };
+
+  const handleDeclineReviewRequest = async (requestId) => {
+    await updateDoc(doc(db, "reviewRequests", requestId), {
+      status: "declined",
+      respondedAt: serverTimestamp(),
+    });
+  };
+
   const handleSearch = () => {
     if (!searchTerm.trim()) {
       setSearchResults([]);
       setDropdownVisible(false);
-      setShowNoResults(false); // reset when search is empty
       return;
     }
     const searchTermLower = searchTerm.toLowerCase();
@@ -226,69 +248,103 @@ const [listingToDelete, setListingToDelete] = useState(null);
       return title.includes(searchTermLower) || researcherName.includes(searchTermLower);
     });
     setSearchResults(filtered);
-    setDropdownVisible(filtered.length > 0); //only show dropdown if there are results
-    setShowNoResults(filtered.length === 0);  // Set showNoResults based on actual results
-    clearTimeout(dropdownTimeout.current);
-    dropdownTimeout.current = setTimeout(() => {
-      setDropdownVisible(false);
-    }, 5000);
+    setDropdownVisible(true);
     setShowNoResults(filtered.length === 0);
   };
 
-  // Mark a message as read in Firestore
-const markMessageAsRead = async (messageId) => {
-  if (!userId || !messageId) return;
-  try {
-    await updateDoc(doc(db, 'users', userId, 'messages', messageId), {
-      read: true
-    });
-  } catch (error) {
-    console.error('Error marking message as read:', error);
-    throw error; // Re-throw to allow handleMessageClick to handle it
-  }
-};
+  const markMessageAsRead = async (messageId) => {
+    try {
+      await updateDoc(doc(db, 'users', userId, 'messages', messageId), {
+        read: true
+      });
+    } catch (error) {
+      console.error("Error marking message as read:", error);
+    }
+  };
 
-  // Handle clicking a notification message
-const handleMessageClick = async (message) => {
-  if (!message || !message.id) return;
-  
-  try {
-    await markMessageAsRead(message.id);
-    
-    if (!userId) return;
-    
-    if (message.type === 'collaboration-request') {
-      setSelectedMessage(message);
+  const handleMessageClick = (message) => {
+    if (message.type === 'review-request') {
+      if (pendingReviewRef.current) {
+        pendingReviewRef.current.scrollIntoView({ behavior: 'smooth' });
+      }
+      setSelectedMessage(null);
       return;
     }
-    
-    setSelectedMessage(message);
-    switch (message.type) {
+    markMessageAsRead(message.id);
+    if (message.type === 'collaboration-request') {
+      setSelectedMessage(message); // Show Accept/Reject in menu
+      return;
+    }
+    setSelectedMessage(null);
+    switch(message.type) {
       case 'review-request':
         navigate(`/review-requests/${message.relatedId}`);
         break;
       case 'upload-confirmation':
         navigate(`/listing/${message.relatedId}`);
         break;
-      default:
-        break;
+      default: break;
     }
-  } catch (error) {
-    // This ensures we don't set selectedMessage on error
-    console.error('Error marking message as read:', error);
-    setSelectedMessage(null); // Ensure selectedMessage is cleared on error
-  }
-};
+  };
 
-  // Accept/reject handlers for collaboration-request messages
+  const handleAddListing = () => navigate('/researcher/add-listing');
+  const handleCollaborate = () => navigate('/researcher/collaborate');
+
+  const handleInputChange = (e) => {
+    setSearchTerm(e.target.value);
+    setDropdownVisible(false);
+    clearTimeout(dropdownTimeout.current);
+  };
+  const handleClear = () => {
+    setSearchTerm('');
+    setSearchResults([]);
+    setDropdownVisible(false);
+  };
+
+  const logEvent = async ({ userId, role, userName, action, details, ip, target }) => {
+    try {
+      await addDoc(collection(db, "logs"), {
+        userId,
+        role,
+        userName,
+        action,
+        details,
+        ip,
+        target,
+        timestamp: serverTimestamp(),
+      });
+    } catch (error) {
+      console.error("Error logging event:", error);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      const user = auth.currentUser;
+      if (user) {
+        await logEvent({
+          userId: user.uid,
+          role: "Researcher",
+          userName: user.displayName || "N/A",
+          action: "Logout",
+          details: "User logged out",
+          ip: ipAddress,
+          target: "Researcher Dashboard", 
+        });
+        await auth.signOut();
+        navigate("/signin");
+      }
+    } catch (error) {
+      console.error("Error during logout:", error);
+    }
+  };
+
   const handleAcceptCollab = async (message) => {
     try {
-      // Use message.id as the document ID for the collaboration request
       await updateDoc(doc(db, 'collaboration-requests', message.id), {
         status: 'accepted',
         respondedAt: new Date()
       });
-      // Add to collaborations collection
       await addDoc(collection(db, 'collaborations'), {
         listingId: message.relatedId,
         researcherId: userId,
@@ -301,7 +357,6 @@ const handleMessageClick = async (message) => {
       console.error('Error accepting collaboration:', error);
     }
   };
-
   const handleRejectCollab = async (message) => {
     try {
       await updateDoc(doc(db, 'collaboration-requests', message.id), {
@@ -314,128 +369,140 @@ const handleMessageClick = async (message) => {
     }
   };
 
-  // Navigation handlers
-  const handleAddListing = () => navigate('/researcher/add-listing');
-  const handleCollaborate = () => navigate('/researcher/collaborate');
-  const handleInputFocus = () => {
-    setDropdownVisible(false);
-    clearTimeout(dropdownTimeout.current);
-  };
-  const handleInputChange = (e) => {
-    setSearchTerm(e?.target?.value || '');
-    setDropdownVisible(false);
-    clearTimeout(dropdownTimeout.current);
-  };
-  const handleClear = () => {
-    setSearchTerm('');
-    setSearchResults([]);
-    setDropdownVisible(false);
-    setShowNoResults(false);
-  };
-
-  // Log user events
-  const logEvent = async ({ userId, role, userName, action, details, ip, target }) => {
+  const handleClearNotifications = async () => {
+    if (!userId) return;
     try {
-      await addDoc(collection(db, 'logs'), {
-        userId,
-        role,
-        userName,
-        action,
-        details,
-        ip,
-        target: target || 'Unknown', // Ensure target is always defined
-        timestamp: serverTimestamp(),
+      const messagesRef = collection(db, 'users', userId, 'messages');
+      const messagesSnapshot = await getDocs(messagesRef);
+      const batch = writeBatch(db);
+      let updatedMessages = [];
+      messagesSnapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        if (!data.read) {
+          batch.update(docSnap.ref, { read: true });
+          updatedMessages.push({ ...data, id: docSnap.id, read: true });
+        } else {
+          updatedMessages.push({ ...data, id: docSnap.id });
+        }
       });
+      await batch.commit();
+      // Update local state immediately for UI responsiveness
+      setMessages(updatedMessages.sort((a, b) => (b.timestamp?.toMillis?.() || 0) - (a.timestamp?.toMillis?.() || 0)));
     } catch (error) {
-      console.error('Error logging event:', error);
+      console.error("Error clearing notifications:", error);
     }
   };
 
-  // Logout handler
-  const handleLogout = async () => {
+  const combinedNotifications = [
+    ...messages,
+    ...reviewRequests.map(req => ({
+      id: req.id,
+      type: 'review-request',
+      title: 'Pending Review Request',
+      content: `Reviewer ${req.reviewerName} requested to review your project "${req.projectTitle}".`,
+      timestamp: req.requestedAt?.toDate?.() || new Date(),
+      read: false,
+    }))
+  ];
+
+  const handleShowReviewers = async (listingId) => {
+    const q = query(collection(db, "reviewRequests"), where("listingId", "==", listingId));
+    const snap = await getDocs(q);
+    const reviewers = await Promise.all(snap.docs.map(async (docSnap) => {
+      const data = docSnap.data();
+      let reviewerName = "Unknown Reviewer";
+      let reviewerEmail = "";
+      try {
+        const reviewerDoc = await getDoc(doc(db, "users", data.reviewerId));
+        if (reviewerDoc.exists()) {
+          reviewerName = reviewerDoc.data().name || reviewerName;
+          reviewerEmail = reviewerDoc.data().email || "";
+        }
+      } catch {}
+      return {
+        id: docSnap.id,
+        reviewerName,
+        reviewerEmail,
+        status: data.status,
+      };
+    }));
+    setReviewersForProject(reviewers);
+    setShowReviewersDialog(true);
+    setCardMenuAnchor(null);
+  };
+
+  const handleToggleSummary = (id) => {
+    setExpandedSummaries(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+  };
+
+  const handleDropdownMouseEnter = () => setDropdownHover(true);
+  const handleDropdownMouseLeave = () => {
+    setDropdownHover(false);
+    setDropdownVisible(false);
+  };
+
+  const handleDeleteListing = async () => {
+    if (!listingToDelete) return;
     try {
-      const user = auth.currentUser;
-      if (user) {
-        await logEvent({
-          userId: user.uid,
-          role: 'Researcher',
-          userName: user.displayName || 'N/A',
-          action: 'Logout',
-          details: 'User logged out',
-          ip: ipAddress,
-          target: 'Researcher Dashboard',
-        });
-        await auth.signOut();
-        navigate('/signin');
-      }
+      await deleteDoc(doc(db, 'research-listings', listingToDelete));
+      setMyListings(prev => prev.filter(l => l.id !== listingToDelete));
+      setDeleteDialogOpen(false);
+      setListingToDelete(null);
     } catch (error) {
-      console.error('Error during logout:', error);
+      console.error("Error deleting listing:", error);
     }
   };
-const handleDeleteListing = async () => {
-  if (!listingToDelete) return false;
-  try {
-    await deleteDoc(doc(db, 'research-listings', listingToDelete));
-    await logEvent({
-      userId,
-      role: 'Researcher',
-      userName,
-      action: 'Delete Listing',
-      details: 'Deleted a research listing',
-      ip: ipAddress,
-      target: listingToDelete
-    });
-    setListingToDelete(null);
-    setDeleteDialogOpen(false);
-    return true;
-  } catch (error) {
-    console.error('Error deleting listing:', error);
-    return false;
-  }
-};
-  // Return all state and handlers for the component to use
+
   return {
-    // State
-    allListings,
-    myListings,
-    userId,
-    hasProfile,
-    collabListings,
-    searchTerm,
-    searchResults,
-    dropdownVisible,
-    showNoResults,
-    showErrorModal,
-    filteredListings,
-    userName,
-    messages,
-    unreadCount,
-    showContactForm,
-    anchorEl,
-    ipAddress,
-    selectedMessage,
-    deleteDialogOpen,
-  setDeleteDialogOpen,
-  listingToDelete,
-  setListingToDelete,
-    // Handlers
+    allListings, setAllListings,
+    myListings, setMyListings,
+    userId, setUserId,
+    hasProfile, setHasProfile,
+    collabListings, setCollabListings,
+    searchTerm, setSearchTerm,
+    searchResults, setSearchResults,
+    dropdownVisible, setDropdownVisible,
+    showNoResults, setShowNoResults,
+    dropdownTimeout,
+    filteredListings, setFilteredListings,
+    userName, setUserName,
+    messages, setMessages,
+    showContactForm, setShowContactForm,
+    ipAddress, setIpAddress,
+    anchorEl, setAnchorEl,
+    selectedMessage, setSelectedMessage,
+    cardMenuAnchor, setCardMenuAnchor,
+    cardMenuId, setCardMenuId,
+    showReviewersDialog, setShowReviewersDialog,
+    reviewersForProject, setReviewersForProject,
+    reviewRequests, setReviewRequests,
+    expandedSummaries, setExpandedSummaries,
+    deleteDialogOpen, setDeleteDialogOpen,
+    listingToDelete, setListingToDelete,
+    dropdownHover, setDropdownHover,
+    pendingReviewRef,
+    handleAcceptReviewRequest,
+    handleDeclineReviewRequest,
     handleSearch,
+    markMessageAsRead,
     handleMessageClick,
     handleAddListing,
     handleCollaborate,
-    handleInputFocus,
     handleInputChange,
     handleClear,
+    logEvent,
     handleLogout,
-    setSearchTerm,
-    setAnchorEl,
-    setShowContactForm,
-    setShowErrorModal,
-    setSelectedMessage,
-    // For testability: allow tests to set userId directly
-    setUserId,
     handleAcceptCollab,
     handleRejectCollab,
-  handleDeleteListing
+    handleClearNotifications,
+    combinedNotifications,
+    handleShowReviewers,
+    handleToggleSummary,
+    handleDropdownMouseEnter,
+    handleDropdownMouseLeave,
+    handleDeleteListing,
   };
-};
+}

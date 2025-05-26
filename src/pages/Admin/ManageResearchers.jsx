@@ -174,16 +174,67 @@ export default function ManageResearchers() {
 
       {/* Revoke Reason Modal */}
       {showRevokeModal && (
-        <dialog open className="manage-researchers-modal-overlay">
+        <dialog
+          open
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            background: "rgba(20, 30, 50, 0.82)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            border: "none",
+            padding: 0,
+            margin: 0,
+          }}
+        >
           <form
-            className="manage-researchers-modal"
+            style={{
+              background: "linear-gradient(135deg, #243447 80%, #1a2e40 100%)",
+              borderRadius: "0.7rem",
+              color: "#fff",
+              boxShadow: "0 8px 40px rgba(0,0,0,0.25)",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "stretch",
+              minWidth: 320,
+              maxWidth: "90vw",
+              width: 340,
+              padding: "1.2rem 1.4rem",
+              border: "none",
+            }}
             onSubmit={e => {
               e.preventDefault();
               confirmRevoke();
             }}
           >
-            <h3 style={{ marginBottom: "1rem" }}>Revoke Researcher</h3>
-            <label htmlFor="revoke-reason" className="manage-researchers-modal-label">
+            <h3
+              style={{
+                marginBottom: "0.7rem",
+                fontSize: "1.25rem",
+                color: "#64CCC5",
+                textAlign: "center",
+                fontWeight: 700,
+                letterSpacing: "0.5px",
+              }}
+            >
+              Revoke Researcher
+            </h3>
+            <label
+              htmlFor="revoke-reason"
+              style={{
+                display: "block",
+                marginBottom: "0.5rem",
+                fontWeight: 600,
+                color: "#b1ede8",
+                fontSize: "1.05rem",
+                letterSpacing: "0.2px",
+              }}
+            >
               Please provide a reason for revoking:
             </label>
             <textarea
@@ -191,9 +242,29 @@ export default function ManageResearchers() {
               value={revokeReason}
               onChange={(e) => setRevokeReason(e.target.value)}
               rows={3}
-              className="manage-researchers-modal-textarea"
+              style={{
+                width: "100%",
+                marginBottom: "1rem",
+                borderRadius: "0.5rem",
+                padding: "0.7rem 1rem",
+                border: "1.5px solid #364e68",
+                background: "#1a2e40",
+                color: "#fff",
+                fontSize: "1.08rem",
+                resize: "vertical",
+                minHeight: 70,
+                transition: "border 0.2s, box-shadow 0.2s",
+                boxShadow: "0 2px 8px rgba(50, 80, 120, 0.07)",
+              }}
             />
-            <div className="manage-researchers-modal-button-row">
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: "0.7rem",
+                marginTop: "0.2rem",
+              }}
+            >
               <button
                 type="button"
                 onClick={() => {
@@ -201,13 +272,35 @@ export default function ManageResearchers() {
                   setRevokeReason("");
                   setRevokingId(null);
                 }}
-                className="manage-researchers-modal-cancel"
+                style={{
+                  backgroundColor: "#4a5568",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "0.5rem",
+                  padding: "0.45rem 1.1rem",
+                  cursor: "pointer",
+                  fontWeight: 600,
+                  fontSize: "1rem",
+                  transition: "background 0.18s",
+                  boxShadow: "0 2px 8px rgba(50, 80, 120, 0.08)",
+                }}
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="manage-researchers-modal-confirm"
+                style={{
+                  backgroundColor: "#FF6B6B",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "0.5rem",
+                  padding: "0.45rem 1.1rem",
+                  cursor: "pointer",
+                  fontWeight: 600,
+                  fontSize: "1rem",
+                  transition: "background 0.18s, box-shadow 0.18s",
+                  boxShadow: "0 2px 8px rgba(255, 107, 107, 0.10)",
+                }}
               >
                 Confirm Revoke
               </button>
