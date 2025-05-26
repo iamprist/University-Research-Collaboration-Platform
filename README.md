@@ -5,7 +5,12 @@
 
 [![codecov](https://codecov.io/gh/iamprist/University-Research-Collaboration-Platform/branch/skeletoncode/graph/badge.svg?token=EIG69HYXA7)](https://codecov.io/gh/iamprist/University-Research-Collaboration-Platform)
 
-**Innerk Hub** is a full-stack web application designed to streamline research collaboration in academic environments. The platform connects researchers, facilitates project and funding management, and provides tools for real-time communication, supervision, and progress tracking.
+**Innerk Hub** is a full-stack web application designed to streamline research collaboration in academic environments. The platform connects researchers, facilitates project and funding management, and provides real-time communication, supervision, and progress tracking tools.
+
+**How to run Innerk Hub on your local machine**: npm install (to install all dependencies)
+                                      npm start (to run on localhost)
+                                      To check for coverage, use:
+                                      npx jest--coverage
 
 > Developed for the **COMS3003A Software Design** course at the **University of the Witwatersrand**, 2025.
 
@@ -45,7 +50,7 @@
 
 ##  Technologies Used
 
-* **Frontend**: React + Vite
+* **Frontend**: CRA, (React)
 * **Backend & Services**: Firebase Auth, Firestore, Firebase Storage
 * **Styling**: Bootstrap 5 + Custom CSS
 * **Testing**: Jest, Codecov
@@ -55,7 +60,7 @@
 
 ---
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 /src
@@ -76,7 +81,7 @@ README.md
 | --------------------- | ------------- |
 | Nonhlanhla Sindane    | Product Owner |
 | Pretty Mangwadi       | Scrum Master  |
-| Smiso Ndlovu          | UI Lead       |
+| Smiso Ndlovu          | Developer     |
 | Nkosinathi Tshabalala | Developer     |
 | Khulekani Mtshali     | Developer     |
 | Zainab Lorgat         | Developer     |
