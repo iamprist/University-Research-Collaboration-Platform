@@ -434,7 +434,7 @@ export default function ReviewerPage() {
                         mt: 2,
                         '&:hover': { bgcolor: '#5AA9A3', color: 'var(--white)' }
                       }}
-                      onClick={() => navigate('/apply-reviewer')}
+                      onClick={() => navigate('/reviewer-form')} // <-- Fix route here
                     >
                       Apply to be a Reviewer
                     </Button>
