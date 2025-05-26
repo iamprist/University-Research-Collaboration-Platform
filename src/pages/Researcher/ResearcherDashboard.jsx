@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../../config/firebaseConfig';
-import { collection, getDocs, query, where, doc, getDoc, onSnapshot, orderBy, updateDoc, addDoc, serverTimestamp, deleteDoc, writeBatch } from 'firebase/firestore';
+import { collection, getDocs, query, where, doc, getDoc, onSnapshot, orderBy} from 'firebase/firestore';
 import './ResearcherDashboard.css';
 import axios from "axios";
 import Footer from '../../components/Footer';
@@ -155,43 +155,40 @@ const MessageNotification = ({ messages, unreadCount, onMessageClick, selectedMe
 
 const ResearcherDashboard = () => {
   const {
-    allListings, setAllListings,
+    setAllListings,
     myListings, setMyListings,
     userId, setUserId,
     hasProfile, setHasProfile,
     collabListings, setCollabListings,
-    searchTerm, setSearchTerm,
-    searchResults, setSearchResults,
+    searchTerm, 
+    searchResults, 
     dropdownVisible, setDropdownVisible,
-    showNoResults, setShowNoResults,
-    dropdownTimeout,
+    showNoResults, 
     filteredListings, setFilteredListings,
     userName, setUserName,
-    messages, setMessages,
-    showContactForm, setShowContactForm,
-    ipAddress, setIpAddress,
+    setMessages,
+    
+    setIpAddress,
     anchorEl, setAnchorEl,
     selectedMessage, setSelectedMessage,
     cardMenuAnchor, setCardMenuAnchor,
     cardMenuId, setCardMenuId,
     showReviewersDialog, setShowReviewersDialog,
-    reviewersForProject, setReviewersForProject,
+    reviewersForProject, 
     reviewRequests, setReviewRequests,
-    expandedSummaries, setExpandedSummaries,
+    expandedSummaries, 
     deleteDialogOpen, setDeleteDialogOpen,
-    listingToDelete, setListingToDelete,
-    dropdownHover, setDropdownHover,
+    setListingToDelete,
+    
     pendingReviewRef,
     handleAcceptReviewRequest,
     handleDeclineReviewRequest,
     handleSearch,
-    markMessageAsRead,
     handleMessageClick,
     handleAddListing,
     handleCollaborate,
     handleInputChange,
     handleClear,
-    logEvent,
     handleLogout,
     handleAcceptCollab,
     handleRejectCollab,
@@ -248,8 +245,9 @@ const ResearcherDashboard = () => {
       setReviewRequests(requests);
     });
     return () => unsub();
-  }, [userId]);
+  }, [userId, setReviewRequests]);
 
+  
   useEffect(() => {
     const fetchIpAddress = async () => {
       try {
@@ -260,7 +258,7 @@ const ResearcherDashboard = () => {
       }
     };
     fetchIpAddress();
-  }, []);
+  }, [setIpAddress]);
 
   useEffect(() => {
     const token = localStorage.getItem('authToken');
@@ -276,7 +274,7 @@ const ResearcherDashboard = () => {
       }
     });
     return () => unsubscribe();
-  }, [navigate]);
+  }, [navigate, setUserId]);
 
   useEffect(() => {
     if (!userId) return;
@@ -294,7 +292,7 @@ const ResearcherDashboard = () => {
       }
     };
     fetchUserProfile();
-  }, [userId, navigate]);
+  }, [userId, navigate, setHasProfile, setUserName]);
 
   useEffect(() => {
     if (!userId) return;
@@ -331,7 +329,7 @@ const ResearcherDashboard = () => {
       unsubscribeMessages();
       unsubscribeCollabs();
     };
-  }, [userId]);
+  }, [userId, setCollabListings, setMessages]);
 
   useEffect(() => {
     if (!userId || !hasProfile) return;
@@ -360,7 +358,7 @@ const ResearcherDashboard = () => {
       }
     };
     fetchListings();
-  }, [userId, hasProfile]);
+  }, [userId, hasProfile, setAllListings]);
 
   useEffect(() => {
     if (!userId || !hasProfile) return;
@@ -376,11 +374,11 @@ const ResearcherDashboard = () => {
       }
     };
     fetchMyListings();
-  }, [userId, hasProfile]);
+  }, [userId, hasProfile, setMyListings]);
 
   useEffect(() => {
     setFilteredListings(myListings);
-  }, [myListings]);
+  }, [myListings, setFilteredListings]);
 
 
   return (
