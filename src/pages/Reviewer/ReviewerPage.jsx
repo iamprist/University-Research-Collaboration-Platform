@@ -6,6 +6,8 @@ import ReviewerRecommendations from '../../components/ReviewerRecommendations'
 import MyReviewRequests from '../../components/MyReviewRequests'
 import { useReviewerDashboard } from './reviewerDashboardLogic'
 import { useNavigate } from 'react-router-dom'
+import FloatingHelpChat from '../../components/FloatingHelpChat';
+import { auth } from '../../config/firebaseConfig';
 
 export default function ReviewerPage() {
   const navigate = useNavigate()
@@ -90,6 +92,7 @@ export default function ReviewerPage() {
     link.href = faviconUrl;
   }, []);
   return (
+    <>
     <main
       style={{
         backgroundColor: '#FFFFFF',
@@ -464,5 +467,7 @@ export default function ReviewerPage() {
         </MuiAlert>
       </Snackbar>
     </main>
+    <FloatingHelpChat chatId={`support_${auth.currentUser?.uid}`} title="Contact Admin Support" />
+    </>
   )
 }
