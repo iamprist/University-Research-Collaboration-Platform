@@ -5,7 +5,6 @@ import { collection, getDocs, query, where, doc, getDoc, onSnapshot, orderBy, up
 import './ResearcherDashboard.css';
 import axios from "axios";
 import Footer from '../../components/Footer';
-import ContactForm from '../../components/ContactForm';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import { useResearcherDashboard } from './researcherDashboardLogic';
 // MUI Components
@@ -149,7 +148,6 @@ const ResearcherDashboard = () => {
   const [filteredListings, setFilteredListings] = useState([]);
   const [userName, setUserName] = useState('');
   const [messages, setMessages] = useState([]);
-  const [showContactForm, setShowContactForm] = useState(false);
   const [ipAddress, setIpAddress] = useState("");
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedMessage, setSelectedMessage] = useState(null);
@@ -634,7 +632,6 @@ const handleDeclineReviewRequest = async (requestId) => {
   <MenuItem onClick={handleAddListing}>New Research</MenuItem>
   <MenuItem onClick={() => navigate('/friends')}>Friends</MenuItem>
   <MenuItem onClick={handleCollaborate}>Collaborate</MenuItem>
-  <MenuItem onClick={() => setShowContactForm(true)}>Chat with Us</MenuItem>
   <MenuItem onClick={handleLogout}>Logout</MenuItem>
 </Menu>
         </nav>
@@ -1130,30 +1127,6 @@ const handleDeclineReviewRequest = async (requestId) => {
   )}
 </section>
 
-        {/* Contact Form Dialog */}
-        <Dialog
-          open={showContactForm}
-          onClose={() => setShowContactForm(false)}
-          PaperProps={{
-            sx: {
-              bgcolor: '#1a2a42',
-              color: '#B1EDE8',
-              borderRadius: 2
-            }
-          }}
-        >
-          <DialogTitle>
-            <section style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              Contact Form
-              <IconButton onClick={() => setShowContactForm(false)}>
-                <Close sx={{ color: '#B1EDE8' }} />
-              </IconButton>
-            </section>
-          </DialogTitle>
-          <DialogContent>
-            <ContactForm onClose={() => setShowContactForm(false)} />
-          </DialogContent>
-        </Dialog>
       </section>
 
       <footer>
