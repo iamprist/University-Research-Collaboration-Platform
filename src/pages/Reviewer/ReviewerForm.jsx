@@ -8,9 +8,7 @@ import { toast } from 'react-toastify';
 import { Link } from 'react-router-dom';
 import 'react-toastify/dist/ReactToastify.css';
 import './ReviewerStyles.css';
-// Import fetchCountries as a named import
 import { fetchCountries } from '../../utils/api/countries';
-// Import fetchUniversities as a named import
 import { fetchUniversities } from '../../utils/api/institution';
 
 
@@ -234,20 +232,24 @@ if (formData.hasResearchExperience === 'yes') {
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
 
     const formErrors = validateForm();
     if (Object.keys(formErrors).length > 0) {
       setErrors(formErrors);
       toast.error('Please fix the highlighted errors');
+      setIsSubmitting(false);
       return;
     }
 
     if (formData.cvFile.size > 5 * 1024 * 1024) {
       toast.error('CV must be less than 5MB');
+      setIsSubmitting(false);
       return;
     }
     if (formData.cvFile.type !== 'application/pdf') {
       toast.error('Only PDF files are accepted');
+      setIsSubmitting(false);
       return;
     }
     if (
@@ -259,8 +261,6 @@ if (formData.hasResearchExperience === 'yes') {
   setIsSubmitting(false);
   return;
 }
-
-    setIsSubmitting(true);
 
     try {
       const storageRef = ref(

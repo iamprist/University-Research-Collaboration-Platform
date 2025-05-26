@@ -134,7 +134,7 @@ function App() {
 />
         <Route path="/reviewer-profile" element={<ReviewerProfile />} />
         <Route path="/reviewer-form" element={<ReviewerForm />} />
-        <Route path="/apply" element={<ReviewerForm />} />
+        <Route path="/reviewer/apply" element={<ReviewerForm />} />
         <Route
           path="/review/:listingId"
           element={
