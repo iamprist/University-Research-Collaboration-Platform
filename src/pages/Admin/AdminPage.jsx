@@ -1,6 +1,6 @@
 //AdminPage.jsx
 import { useState, useEffect } from "react";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, doc, getDoc } from "firebase/firestore";
 import { db } from "../../config/firebaseConfig";
 import { Dialog, List, ListItem, ListItemButton, ListItemText, IconButton } from "@mui/material";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
@@ -29,11 +29,19 @@ export default function AdminPage({ initialTab = "dashboard" }) {
     async function fetchSupportChats() {
       const chatsSnap = await getDocs(collection(db, 'chats'));
       const support = [];
-      chatsSnap.forEach(doc => {
-        if (doc.id.startsWith('support_')) {
-          support.push({ id: doc.id });
+      for (const docSnap of chatsSnap.docs) {
+        if (docSnap.id.startsWith('support_')) {
+          const uid = docSnap.id.replace('support_', '');
+          // Fetch user document
+          const userDoc = await getDoc(doc(db, 'users', uid));
+          const userData = userDoc.exists() ? userDoc.data() : {};
+          support.push({
+            id: docSnap.id,
+            uid,
+            name: userData.name || `User: ${uid}`
+          });
         }
-      });
+      }
       setSupportChats(support);
     }
     if (open) fetchSupportChats();
@@ -109,7 +117,7 @@ export default function AdminPage({ initialTab = "dashboard" }) {
           {supportChats.map(chat => (
             <ListItem key={chat.id} disablePadding>
               <ListItemButton onClick={() => setSelectedChatId(chat.id)}>
-                <ListItemText primary={chat.id.replace('support_', 'User: ')} />
+                <ListItemText primary={chat.name} secondary={chat.uid} />
               </ListItemButton>
             </ListItem>
           ))}
