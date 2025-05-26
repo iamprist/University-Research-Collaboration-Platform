@@ -6,6 +6,8 @@ import ReviewerRecommendations from '../../components/ReviewerRecommendations'
 import MyReviewRequests from '../../components/MyReviewRequests'
 import { useReviewerDashboard } from './reviewerDashboardLogic'
 import { useNavigate } from 'react-router-dom'
+import FloatingHelpChat from '../../components/FloatingHelpChat';
+import { auth } from '../../config/firebaseConfig';
 
 export default function ReviewerPage() {
   const navigate = useNavigate()
@@ -76,8 +78,8 @@ export default function ReviewerPage() {
   }
 
   const toggleSidebar = () => setSidebarOpen(prev => !prev);
-    useEffect(() => {
-    const faviconUrl = '/favicon.ico'; // Update path if your favicon is named differently or in a different location
+  useEffect(() => {
+    const faviconUrl = '/favicon.ico';
     let link = document.querySelector("link[rel~='icon']");
     if (!link) {
       link = document.createElement('link');
@@ -87,189 +89,188 @@ export default function ReviewerPage() {
     link.href = faviconUrl;
   }, []);
   return (
-    <main
-      style={{
-        backgroundColor: '#FFFFFF',
-        color: '#000000',
-        minHeight: '100vh',
-        paddingTop: '70px',
-        fontFamily: 'Arial, sans-serif'
-
-
-      }}
-    >
-      <header
-  className="navbar navbar-light bg-light fixed-top px-4 py-3"
-  style={{ borderBottom: '1px solid #000' }}
->
-<span style={{ display: 'flex', alignItems: 'center' }}>
-  <img
-    src="/favicon.ico"
-    alt="Favicon"
-    style={{
-      width: 44,            // Increased from 28 to 44
-      height: 44,           // Increased from 28 to 44
-      marginRight: 12,      // Slightly more space
-      borderRadius: '50%',
-      border: '2px solid #B1EDE8', // Add border for branding
-      objectFit: 'cover'
-    }}
-  />
-  <h1 className="navbar-brand fw-bold fs-4 mb-0">Reviewer</h1>
-</span>
-  <IconButton
-    onClick={e => setMenuAnchorEl(e.currentTarget)}
-    sx={{
-      bgcolor: 'var(--light-blue)',
-      color: 'var(--dark-blue)',
-      borderRadius: '1.5rem',
-      ml: 2,
-      '&:hover': { bgcolor: '#5AA9A3', color: 'var(--white)' }
-    }}
-  >
-    <MenuIcon />
-  </IconButton>
-        <Menu
-          anchorEl={menuAnchorEl}
-          open={Boolean(menuAnchorEl)}
-          onClose={() => setMenuAnchorEl(null)}
-          PaperProps={{
-            sx: {
-              bgcolor: 'var(--dark-blue)',
-              color: 'var(--accent-teal)',
-              borderRadius: '0.8rem',
-              minWidth: 200,
-              mt: 1,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
-            },
-          }}
-          anchorOrigin={{
-            vertical: 'bottom',
-            horizontal: 'right',
-          }}
-          transformOrigin={{
-            vertical: 'top',
-            horizontal: 'right',
-          }}
-        >
-          <MenuItem
-            onClick={() => {
-              setMenuAnchorEl(null)
-              navigate('/reviewer-profile')
-            }}
-            sx={{
-              color: 'var(--accent-teal)',
-              borderRadius: '0.5rem',
-              px: 2,
-              py: 1,
-              fontSize: '1.1rem',
-              '&:hover': { bgcolor: 'var(--light-blue)', color: 'var(--dark-blue)' },
-            }}
-          >
-            View Profile
-          </MenuItem>
-          <MenuItem
-            onClick={() => {
-              setMenuAnchorEl(null)
-              handleLogout()
-            }}
-            sx={{
-              color: 'var(--accent-teal)',
-              borderRadius: '0.5rem',
-              px: 2,
-              py: 1,
-              fontSize: '1.1rem',
-              '&:hover': { bgcolor: 'var(--light-blue)', color: 'var(--dark-blue)' },
-            }}
-          >
-            Logout
-          </MenuItem>
-        </Menu>
-      </header>
-
-      <aside
-        className={`position-fixed top-0 end-0 h-100 bg-light shadow p-4 d-flex flex-column ${sidebarOpen ? 'd-block' : 'd-none'}`}
-        style={{ width: '280px', zIndex: 1050 }}
+    <>
+      <main
+        style={{
+          backgroundColor: '#FFFFFF',
+          color: '#000000',
+          minHeight: '100vh',
+          paddingTop: '70px',
+          fontFamily: 'Arial, sans-serif'
+        }}
       >
-        <button
-          className="btn-close align-self-end"
-          onClick={toggleSidebar}
-          aria-label="Close sidebar"
-        />
-
-        <section className="text-center mb-4">
-          <img
-            src={'https://via.placeholder.com/70'}
-            alt="Profile"
-            className="rounded-circle mb-2"
-            style={{
-              width: '70px',
-              height: '70px',
-              objectFit: 'cover',
-              border: '2px solid #ccc'
+        <header
+          className="navbar navbar-light bg-light fixed-top px-4 py-3"
+          style={{ borderBottom: '1px solid #000' }}
+        >
+          <section style={{ display: 'flex', alignItems: 'center' }}>
+            <img
+              src="/favicon.ico"
+              alt="Favicon"
+              style={{
+                width: 44,
+                height: 44,
+                marginRight: 12,
+                borderRadius: '50%',
+                border: '2px solid #B1EDE8',
+                objectFit: 'cover'
+              }}
+            />
+            <h1 className="navbar-brand fw-bold fs-4 mb-0">Reviewer</h1>
+          </section>
+          <IconButton
+            onClick={e => setMenuAnchorEl(e.currentTarget)}
+            sx={{
+              bgcolor: 'var(--light-blue)',
+              color: 'var(--dark-blue)',
+              borderRadius: '1.5rem',
+              ml: 2,
+              '&:hover': { bgcolor: '#5AA9A3', color: 'var(--white)' }
             }}
-          />
-          <h2 className="h6 mb-0 mt-2">
-            Reviewer
-          </h2>
-          <address className="text-muted">
-            N/A
-          </address>
-        </section>
-
-        <section className="mb-4">
-          {renderBadge()}
-          {status === 'rejected' && reason && (
-            <small className="text-danger d-block mt-1">
-              Reason: {reason}
-            </small>
-          )}
-        </section>
-
-        <hr />
-
-        <nav aria-label="Sidebar links" className="mb-4">
-          <ul className="list-unstyled">
-            <li>
-              <a href="/about" className="text-decoration-none text-dark">
-                About Us
-              </a>
-            </li>
-            <li>
-              <a href="/terms" className="text-decoration-none text-dark">
-                Terms &amp; Conditions
-              </a>
-            </li>
-          </ul>
-        </nav>
-
-        <section className="mt-auto">
-          {status === 'approved' && (
-            <button
-              onClick={handleRevoke}
-              className="btn btn-warning w-100 mb-2"
-            >
-              Stop Being a Reviewer
-            </button>
-          )}
-          {status !== 'approved' && status !== 'not_found' && (
-            <button
-              onClick={handleRevoke}
-              className="btn btn-warning w-100 mb-2"
-            >
-              {status === 'rejected'
-                ? 'Remove Rejected Application'
-                : 'Revoke Application'}
-            </button>
-          )}
-          <button
-            onClick={handleLogout}
-            className="btn btn-danger w-100"
           >
-            Logout
-          </button>
-        </section>
-      </aside>
+            <MenuIcon />
+          </IconButton>
+          <Menu
+            anchorEl={menuAnchorEl}
+            open={Boolean(menuAnchorEl)}
+            onClose={() => setMenuAnchorEl(null)}
+            PaperProps={{
+              sx: {
+                bgcolor: 'var(--dark-blue)',
+                color: 'var(--accent-teal)',
+                borderRadius: '0.8rem',
+                minWidth: 200,
+                mt: 1,
+                boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+              },
+            }}
+            anchorOrigin={{
+              vertical: 'bottom',
+              horizontal: 'right',
+            }}
+            transformOrigin={{
+              vertical: 'top',
+              horizontal: 'right',
+            }}
+          >
+            <MenuItem
+              onClick={() => {
+                setMenuAnchorEl(null)
+                navigate('/reviewer-profile')
+              }}
+              sx={{
+                color: 'var(--accent-teal)',
+                borderRadius: '0.5rem',
+                px: 2,
+                py: 1,
+                fontSize: '1.1rem',
+                '&:hover': { bgcolor: 'var(--light-blue)', color: 'var(--dark-blue)' },
+              }}
+            >
+              View Profile
+            </MenuItem>
+            <MenuItem
+              onClick={() => {
+                setMenuAnchorEl(null)
+                handleLogout()
+              }}
+              sx={{
+                color: 'var(--accent-teal)',
+                borderRadius: '0.5rem',
+                px: 2,
+                py: 1,
+                fontSize: '1.1rem',
+                '&:hover': { bgcolor: 'var(--light-blue)', color: 'var(--dark-blue)' },
+              }}
+            >
+              Logout
+            </MenuItem>
+          </Menu>
+        </header>
+
+        <aside
+          className={`position-fixed top-0 end-0 h-100 bg-light shadow p-4 d-flex flex-column ${sidebarOpen ? 'd-block' : 'd-none'}`}
+          style={{ width: '280px', zIndex: 1050 }}
+        >
+          <button
+            className="btn-close align-self-end"
+            onClick={toggleSidebar}
+            aria-label="Close sidebar"
+          />
+
+          <section className="text-center mb-4">
+            <img
+              src={'https://via.placeholder.com/70'}
+              alt="Profile"
+              className="rounded-circle mb-2"
+              style={{
+                width: '70px',
+                height: '70px',
+                objectFit: 'cover',
+                border: '2px solid #ccc'
+              }}
+            />
+            <h2 className="h6 mb-0 mt-2">
+              Reviewer
+            </h2>
+            <address className="text-muted">
+              N/A
+            </address>
+          </section>
+
+          <section className="mb-4">
+            {renderBadge()}
+            {status === 'rejected' && reason && (
+              <small className="text-danger d-block mt-1">
+                Reason: {reason}
+              </small>
+            )}
+          </section>
+
+          <hr />
+
+          <nav aria-label="Sidebar links" className="mb-4">
+            <ul className="list-unstyled">
+              <li>
+                <a href="/about" className="text-decoration-none text-dark">
+                  About Us
+                </a>
+              </li>
+              <li>
+                <a href="/terms" className="text-decoration-none text-dark">
+                  Terms &amp; Conditions
+                </a>
+              </li>
+            </ul>
+          </nav>
+
+          <section className="mt-auto">
+            {status === 'approved' && (
+              <button
+                onClick={handleRevoke}
+                className="btn btn-warning w-100 mb-2"
+              >
+                Stop Being a Reviewer
+              </button>
+            )}
+            {status !== 'approved' && status !== 'not_found' && (
+              <button
+                onClick={handleRevoke}
+                className="btn btn-warning w-100 mb-2"
+              >
+                {status === 'rejected'
+                  ? 'Remove Rejected Application'
+                  : 'Revoke Application'}
+              </button>
+            )}
+            <button
+              onClick={handleLogout}
+              className="btn btn-danger w-100"
+            >
+              Logout
+            </button>
+          </section>
+        </aside>
 
       <section
         className="container"
@@ -469,20 +470,22 @@ export default function ReviewerPage() {
         )}
       </section>
 
-      <Snackbar
-        open={notif.open}
-        autoHideDuration={6000}
-        onClose={() => setNotif({ ...notif, open: false })}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-      >
-        <MuiAlert
+        <Snackbar
+          open={notif.open}
+          autoHideDuration={6000}
           onClose={() => setNotif({ ...notif, open: false })}
-          severity={notif.severity}
-          sx={{ width: '100%' }}
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
         >
-          {notif.msg}
-        </MuiAlert>
-      </Snackbar>
-    </main>
+          <MuiAlert
+            onClose={() => setNotif({ ...notif, open: false })}
+            severity={notif.severity}
+            sx={{ width: '100%' }}
+          >
+            {notif.msg}
+          </MuiAlert>
+        </Snackbar>
+      </main>
+      <FloatingHelpChat chatId={`support_${auth.currentUser?.uid}`} title="Contact Admin Support" />
+    </>
   )
 }

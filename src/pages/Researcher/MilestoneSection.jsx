@@ -3,7 +3,7 @@ import { milestoneService } from './milestoneService';
 import jsPDF from 'jspdf';
 import './MilestoneSection.css';
 
-export default function MilestonesSection({ chatId, projectCreated }) {
+export default function MilestonesSection({ chatId, projectCreated, researchComplete, isReviewer }) {
   const [milestoneData, setMilestoneData] = useState({
     milestones: [],
     researchComplete: false,
@@ -18,13 +18,14 @@ export default function MilestonesSection({ chatId, projectCreated }) {
     return () => unsubscribe();
   }, [chatId]);
 
-  const { milestones, researchComplete } = milestoneData;
+  const { milestones, researchComplete: researchCompleteFromData } = milestoneData;
   const allMilestonesDone = milestones.length > 0 && milestones.every(m => m.done);
   const projectFinished = allMilestonesDone 
     ? Math.max(...milestones.map(m => m.doneAt ? new Date(m.doneAt).getTime() : 0))
     : null;
 
   const toggleMilestoneDone = async (id) => {
+    if (isReviewer) return;
     await milestoneService.toggleMilestone(chatId, id, milestones);
   };
 
@@ -97,7 +98,7 @@ export default function MilestonesSection({ chatId, projectCreated }) {
 
   const handleAddMilestone = async (e) => {
     e.preventDefault();
-    if (!milestoneInput.title) return;
+    if (!milestoneInput.title || isReviewer) return;
     await milestoneService.addMilestone(chatId, {
       title: milestoneInput.title,
       description: milestoneInput.description
@@ -107,20 +108,23 @@ export default function MilestonesSection({ chatId, projectCreated }) {
   };
 
   const handleDeleteMilestone = async (id) => {
+    if (isReviewer) return;
     await milestoneService.deleteMilestone(chatId, id, milestones);
   };
 
   const handleMarkResearchComplete = async () => {
+    if (isReviewer) return;
     await milestoneService.markResearchComplete(chatId);
   };
 
   const handleUnmarkResearchComplete = async () => {
+    if (isReviewer) return;
     await milestoneService.unmarkResearchComplete(chatId);
   };
 
   return (
     <section className="milestones-container">
-      <h3>Research Milestones</h3>
+      <h3>Research Milestones {isReviewer && <span className="view-only-badge">(View Only)</span>}</h3>
       
       <dl className="project-timeline">
         <dt className="timeline-label">Project Created:</dt>
@@ -129,7 +133,7 @@ export default function MilestonesSection({ chatId, projectCreated }) {
         </dd>
         <dt className="timeline-label">Project Finished:</dt>
         <dd className="timeline-value">
-          {researchComplete 
+          {researchComplete || researchCompleteFromData
             ? 'Marked complete by researcher' 
             : milestones.length > 0 
               ? 'Not yet finished' 
@@ -137,26 +141,28 @@ export default function MilestonesSection({ chatId, projectCreated }) {
         </dd>
       </dl>
 
-      <menu className="milestone-actions">
-        <li>
-          <button 
-            className={`toggle-button ${showMilestoneForm ? 'cancel' : ''}`}
-            onClick={() => setShowMilestoneForm(v => !v)}
-          >
-            {showMilestoneForm ? 'Cancel' : 'Add Milestone'}
-          </button>
-        </li>
-        <li>
-          <button 
-            className="export-button"
-            onClick={handleExportMilestonesPDF}
-          >
-            Export as PDF
-          </button>
-        </li>
-      </menu>
+      {!isReviewer && (
+        <menu className="milestone-actions">
+          <li>
+            <button 
+              className={`toggle-button ${showMilestoneForm ? 'cancel' : ''}`}
+              onClick={() => setShowMilestoneForm(v => !v)}
+            >
+              {showMilestoneForm ? 'Cancel' : 'Add Milestone'}
+            </button>
+          </li>
+          <li>
+            <button 
+              className="export-button"
+              onClick={handleExportMilestonesPDF}
+            >
+              Export as PDF
+            </button>
+          </li>
+        </menu>
+      )}
 
-      {showMilestoneForm && (
+      {showMilestoneForm && !isReviewer && (
         <form onSubmit={handleAddMilestone} className="milestone-form">
           <input
             type="text"
@@ -188,6 +194,7 @@ export default function MilestonesSection({ chatId, projectCreated }) {
                 checked={m.done}
                 onChange={() => toggleMilestoneDone(m.id)}
                 id={`milestone-${m.id}`}
+                disabled={isReviewer}
               />
               <label htmlFor={`milestone-${m.id}`}>
                 <article className="milestone-details">
@@ -203,53 +210,57 @@ export default function MilestonesSection({ chatId, projectCreated }) {
                   </footer>
                 </article>
               </label>
-              <button
-                className="delete-button"
-                onClick={() => handleDeleteMilestone(m.id)}
-                title="Delete milestone"
-                aria-label="Delete milestone"
-              >
-                ×
-              </button>
+              {!isReviewer && (
+                <button
+                  className="delete-button"
+                  onClick={() => handleDeleteMilestone(m.id)}
+                  title="Delete milestone"
+                  aria-label="Delete milestone"
+                >
+                  ×
+                </button>
+              )}
             </li>
           ))}
         </ul>
       )}
 
-      {allMilestonesDone && !researchComplete && (
+      {allMilestonesDone && !researchComplete && !isReviewer && (
         <aside className="all-complete-banner">
           🎉 All milestones complete!
         </aside>
       )}
 
-      <footer className="research-completion">
-        {!researchComplete ? (
-          <button
-            onClick={handleMarkResearchComplete}
-            disabled={!allMilestonesDone}
-            className={`complete-button ${!allMilestonesDone ? 'disabled' : ''}`}
-            title={
-              milestones.length === 0
-                ? 'Add at least one milestone first'
-                : !allMilestonesDone
-                  ? 'Mark all milestones as done to complete research'
-                  : 'Mark Research as Complete'
-            }
-          >
-            Mark Research as Complete
-          </button>
-        ) : (
-          <p className="completion-status">
-            <span className="completed-text">Research marked as complete</span>
+      {!isReviewer && (
+        <footer className="research-completion">
+          {!researchComplete ? (
             <button
-              onClick={handleUnmarkResearchComplete}
-              className="unmark-button"
+              onClick={handleMarkResearchComplete}
+              disabled={!allMilestonesDone}
+              className={`complete-button ${!allMilestonesDone ? 'disabled' : ''}`}
+              title={
+                milestones.length === 0
+                  ? 'Add at least one milestone first'
+                  : !allMilestonesDone
+                    ? 'Mark all milestones as done to complete research'
+                    : 'Mark Research as Complete'
+              }
             >
-              Unmark as Complete
+              Mark Research as Complete
             </button>
-          </p>
-        )}
-      </footer>
+          ) : (
+            <p className="completion-status">
+              <span className="completed-text">Research marked as complete</span>
+              <button
+                onClick={handleUnmarkResearchComplete}
+                className="unmark-button"
+              >
+                Unmark as Complete
+              </button>
+            </p>
+          )}
+        </footer>
+      )}
     </section>
   );
 }

@@ -121,6 +121,13 @@ const ResearcherProfile = () => {
     return (
       <Box className="loading-container" sx={{ p: 6, textAlign: 'center' }}>
         <Typography>Profile not found</Typography>
+        <Button
+          variant="contained"
+          sx={{ mt: 3, bgcolor: 'var(--light-blue)', color: 'var(--dark-blue)', borderRadius: '1.5rem', fontWeight: 600, px: 3, py: 1.2, '&:hover': { bgcolor: '#5AA9A3', color: 'var(--white)' } }}
+          onClick={() => navigate('/researcher-edit-profile')}
+        >
+          Create Profile
+        </Button>
       </Box>
     );
   }

@@ -33,6 +33,7 @@ const EditProfile = () => {
     name: false,
     email: false
   });
+  const [showCustomResearchArea, setShowCustomResearchArea] = useState(false);
 
   const {
     profile,
@@ -40,15 +41,27 @@ const EditProfile = () => {
     handleSubmit: logicHandleSubmit
   } = useEditProfileLogic();
 
+  // Sync researchArea with customResearchArea if needed
+  React.useEffect(() => {
+    if (showCustomResearchArea && profile.customResearchArea) {
+      if (profile.researchArea !== profile.customResearchArea) {
+        logicHandleChange({ target: { name: 'researchArea', value: profile.customResearchArea } });
+      }
+    }
+    // If user switches away from 'Other', clear customResearchArea
+    if (!showCustomResearchArea && profile.customResearchArea) {
+      logicHandleChange({ target: { name: 'customResearchArea', value: '' } });
+    }
+    // eslint-disable-next-line
+  }, [showCustomResearchArea, profile.customResearchArea]);
+
   const handleSubmitWithValidation = (e) => {
     e.preventDefault();
     const newErrors = {
       name: !profile.name,
       email: !profile.email || !/^\S+@\S+\.\S+$/.test(profile.email)
     };
-    
     setErrors(newErrors);
-    
     if (!Object.values(newErrors).some(error => error)) {
       logicHandleSubmit(e);
     }
@@ -254,11 +267,15 @@ const EditProfile = () => {
               helperText={errors.name ? "Name is required" : ""}
               fullWidth
               sx={{
-                '& .MuiInputBase-root': { bgcolor: '#132238' },
+                '& .MuiInputBase-root': { bgcolor: '#132238', color: '#FFFFFF' },
                 '& .MuiInputLabel-root': { color: '#64CCC5' },
                 '& .MuiOutlinedInput-root': {
-                  '& fieldset': { borderColor: '#64CCC5' },
-                  '&:hover fieldset': { borderColor: '#64CCC5' }
+                  '& fieldset': { borderColor: errors.name ? '#ff1744' : '#64CCC5' },
+                  '&:hover fieldset': { borderColor: errors.name ? '#ff1744' : '#64CCC5' },
+                },
+                '& .MuiFormHelperText-root': {
+                  color: errors.name ? '#ff1744' : '#64CCC5',
+                  fontWeight: 600,
                 },
               }}
             />
@@ -276,11 +293,59 @@ const EditProfile = () => {
             fullWidth
             sx={{ 
               mb: 3,
-              '& .MuiInputBase-root': { bgcolor: '#132238' },
+              '& .MuiInputBase-root': { bgcolor: '#132238', color: '#FFFFFF' },
+              '& .MuiInputLabel-root': { color: '#64CCC5' },
+              '& .MuiOutlinedInput-root': {
+                '& fieldset': { borderColor: errors.email ? '#ff1744' : '#64CCC5' },
+                '&:hover fieldset': { borderColor: errors.email ? '#ff1744' : '#64CCC5' }
+              },
+              '& .MuiFormHelperText-root': {
+                color: errors.email ? '#ff1744' : '#64CCC5',
+                fontWeight: 600,
+              },
+            }}
+          />
+
+          {/* Institution Field */}
+          <TextField
+            name="university"
+            label="Institution / University"
+            value={profile.university || ''}
+            onChange={logicHandleChange}
+            fullWidth
+            sx={{
+              mb: 3,
+              '& .MuiInputBase-root': { bgcolor: '#132238', color: '#FFFFFF' },
               '& .MuiInputLabel-root': { color: '#64CCC5' },
               '& .MuiOutlinedInput-root': {
                 '& fieldset': { borderColor: '#64CCC5' },
                 '&:hover fieldset': { borderColor: '#64CCC5' }
+              },
+              '& .MuiFormHelperText-root': {
+                color: '#64CCC5',
+                fontWeight: 600,
+              },
+            }}
+          />
+
+          {/* Country Field */}
+          <TextField
+            name="country"
+            label="Country"
+            value={profile.country || ''}
+            onChange={logicHandleChange}
+            fullWidth
+            sx={{
+              mb: 3,
+              '& .MuiInputBase-root': { bgcolor: '#132238', color: '#FFFFFF' },
+              '& .MuiInputLabel-root': { color: '#64CCC5' },
+              '& .MuiOutlinedInput-root': {
+                '& fieldset': { borderColor: '#64CCC5' },
+                '&:hover fieldset': { borderColor: '#64CCC5' }
+              },
+              '& .MuiFormHelperText-root': {
+                color: '#64CCC5',
+                fontWeight: 600,
               },
             }}
           />
@@ -302,8 +367,11 @@ const EditProfile = () => {
             <InputLabel sx={{ color: '#64CCC5' }}>Research Area</InputLabel>
             <Select
               name="researchArea"
-              value={profile.researchArea || ''}
-              onChange={logicHandleChange}
+              value={showCustomResearchArea ? 'Other' : (profile.researchArea || '')}
+              onChange={e => {
+                logicHandleChange(e);
+                setShowCustomResearchArea(e.target.value === 'Other');
+              }}
               sx={{
                 bgcolor: '#132238',
                 color: '#FFFFFF',
@@ -316,6 +384,24 @@ const EditProfile = () => {
               ))}
             </Select>
           </FormControl>
+          {showCustomResearchArea && (
+            <TextField
+              name="customResearchArea"
+              label="Please specify your research area"
+              value={profile.customResearchArea || ''}
+              onChange={logicHandleChange}
+              fullWidth
+              sx={{
+                mb: 3,
+                '& .MuiInputBase-root': { bgcolor: '#132238', color: '#FFFFFF' },
+                '& .MuiInputLabel-root': { color: '#64CCC5' },
+                '& .MuiOutlinedInput-root': {
+                  '& fieldset': { borderColor: '#64CCC5' },
+                  '&:hover fieldset': { borderColor: '#64CCC5' }
+                },
+              }}
+            />
+          )}
 
           {/* Biography */}
           <TextField
@@ -328,7 +414,7 @@ const EditProfile = () => {
             fullWidth
             sx={{ 
               mb: 3,
-              '& .MuiInputBase-root': { bgcolor: '#132238' },
+              '& .MuiInputBase-root': { bgcolor: '#132238', color: '#FFFFFF' },
               '& .MuiInputLabel-root': { color: '#64CCC5' },
               '& .MuiOutlinedInput-root': {
                 '& fieldset': { borderColor: '#64CCC5' },
@@ -353,6 +439,7 @@ const EditProfile = () => {
                 color: '#64CCC5',
                 borderColor: '#64CCC5',
                 px: 4,
+                minWidth: 160,
                 '&:hover': {
                   borderColor: '#5AA9A3',
                   color: '#5AA9A3'
@@ -368,6 +455,7 @@ const EditProfile = () => {
                 bgcolor: '#64CCC5',
                 color: '#132238',
                 px: 4,
+                minWidth: 160,
                 '&:hover': {
                   bgcolor: '#5AA9A3'
                 }

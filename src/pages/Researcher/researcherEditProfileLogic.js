@@ -18,6 +18,8 @@ export const useEditProfileLogic = () => {
     researchArea: '',
     biography: '',
     profilePicture: null,
+    university: '',
+    country: '',
   });
 
   const [userId, setUserId] = useState(null);
@@ -61,6 +63,8 @@ export const useEditProfileLogic = () => {
             researchArea: data.researchArea || '',
             biography: data.biography || '',
             profilePicture: data.profilePicture || null,
+            university: data.university || '',
+            country: data.country || '',
           });
         }
       } catch (err) {

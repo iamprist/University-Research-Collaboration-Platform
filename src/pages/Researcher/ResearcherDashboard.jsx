@@ -28,6 +28,7 @@ import {
 import { Notifications, Menu as MenuIcon, Close } from '@mui/icons-material';
 import CollaborationRequestsPanel from '../../components/CollaborationRequestsPanel';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+import FloatingHelpChat from '../../components/FloatingHelpChat';
 
 const MessageNotification = ({ messages, unreadCount, onMessageClick, selectedMessage, onAccept, onReject, onCloseSelected }) => {
   const [anchorEl, setAnchorEl] = useState(null);
@@ -389,10 +390,10 @@ const handleDeclineReviewRequest = async (requestId) => {
   };
 
   const handleMessageClick = (message) => {
-    // If it's a review-request, maybe open a dialog or scroll to the section
     if (message.type === 'review-request') {
-      // Optionally scroll to the Pending Review Requests section or show a dialog
-      document.querySelector('h2').scrollIntoView({ behavior: 'smooth' });
+      if (pendingReviewRef.current) {
+        pendingReviewRef.current.scrollIntoView({ behavior: 'smooth' });
+      }
       setSelectedMessage(null);
       return;
     }
@@ -543,6 +544,8 @@ const handleDeclineReviewRequest = async (requestId) => {
     setCardMenuAnchor(null);
   };
 
+  const pendingReviewRef = useRef(null);
+
   return (
     <main style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
@@ -606,26 +609,34 @@ const handleDeclineReviewRequest = async (requestId) => {
             <MenuIcon />
           </IconButton>
 
-          <Menu
-            anchorEl={anchorEl}
-            open={Boolean(anchorEl)}
-            onClose={() => setAnchorEl(null)}
-            PaperProps={{
-              sx: {
-                bgcolor: 'var(--dark-blue)',
-                minWidth: 200,
-                color: 'var(--light-blue)',
-                borderRadius: '0.8rem'
-              }
-            }}
-          >
-            <MenuItem onClick={() => navigate('/researcher-profile')}>View Profile</MenuItem>
-            <MenuItem onClick={handleAddListing}>New Research</MenuItem>
-            <MenuItem onClick={() => navigate('/friends')}>Friends</MenuItem>
-            <MenuItem onClick={handleCollaborate}>Collaborate</MenuItem>
-            <MenuItem onClick={() => setShowContactForm(true)}>Chat with Us</MenuItem>
-            <MenuItem onClick={handleLogout}>Logout</MenuItem>
-          </Menu>
+         <Menu
+  anchorEl={anchorEl}
+  open={Boolean(anchorEl)}
+  onClose={() => setAnchorEl(null)}
+  PaperProps={{
+    sx: {
+      bgcolor: 'var(--dark-blue)',
+      minWidth: 200,
+      color: 'var(--light-blue)',
+      borderRadius: '0.8rem'
+    }
+  }}
+>
+  <MenuItem onClick={() => {
+    if (hasProfile) {
+      navigate('/researcher-profile');
+    } else {
+      navigate('/researcher-edit-profile');
+    }
+  }}>
+    View Profile
+  </MenuItem>
+  <MenuItem onClick={handleAddListing}>New Research</MenuItem>
+  <MenuItem onClick={() => navigate('/friends')}>Friends</MenuItem>
+  <MenuItem onClick={handleCollaborate}>Collaborate</MenuItem>
+  <MenuItem onClick={() => setShowContactForm(true)}>Chat with Us</MenuItem>
+  <MenuItem onClick={handleLogout}>Logout</MenuItem>
+</Menu>
         </nav>
       </header>
 
@@ -897,22 +908,22 @@ const handleDeclineReviewRequest = async (requestId) => {
                       View Listing
                     </Button>
                     <Button
-                      variant="contained"
-                      size="small"
-                      sx={{
-                        bgcolor: 'var(--light-blue)',
-                        color: 'var(--dark-blue)',
-                        borderRadius: '1.5rem',
-                        fontWeight: 600,
-                        px: 2,
-                        py: 0.5,
-                        minWidth: 0,
-                        boxShadow: '0 2px 10px rgba(100,204,197,0.08)',
-                        textTransform: "none",
-                        '&:hover': { bgcolor: '#5AA9A3', color: 'var(--white)' },
-                        flex: 1
-                      }}
-                      onClick={() => navigate(`/collaboration/${item.id}`)}
+  variant="contained"
+  size="small"
+  sx={{
+    bgcolor: 'var(--light-blue)',
+    color: 'var(--dark-blue)',
+    borderRadius: '1.5rem',
+    fontWeight: 600,
+    px: 2,
+    py: 0.5,
+    minWidth: 0,
+    boxShadow: '0 2px 10px rgba(100,204,197,0.08)',
+    textTransform: "none",
+    '&:hover': { bgcolor: '#5AA9A3', color: 'var(--white)' },
+    flex: 1
+  }}
+  onClick={() => navigate(`/collaboration/${item.id}`, { state: { userRole: 'researcher' } })}
                     >
                       Collaboration Room
                     </Button>
@@ -1047,22 +1058,22 @@ const handleDeclineReviewRequest = async (requestId) => {
                       View Project
                     </Button>
                     <Button
-                      variant="contained"
-                      size="small"
-                      sx={{
-                        bgcolor: 'var(--light-blue)',
-                        color: 'var(--dark-blue)',
-                        borderRadius: '1.5rem',
-                        fontWeight: 600,
-                        px: 2,
-                        py: 0.5,
-                        minWidth: 0,
-                        boxShadow: '0 2px 10px rgba(100,204,197,0.08)',
-                        textTransform: "none",
-                        '&:hover': { bgcolor: '#5AA9A3', color: 'var(--white)' },
-                        flex: 1
-                      }}
-                      onClick={() => navigate(`/collaboration/${listing.id}`)}
+  variant="contained"
+  size="small"
+  sx={{
+    bgcolor: 'var(--light-blue)',
+    color: 'var(--dark-blue)',
+    borderRadius: '1.5rem',
+    fontWeight: 600,
+    px: 2,
+    py: 0.5,
+    minWidth: 0,
+    boxShadow: '0 2px 10px rgba(100,204,197,0.08)',
+    textTransform: "none",
+    '&:hover': { bgcolor: '#5AA9A3', color: 'var(--white)' },
+    flex: 1
+  }}
+  onClick={() => navigate(`/collaboration/${listing.id}`, { state: { userRole: 'researcher' } })}
                     >
                       Collaboration Room
                     </Button>
@@ -1088,7 +1099,7 @@ const handleDeclineReviewRequest = async (requestId) => {
     <CollaborationRequestsPanel />
   </Paper>
 </section>
-<section style={{ maxWidth: 800, margin: '32px auto' }}>
+<section ref={pendingReviewRef} style={{ maxWidth: 800, margin: '32px auto' }}>
   <h2>Pending Review Requests</h2>
   {reviewRequests.length === 0 ? (
     <p>No pending review requests.</p>
@@ -1096,7 +1107,9 @@ const handleDeclineReviewRequest = async (requestId) => {
     reviewRequests.map(req => (
       <Paper key={req.id} sx={{ p: 2, mb: 2, bgcolor: '#1a2a42', color: '#B1EDE8' }}>
         <Typography variant="subtitle1">
-          Reviewer: {req.reviewerName} {req.reviewerEmail && <>({req.reviewerEmail})</>}
+          Reviewer: {req.reviewerName} {req.reviewerEmail && <>(
+            {req.reviewerEmail}
+          )</>}
         </Typography>
         <Typography variant="body2" sx={{ mb: 1 }}>
           Project: <strong>{req.projectTitle}</strong>
@@ -1146,6 +1159,7 @@ const handleDeclineReviewRequest = async (requestId) => {
       <footer>
         <Footer />
       </footer>
+      <FloatingHelpChat chatId={`support_${auth.currentUser?.uid}`} title="Contact Admin Support" />
     </main>
   );
 };

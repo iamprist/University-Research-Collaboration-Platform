@@ -5,7 +5,7 @@ import MilestonesSection from './MilestoneSection';
 import FundingSection from './FundingSection';
 import './CollaborationDashboard.css';
 
-export default function CollaborationDashboard() {
+export default function CollaborationDashboard({ userRole }) {
   const { chatId } = useParams();
   const [researchComplete, setResearchComplete] = useState(false);
   const [projectCreated, setProjectCreated] = useState(null);
@@ -22,6 +22,7 @@ export default function CollaborationDashboard() {
           chatId={chatId}
           onProjectCreated={setProjectCreated}
           onResearchComplete={setResearchComplete}
+          isReviewer={userRole === 'reviewer'}
         />
       </section>
 
@@ -32,6 +33,9 @@ export default function CollaborationDashboard() {
       >
         <header className="panel-header">
           <h2 id="dashboard-heading">inTracking</h2>
+          {userRole === 'reviewer' && (
+            <div className="role-badge">Reviewer Mode</div>
+          )}
         </header>
 
         <nav className="tabs" role="tablist" aria-label="Collaboration tabs">
@@ -68,6 +72,7 @@ export default function CollaborationDashboard() {
             chatId={chatId}
             projectCreated={projectCreated}
             researchComplete={researchComplete}
+            isReviewer={userRole === 'reviewer'}
           />
         </article>
 
@@ -78,7 +83,10 @@ export default function CollaborationDashboard() {
           aria-labelledby="funding-tab-button"
           hidden={activeTab !== 'funding'}
         >
-          <FundingSection chatId={chatId} />
+          <FundingSection 
+            chatId={chatId} 
+            isReviewer={userRole === 'reviewer'}
+          />
         </article>
       </section>
     </main>
