@@ -5,7 +5,6 @@ import { collection, getDocs, query, where, doc, getDoc, onSnapshot, orderBy, up
 import './ResearcherDashboard.css';
 import axios from "axios";
 import Footer from '../../components/Footer';
-import ContactForm from '../../components/ContactForm';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import { useResearcherDashboard } from './researcherDashboardLogic';
 // MUI Components
@@ -1173,7 +1172,7 @@ const handleDeclineReviewRequest = async (requestId) => {
             </section>
           </DialogTitle>
           <DialogContent>
-            <ContactForm onClose={() => setShowContactForm(false)} />
+            {/* Contact form content here */}
           </DialogContent>
         </Dialog>
       </section>
