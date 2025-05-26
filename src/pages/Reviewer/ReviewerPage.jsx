@@ -1,16 +1,31 @@
-import React, { useEffect } from 'react'
-import { IconButton, Menu, MenuItem, TextField, Button, Paper, Box, Typography, Snackbar } from '@mui/material'
-import MenuIcon from '@mui/icons-material/Menu'
-import MuiAlert from '@mui/material/Alert'
-import ReviewerRecommendations from '../../components/ReviewerRecommendations'
-import MyReviewRequests from '../../components/MyReviewRequests'
-import { useReviewerDashboard } from './reviewerDashboardLogic'
-import { useNavigate } from 'react-router-dom'
+import React, { useEffect, useState } from 'react';
+import {
+  IconButton, 
+  Menu, 
+  MenuItem, 
+  TextField, 
+  Button, 
+  Paper, 
+  Box, 
+  Typography, 
+  Snackbar, 
+  CircularProgress
+} from '@mui/material';
+
+import MenuIcon from '@mui/icons-material/Menu';
+import MuiAlert from '@mui/material/Alert';
+import ReviewerRecommendations from '../../components/ReviewerRecommendations';
+import MyReviewRequests from '../../components/MyReviewRequests';
+import { useReviewerDashboard } from './reviewerDashboardLogic';
+import { useNavigate } from 'react-router-dom';
 import FloatingHelpChat from '../../components/FloatingHelpChat';
 import { auth } from '../../config/firebaseConfig';
 
 export default function ReviewerPage() {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
+const [setDeleteDialogOpen] = useState(false);
+
+
   const {
     status,
     reason,
@@ -36,48 +51,47 @@ export default function ReviewerPage() {
     handleRevoke,
   } = useReviewerDashboard();
 
+   
+
   const statusStyles = {
     approved: {
-      backgroundColor: '#e6f4ea', // soft green
+      backgroundColor: '#e6f4ea',
       borderLeft: '4px solid #34a853',
       color: '#256029'
     },
     in_progress: {
-      backgroundColor: '#e8f0fe', // soft blue
+      backgroundColor: '#e8f0fe',
       borderLeft: '4px solid #4285f4',
       color: '#174ea6'
     },
     rejected: {
-      backgroundColor: '#f3e8fd', // soft purple
-      borderLeft: '4px solid #a142f4',
+      backgroundColor: '#f3e8fd',
+      borderLeft: '4px solidrgb(255, 255, 255)',
       color: '#5e2b97'
     }
-  }
+  };
 
   const renderBadge = () => {
-    if (status === 'approved')
-      return (
-        <section style={statusStyles.approved} className="p-2 rounded mb-2">
-          <strong>Approved Reviewer</strong>
-        </section>
-      )
-    if (status === 'in_progress')
-      return (
-        <section style={statusStyles.in_progress} className="p-2 rounded mb-2">
-          <strong>Application Under Review</strong>
-        </section>
-      )
-    if (status === 'rejected')
-      return (
-        <section style={statusStyles.rejected} className="p-2 rounded mb-2">
-          <strong>Application Rejected</strong>
-        </section>
-      )
-    // Remove "Reviewer profile not found" or similar message
+    if (status === 'approved') return (
+      <section style={statusStyles.approved} className="p-2 rounded mb-2">
+        <strong>Approved Reviewer</strong>
+      </section>
+    );
+    if (status === 'in_progress') return (
+      <section style={statusStyles.in_progress} className="p-2 rounded mb-2">
+        <strong>Application Under Review</strong>
+      </section>
+    );
+    if (status === 'rejected') return (
+      <section style={statusStyles.rejected} className="p-2 rounded mb-2">
+        <strong>Application Rejected</strong>
+      </section>
+    );
     return null;
-  }
+  };
 
   const toggleSidebar = () => setSidebarOpen(prev => !prev);
+
   useEffect(() => {
     const faviconUrl = '/favicon.ico';
     let link = document.querySelector("link[rel~='icon']");
@@ -88,6 +102,9 @@ export default function ReviewerPage() {
     }
     link.href = faviconUrl;
   }, []);
+
+  
+
   return (
     <>
       <main
@@ -144,7 +161,7 @@ export default function ReviewerPage() {
                 boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
               },
             }}
-            anchorOrigin={{
+             anchorOrigin={{
               vertical: 'bottom',
               horizontal: 'right',
             }}
@@ -153,10 +170,11 @@ export default function ReviewerPage() {
               horizontal: 'right',
             }}
           >
+          
             <MenuItem
               onClick={() => {
-                setMenuAnchorEl(null)
-                navigate('/reviewer-profile')
+                setMenuAnchorEl(null);
+                navigate('/reviewer-profile');
               }}
               sx={{
                 color: 'var(--accent-teal)',
@@ -171,8 +189,24 @@ export default function ReviewerPage() {
             </MenuItem>
             <MenuItem
               onClick={() => {
-                setMenuAnchorEl(null)
-                handleLogout()
+                setMenuAnchorEl(null);
+                setDeleteDialogOpen(true);
+              }}
+              sx={{
+                color: '#d32f2f',
+                borderRadius: '0.5rem',
+                px: 2,
+                py: 1,
+                fontSize: '1.1rem',
+                '&:hover': { bgcolor: '#ffeaea', color: '#b71c1c' },
+              }}
+            >
+              Delete Account
+            </MenuItem>
+            <MenuItem
+              onClick={() => {
+                setMenuAnchorEl(null);
+                handleLogout();
               }}
               sx={{
                 color: 'var(--accent-teal)',
@@ -272,76 +306,130 @@ export default function ReviewerPage() {
           </section>
         </aside>
 
-      <section
-        className="container"
-        style={{ backgroundColor: 'white', color: 'black' }}
-      >
-        {loading ? (
-          <section className="text-center text-muted mt-4">
-            <p>Retrieving your reviewer status…</p>
-            <div className="spinner-border text-dark" role="status" />
-          </section>
-        ) : (
-          <>
-            {/* Only show header and apply button if not a reviewer */}
-            {status === 'not_found' && (
-              <header className="text-center my-4">
-                <Button
-                  variant="contained"
-                  sx={{
-                    bgcolor: 'var(--light-blue)',
-                    color: 'var(--dark-blue)',
-                    borderRadius: '1.5rem',
-                    px: 4,
-                    py: 2,
-                    mt: 2,
-                    textTransform: 'none',
-                    fontWeight: 500,
-                    fontSize: '1.1rem',
-                    '&:hover': { bgcolor: '#5AA9A3', color: 'var(--white)' }
-                  }}
-                  onClick={() => navigate('/reviewer/apply')}
-                >
-                  <strong>Apply</strong>
-                </Button>
-              </header>
-            )}
-
-            {/* Show only a card if application is pending */}
-            {status === 'in_progress' && (
-              <Box
-                sx={{
-                  maxWidth: 420,
-                  mx: 'auto',
-                  mt: 8,
-                  p: 4,
-                  bgcolor: '#e8f0fe',
-                  borderRadius: 3,
-                  boxShadow: 2,
-                  textAlign: 'center',
-                  borderLeft: '6px solid #4285f4'
-                }}
-              >
-                <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, color: '#174ea6' }}>
-                  Your application is under review
-                </Typography>
-                <Typography sx={{ color: '#174ea6' }}>
-                  Thank you for applying to be a reviewer. Our team will review your application soon.<br />
-                  You will be notified once your account is approved.
-                </Typography>
-              </Box>
-            )}
-
-            {/* Only show search, reviews, and recommendations if reviewer is approved */}
-            {status === 'approved' && (
-              <>
+        <section
+          className="container"
+          style={{ backgroundColor: 'white', color: 'black' }}
+        >
+          {loading ? (
+            <section className="d-flex flex-column align-items-center justify-content-center" style={{ minHeight: 300 }}>
+              <CircularProgress color="primary" size={48} sx={{ mb: 2 }} />
+              <Typography variant="h6" sx={{ color: 'var(--dark-blue)', mb: 1 }}>
+                Checking your reviewer status…
+              </Typography>
+              <Typography sx={{ color: '#555' }}>
+                Please wait while we load your dashboard.
+              </Typography>
+            </section>
+          ) : (
+            <>
+              {status === 'not_found' && (
                 <header className="text-center my-4">
-                  <p>Hi Reviewer</p>
-                  <p>
-                    Welcome back! Ready to read, review, and recommend
-                    cutting-edge research?
-                  </p>
+                  <Typography variant="h5" sx={{ fontWeight: 700, mb: 2, color: 'var(--dark-blue)' }}>
+                    Welcome to the Reviewer Portal!
+                  </Typography>
+                  <Typography sx={{ mb: 3, color: '#333' }}>
+                    Apply to become a reviewer and help advance research by providing your expert feedback.
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    sx={{
+                      bgcolor: 'var(--light-blue)',
+                      color: 'var(--dark-blue)',
+                      borderRadius: '1.5rem',
+                      px: 4,
+                      py: 2,
+                      mt: 2,
+                      textTransform: 'none',
+                      fontWeight: 500,
+                      fontSize: '1.1rem',
+                      '&:hover': { bgcolor: '#5AA9A3', color: 'var(--white)' }
+                    }}
+                    onClick={() => navigate('/reviewer/apply')}
+                  >
+                    <strong>Apply</strong>
+                  </Button>
                 </header>
+              )}
+
+              {status === 'in_progress' && (
+                <Box
+                  sx={{
+                    maxWidth: 420,
+                    mx: 'auto',
+                    mt: 8,
+                    p: 4,
+                    bgcolor: '#e8f0fe',
+                    borderRadius: 3,
+                    boxShadow: 2,
+                    textAlign: 'center',
+                    borderLeft: '6px solid #4285f4'
+                  }}
+                >
+                  <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, color: '#174ea6' }}>
+                    Your application is under review
+                  </Typography>
+                  <Typography sx={{ color: '#174ea6' }}>
+                    Thank you for applying to be a reviewer. Our team will review your application soon.<br />
+                    You will be notified once your account is approved.
+                  </Typography>
+                </Box>
+              )}
+
+              {status === 'rejected' && (
+                <Box
+                  sx={{
+                    maxWidth: 420,
+                    mx: 'auto',
+                    mt: 8,
+                    p: 4,
+                    bgcolor: '#f3e8fd',
+                    borderRadius: 3,
+                    boxShadow: 2,
+                    textAlign: 'center',
+                    borderLeft: '6px solidrgb(255, 255, 255)'
+                  }}
+                >
+                  <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, color: '#5e2b97' }}>
+                    Your reviewer application was rejected
+                  </Typography>
+                  <Typography sx={{ color: '#5e2b97', mb: 2 }}>
+                    {reason
+                      ? <>Reason: <b>{reason}</b></>
+                      : "Unfortunately, your application did not meet our criteria at this time."}
+                  </Typography>
+                  <Typography sx={{ color: '#5e2b97', mb: 3 }}>
+                    You may update your profile and reapply, or contact support for more information.
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    sx={{
+                      bgcolor: 'var(--light-blue)',
+                      color: 'var(--dark-blue)',
+                      borderRadius: '1.5rem',
+                      px: 4,
+                      py: 2,
+                      mt: 1,
+                      textTransform: 'none',
+                      fontWeight: 500,
+                      fontSize: '1.1rem',
+                      '&:hover': { bgcolor: '#5AA9A3', color: 'var(--white)' }
+                    }}
+                    onClick={() => navigate('/reviewer/apply')}
+                  >
+                    <strong>Apply Again</strong>
+                  </Button>
+                </Box>
+              )}
+
+              {status === 'approved' && (
+                <>
+                  <header className="text-center my-4">
+                    <p>Hi Reviewer</p>
+                    <p>
+                      Welcome back! Ready to read, review, and recommend
+                      cutting-edge research?
+                    </p>
+                  </header>
                 <Box sx={{ maxWidth: 800, mx: 'auto', mb: 4 }}>
                   <Paper
                     component="form"
