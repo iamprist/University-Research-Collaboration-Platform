@@ -1,200 +1,200 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
 .manage-reviewers-container {
   min-height: 100vh;
   background: #1a2e40;
-  color: white;
+  color: #fff;
   padding: 2rem 0;
+  font-family: 'Inter', sans-serif;
 }
 
 .manage-reviewers-article {
   max-width: 960px;
   margin: 2rem auto;
-  padding: 1.5rem;
-  background-color: #1a2e40;
-  border-radius: 0.5rem;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  padding: 2rem 2.5rem;
+  background-color: #212d3b;
+  border-radius: 1rem;
+  box-shadow: 0 6px 32px rgba(20, 40, 80, 0.18);
 }
 
 .manage-reviewers-heading {
-  font-size: 2rem;
-  font-weight: bold;
+  font-size: 2.2rem;
+  font-weight: 700;
   text-align: center;
   margin-bottom: 1.5rem;
+  color: #64CCC5;
+  letter-spacing: 1px;
 }
 
 .manage-reviewers-description {
   text-align: center;
-  color: #cbd5e0;
+  color: #b1ede8;
   margin-bottom: 1.5rem;
+  font-size: 1.1rem;
 }
 
 .manage-reviewers-search-input {
   width: 100%;
   max-width: 350px;
-  margin: 0 auto 1.2rem auto;
+  margin: 0 auto 1.5rem auto;
   display: block;
-  padding: 0.5rem 1rem;
-  border-radius: 0.4rem;
-  border: 1px solid #4a5568;
+  padding: 0.6rem 1.1rem;
+  border-radius: 0.5rem;
+  border: 1.5px solid #364e68;
   background: #243447;
   color: #fff;
-  font-size: 1rem;
+  font-size: 1.05rem;
   outline: none;
+  transition: border 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px rgba(50, 80, 120, 0.07);
+}
+.manage-reviewers-search-input:focus {
+  border: 1.5px solid #64CCC5;
+  box-shadow: 0 0 0 2px #64ccc555;
 }
 
 .manage-reviewers-card {
   background-color: #243447;
-  padding: 1rem;
-  border-radius: 0.5rem;
-  margin-bottom: 1rem;
+  padding: 1.2rem 1.5rem;
+  border-radius: 0.7rem;
+  margin-bottom: 1.2rem;
   color: #FFFFFF;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 12px rgba(50, 80, 120, 0.10);
+  transition: transform 0.13s, box-shadow 0.13s;
+  border: 1.5px solid transparent;
+}
+.manage-reviewers-card:hover {
+  transform: translateY(-4px) scale(1.015);
+  box-shadow: 0 8px 32px 0 rgba(100, 200, 200, 0.13);
+  border: 1.5px solid #64CCC5;
 }
 
-.manage-reviewers-card-name {
-  color: #64CCC5;
-  margin-bottom: 0.5rem;
+.manage-reviewers-card-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.manage-reviewers-card-title {
+  font-size: 1.25rem;
   font-weight: bold;
-  font-size: 1.1rem;
+  color: #64CCC5;
+  margin-bottom: 0.2rem;
 }
 
 .manage-reviewers-card-email {
-  color: #A0AEC0;
-  font-size: 0.95rem;
-  margin: 0;
-}
-
-.manage-reviewers-publications-list {
-  margin: 0;
-  padding-left: 18px;
-}
-
-.manage-reviewers-publication-link,
-.manage-reviewers-cv-link {
-  color: #64CCC5;
-  text-decoration: underline;
+  font-size: 0.97rem;
+  color: #b1ede8;
+  margin-bottom: 0.2rem;
 }
 
 .manage-reviewers-no-data {
   text-align: center;
-  color: #a0aec0;
-  margin-top: 1rem;
+  color: #A0AEC0;
+  margin-top: 1.5rem;
+  font-size: 1.1rem;
 }
 
+/* Shared button base */
 .manage-reviewers-button {
-  padding: 0.5rem 1rem;
+  color: #fff;
   border: none;
   border-radius: 0.5rem;
+  padding: 0.5rem 1.1rem;
   cursor: pointer;
-  font-weight: bold;
+  margin-top: 0.7rem;
+  align-self: flex-start;
+  font-weight: 600;
   font-size: 1rem;
-  margin-right: 0.5rem;
-  margin-top: 0.5rem;
+  transition: background 0.18s, box-shadow 0.18s;
+  box-shadow: 0 2px 8px rgba(50, 80, 120, 0.08);
 }
 
+/* Approve button */
 .manage-reviewers-approve {
   background-color: #64CCC5;
-  color: #132238;
+  color: #1a2e40;
+}
+.manage-reviewers-approve:hover {
+  background-color: #4299e1;
+  color: #fff;
 }
 
+/* Reject and Revoke buttons */
 .manage-reviewers-reject,
 .manage-reviewers-revoke {
   background-color: #FF6B6B;
-  color: #fff;
+}
+.manage-reviewers-reject:hover,
+.manage-reviewers-revoke:hover {
+  background-color: #ff4b4b;
+  box-shadow: 0 4px 16px #ff6b6b33;
 }
 
+/* Delete button */
 .manage-reviewers-delete {
-  background-color: #E53E3E;
-  color: #fff;
+  background-color: #e53e3e;
+}
+.manage-reviewers-delete:hover {
+  background-color: #c53030;
+  box-shadow: 0 4px 16px #e53e3e33;
 }
 
 .manage-reviewers-pagination {
   display: flex;
   justify-content: center;
-  margin-top: 1rem;
+  margin-top: 1.5rem;
   gap: 0.5rem;
 }
 
 .manage-reviewers-pagination-btn {
-  padding: 0.5rem 1rem;
+  padding: 0.5rem 1.1rem;
   margin: 0 0.25rem;
-  border-radius: 0.25rem;
-  background-color: #4a5568;
-  color: #cbd5e0;
+  border-radius: 0.3rem;
+  background-color: #364e68;
+  color: #b1ede8;
   border: none;
   cursor: pointer;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: background 0.15s, color 0.15s;
 }
-
+.manage-reviewers-pagination-btn:hover {
+  background-color: #64CCC5;
+  color: #1a2e40;
+}
 .manage-reviewers-pagination-btn.active {
   background-color: #4299e1;
   color: #fff;
 }
 
-.manage-reviewers-modal-overlay {
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.5);
-  z-index: 1000;
+/* Add this for the local overlay */
+.manage-reviewers-modal-local-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(20, 30, 50, 0.82);
   display: flex;
   align-items: center;
   justify-content: center;
+  z-index: 10;
+  border-radius: 0.7rem;
 }
 
-.manage-reviewers-modal {
-  background: #243447;
-  padding: 2rem;
-  border-radius: 0.5rem;
-  min-width: 320px;
-  max-width: 90vw;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+/* Make modal match card size and style */
+.manage-reviewers-modal-local {
+  background: linear-gradient(135deg, #243447 80%, #1a2e40 100%);
+  border-radius: 0.7rem;
   color: #fff;
-}
-
-.manage-reviewers-modal-label {
-  color: #64CCC5;
-  font-weight: 600;
-  display: block;
-  margin-bottom: 8px;
-}
-
-.manage-reviewers-modal-textarea {
-  width: 100%;
-  border-radius: 0.4rem;
-  border: 1.5px solid #64CCC5;
-  background: #132238;
-  color: #fff;
-  padding: 0.7rem;
-  margin-bottom: 1.2rem;
-  font-size: 1rem;
-  resize: vertical;
-}
-
-.manage-reviewers-modal-button-row {
+  box-shadow: 0 8px 40px rgba(0,0,0,0.25);
+  animation: fadeInModal 0.3s cubic-bezier(0.23, 1, 0.32, 1);
   display: flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
-}
-
-.manage-reviewers-modal-cancel {
-  background: #4a5568;
-  color: #fff;
-  border: none;
-  border-radius: 0.5rem;
-  padding: 0.5rem 1.2rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.manage-reviewers-modal-confirm {
-  background: #FF6B6B;
-  color: #fff;
-  border: none;
-  border-radius: 0.5rem;
-  padding: 0.5rem 1.2rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.manage-reviewers-modal-confirm:disabled {
-  cursor: not-allowed;
-  opacity: 0.7;
+  flex-direction: column;
+  align-items: stretch;
+  min-width: 320px;
+  max-width: 90%;
+  width: 340px;
+  padding: 1.2rem 1.4rem;
 }
