@@ -247,7 +247,6 @@ const ResearcherDashboard = () => {
     return () => unsub();
   }, [userId, setReviewRequests]);
 
-  
   useEffect(() => {
     const fetchIpAddress = async () => {
       try {
