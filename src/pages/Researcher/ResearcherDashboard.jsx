@@ -1001,38 +1001,83 @@ const handleDeclineReviewRequest = async (requestId) => {
             '&::-webkit-scrollbar-thumb': { bgcolor: '#e3e8ee', borderRadius: 4 },
           }}>
             {collabListings.map((listing, idx) => (
-              <Box
-                key={`collab-${listing.id}-${idx}`}
-                sx={{
-                  maxWidth: 350,
-                  minWidth: 280,
-                  bgcolor: "#fff",
-                  color: "#222",
-                  borderRadius: "1.2rem",
-                  boxShadow: "0 6px 24px rgba(30, 60, 90, 0.12), 0 1.5px 4px rgba(30, 60, 90, 0.10)",
-                  border: "1px solid #e3e8ee",
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "space-between",
-                  m: 0,
-                  transition: "box-shadow 0.2s, transform 0.2s",
-                  '&:hover': {
-                    boxShadow: "0 12px 32px rgba(30, 60, 90, 0.18), 0 2px 8px rgba(30, 60, 90, 0.12)",
-                    transform: "translateY(-4px) scale(1.03)",
-                    borderColor: "#B1EDE8",
-                  },
-                  position: 'relative'
-                }}
-              >
-                <Box sx={{ flex: 1, pt: 0, px: 2, pb: 2 }}>
-                  <Typography variant="h6" sx={{ color: "var(--dark-blue)", fontWeight: 700, fontSize: "1.2rem", mb: 1 }}>
-                    {listing.title}
-                  </Typography>
-                  <Typography sx={{ color: "#222", mb: 1 }}>
-                    {listing.summary}
-                  </Typography>
-                </Box>
-                <Box sx={{ pt: 0, px: 2, pb: 2 }}>
+  <Box
+    key={`collab-${listing.id}-${idx}`}
+    sx={{
+      maxWidth: 350,
+      minWidth: 280,
+      bgcolor: "#fff",
+      color: "#222",
+      borderRadius: "1.2rem",
+      boxShadow: "0 6px 24px rgba(30, 60, 90, 0.12), 0 1.5px 4px rgba(30, 60, 90, 0.10)",
+      border: "1px solid #e3e8ee",
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "space-between",
+      m: 0,
+      transition: "box-shadow 0.2s, transform 0.2s",
+      '&:hover': {
+        boxShadow: "0 12px 32px rgba(30, 60, 90, 0.18), 0 2px 8px rgba(30, 60, 90, 0.12)",
+        transform: "translateY(-4px) scale(1.03)",
+        borderColor: "#B1EDE8",
+      },
+      position: 'relative'
+    }}
+  >
+    <Box sx={{ 
+      flex: 1, 
+      pt: 0, 
+      px: 2, 
+      pb: 2,
+      height: '120px', // Fixed height for text container
+      overflow: 'hidden' 
+    }}>
+      <Typography 
+        variant="h6" 
+        sx={{ 
+          color: "var(--dark-blue)", 
+          fontWeight: 700, 
+          fontSize: "1.1rem", 
+          mb: 0.5,
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis'
+        }}
+      >
+                       {listing.title}
+      </Typography>
+      <Typography 
+        sx={{ 
+          color: "#222",
+          fontSize: '0.875rem',
+          lineHeight: 1.4,
+          display: '-webkit-box',
+          WebkitLineClamp: 7, // Limit to 3 lines
+          WebkitBoxOrient: 'vertical',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          position: 'relative',
+          '&:after': {
+            content: '""',
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: '1.5em',
+            background: 'linear-gradient(to bottom, transparent, white 75%)'
+          }
+        }}
+      >
+        {listing.summary}
+      </Typography>
+    </Box>
+    <Box sx={{ 
+      pt: 0, 
+      px: 2, 
+      pb: 2,
+      borderTop: '1px solid #e3e8ee' 
+    }}>
+
                   <Stack direction="row" spacing={2} sx={{ width: "100%" }}>
                     <Button
                       variant="contained"
