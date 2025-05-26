@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { Button, Typography, Box, Stack, Card, CardContent, CardActions } from '@mui/material'
-import { useNavigate } from "react-router-dom";
 import {
   getFirestore,
   collection,
@@ -8,7 +7,6 @@ import {
   getDoc,
   getDocs,
   addDoc,
-  deleteDoc,
   serverTimestamp,
   onSnapshot,
   query,
@@ -51,12 +49,10 @@ export default function ResearchProjectDisplay() {
   const [recommendations, setRecommendations] = useState([]);
   const [expandedProject, setExpandedProject] = useState(null);
   const [requestStatuses, setRequestStatuses] = useState({});
-  const [reviewExists, setReviewExists] = useState({});
  
   
   const auth = getAuth();
   const db = getFirestore();
-  const navigate = useNavigate();
 
   // Snackbar state
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -73,7 +69,12 @@ export default function ResearchProjectDisplay() {
         if (!user) throw new Error("User not logged in");
 
         const reviewerSnap = await getDoc(doc(db, "reviewers", user.uid));
-        if (!reviewerSnap.exists()) throw new Error("Reviewer profile not found");
+        // Remove "Reviewer profile not found" error, just show nothing if not a reviewer
+        if (!reviewerSnap.exists()) {
+          setRecommendations([]);
+          setLoading(false);
+          return;
+        }
 
         const tags = normalizeTags(reviewerSnap.data().expertiseTags || []);
         setExpertiseTags(tags);
@@ -143,34 +144,8 @@ export default function ResearchProjectDisplay() {
     return () => unsub();
   }, [auth, db]);
 
-  
-
-  
- 
-    
-  
-  // 3. Listen for existing reviews
-  useEffect(() => {
-    const user = auth.currentUser;
-    if (!user) return;
-    const q = query(
-      collection(db, "reviews"),
-      where("reviewerId", "==", user.uid)
-    );
-    const unsub = onSnapshot(q, (snap) => {
-      const exists = {};
-      snap.docs.forEach((d) => {
-        const { listingId } = d.data();
-        exists[listingId] = true;
-      });
-      setReviewExists(exists);
-    });
-    return () => unsub();
-  }, [auth, db]);
-
   const handleExpand = (id) =>
     setExpandedProject((prev) => (prev === id ? null : id));
-
 
   // New function to handle review request and notification
   const handleRequestReviewAndNotify = async (project) => {
@@ -215,46 +190,33 @@ export default function ResearchProjectDisplay() {
     }
   };
 
-  // 5. Revoke a pending review request
-  const handleRevokeReview = async (projectId) => {
-    try {
-      const q = query(
-        collection(db, "reviewRequests"),
-        where("reviewerId", "==", auth.currentUser.uid),
-        where("listingId", "==", projectId),
-        where("status", "==", "pending")
-      );
-      const snap = await getDocs(q);
-      await Promise.all(
-        snap.docs.map((d) => deleteDoc(doc(db, "reviewRequests", d.id)))
-      );
-    } catch (err) {
-      console.error("Error revoking review request:", err);
-      alert("Failed to revoke request.");
-    }
-  };
-
-  // 6. Navigate to review form
-  const handleReview = (project) => {
-    navigate(`/review/${project.id}`, { state: { project } });
-  };
-
- 
+  // Move isReviewer state and effect to top-level
+  const [isReviewer, setIsReviewer] = useState(undefined);
 
   useEffect(() => {
-    const user = auth.currentUser;
-    if (!user) return;
-    const q = query(collection(db, "reviewRequests"), where("reviewerId", "==", user.uid));
-    const unsub = onSnapshot(q, async (snapshot) => {
-      snapshot.docs.forEach(async (docSnap) => {
-        
-      });
-    });
-    return () => unsub();
-  }, [auth, db]);
-  
+    async function checkReviewer() {
+      const user = auth.currentUser;
+      if (!user) {
+        setIsReviewer(false);
+        return;
+      }
+      const reviewerSnap = await getDoc(doc(db, "reviewers", user.uid));
+      setIsReviewer(reviewerSnap.exists());
+    }
+    if (loading) {
+      checkReviewer();
+    }
+  }, [auth, db, loading]);
 
   if (loading) {
+    if (isReviewer === false) {
+      return null;
+    }
+    if (isReviewer === undefined) {
+      // Still checking, render nothing
+      return null;
+    }
+    // Only show loading if reviewer exists
     return (
       <section aria-busy="true" style={{ padding: 40, textAlign: "center" }}>
         <progress />
@@ -282,16 +244,8 @@ export default function ResearchProjectDisplay() {
   }
 
   if (!expertiseTags.length) {
-    return (
-      <section
-        aria-live="polite"
-        style={{ padding: 40, textAlign: "center" }}
-      >
-        <p>
-          You have no expertise tags set in your profile, so no recommendations can be made.
-        </p>
-      </section>
-    );
+    // Don't render anything if no expertise tags
+    return null;
   }
 
   if (!recommendations.length) {
@@ -318,182 +272,144 @@ export default function ResearchProjectDisplay() {
       </Helmet>
 
       <main style={{ backgroundColor: "#fff", color: "#000", fontFamily: '"Open Sans", sans-serif', padding: 20 }}>
-        
-
-          {/* --- Recommendations Section --- */}
-          <section className="dashboard-content">
-  <h3>Recommended Projects</h3>
-  {recommendations.length === 0 ? (
-    <p className="no-listings">No research listings matched your expertise tags.</p>
-  ) : (
-    <Stack
-      direction="row"
-      spacing={2}
-      sx={{
-        width: "100%",
-        overflowX: "auto",
-        pb: 2,
-        '&::-webkit-scrollbar': { height: 8 },
-        '&::-webkit-scrollbar-thumb': { bgcolor: '#e3e8ee', borderRadius: 4 },
-      }}
-    >
-      {recommendations.map((project) => {
-        const status = requestStatuses[project.id];
-        const reviewed = reviewExists[project.id];
-        return (
-          <Card
-            key={project.id}
-            sx={{
-              maxWidth: 350,
-              minWidth: 280,
-              bgcolor: "#fff",
-              color: "#222",
-              borderRadius: "1.2rem",
-              boxShadow: "0 6px 24px rgba(30, 60, 90, 0.12), 0 1.5px 4px rgba(30, 60, 90, 0.10)",
-              border: "1px solid #e3e8ee",
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "space-between",
-              m: 0,
-              transition: "box-shadow 0.2s, transform 0.2s",
-              '&:hover': {
-                boxShadow: "0 12px 32px rgba(30, 60, 90, 0.18), 0 2px 8px rgba(30, 60, 90, 0.12)",
-                transform: "translateY(-4px) scale(1.03)",
-                borderColor: "#B1EDE8",
-              },
-            }}
-          >
-            <CardContent sx={{ flex: 1 }}>
-              <h4 style={{
-                color: "var(--dark-blue)",
-                fontWeight: 700,
-                fontSize: "1.2rem",
-                marginBottom: 8
-              }}>
-                {project.title}
-              </h4>
-              <Typography sx={{ mb: 1, color: "#222" }}>
-                {project.summary.length > 100
-                  ? `${project.summary.substring(0, 100)}…`
-                  : project.summary}
-              </Typography>
-              <Typography sx={{ color: "#7f8c8d", fontSize: 14, mb: 1 }}>
-                Researcher: {project.postedByName}
-              </Typography>
-              <Typography sx={{ color: "#7f8c8d", fontSize: 14, mb: 1 }}>
-                Institution: {project.institution}
-              </Typography>
-              <Typography sx={{ color: "#7f8c8d", fontSize: 14, mb: 1 }}>
-                Area: {project.researchArea}
-              </Typography>
-            </CardContent>
-            <CardActions sx={{ justifyContent: "space-between", pt: 0 }}>
-              {status == null && (
-                <Button
-                  variant="contained"
-                  size="small"
-                  sx={{
-                    bgcolor: 'var(--light-blue)',
-                    color: 'var(--dark-blue)',
-                    borderRadius: '1.5rem',
-                    fontWeight: 600,
-                    px: 2,
-                    py: 0.5,
-                    minWidth: 0,
-                    boxShadow: '0 2px 10px rgba(100,204,197,0.08)',
-                    '&:hover': { bgcolor: '#5AA9A3', color: 'var(--white)' },
-                  }}
-                  onClick={() => handleRequestReviewAndNotify(project)}
-                >
-                  Request Review
-                </Button>
-              )}
-              {status === "pending" && (
-                <Button
-                  variant="contained"
-                  size="small"
-                  sx={{
-                    bgcolor: '#c0392b',
-                    color: '#fff',
-                    borderRadius: '1.5rem',
-                    fontWeight: 600,
-                    px: 2,
-                    py: 0.5,
-                    minWidth: 0,
-                    '&:hover': { bgcolor: '#a93226' },
-                  }}
-                  onClick={() => handleRevokeReview(project.id)}
-                >
-                  Revoke Request
-                </Button>
-              )}
-              {status === "accepted" && (
-                <Button
-                  variant="contained"
-                  size="small"
-                  sx={{
-                    bgcolor: '#2980b9',
-                    color: '#fff',
-                    borderRadius: '1.5rem',
-                    fontWeight: 600,
-                    px: 2,
-                    py: 0.5,
-                    minWidth: 0,
-                    '&:hover': { bgcolor: '#21618c' },
-                  }}
-                  onClick={() => handleReview(project)}
-                >
-                  {reviewed ? "Update Review" : "Start Review"}
-                </Button>
-              )}
-              {status === "declined" && (
-                <Typography sx={{ color: "red", fontWeight: 600 }}>
-                  Declined
-                </Typography>
-              )}
-              <Button
-                variant="outlined"
-                size="small"
-                sx={{
-                  borderRadius: '1.5rem',
-                  fontWeight: 600,
-                  px: 2,
-                  py: 0.5,
-                  minWidth: 0,
-                  color: 'var(--dark-blue)',
-                  borderColor: 'var(--light-blue)',
-                  '&:hover': { bgcolor: '#B1EDE8', borderColor: '#5AA9A3', color: 'var(--dark-blue)' },
-                }}
-                onClick={() => handleExpand(project.id)}
-              >
-                {expandedProject === project.id ? "Show Less" : "View Details"}
-              </Button>
-            </CardActions>
-            {expandedProject === project.id && (
-              <Box sx={{ p: 2, borderTop: "1px solid #eee" }}>
-                <Typography sx={{ fontWeight: 600, mb: 1 }}>Methodology:</Typography>
-                <Typography sx={{ mb: 1 }}>{project.methodology}</Typography>
-                <Typography sx={{ fontWeight: 600, mb: 1 }}>Collaboration Needs:</Typography>
-                <Typography sx={{ mb: 1 }}>{project.collaborationNeeds}</Typography>
-                <Typography sx={{ fontWeight: 600, mb: 1 }}>Estimated Completion:</Typography>
-                <Typography sx={{ mb: 1 }}>{project.estimatedCompletion}</Typography>
-                <Typography>
-                  <a
-                    href={project.publicationLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
+        <section className="dashboard-content">
+          <Typography
+  variant="h5"
+  sx={{
+    fontWeight: 700,
+    mb: 3,
+    mt: 2,
+    color: "var(--dark-blue)",
+    letterSpacing: 0.2,
+    textAlign: "left"
+  }}
+>
+  Recommended Projects
+</Typography>
+          {recommendations.length === 0 ? (
+            <p className="no-listings" style={{ fontSize: "0.95rem", textAlign: "left" }}>
+              No research listings matched your expertise tags.
+            </p>
+          ) : (
+            <Stack
+              direction="row"
+              spacing={2}
+              sx={{
+                width: "100%",
+                overflowX: "auto",
+                pb: 2,
+                alignItems: "flex-start",
+                '&::-webkit-scrollbar': { height: 8 },
+                '&::-webkit-scrollbar-thumb': { bgcolor: '#e3e8ee', borderRadius: 4 },
+              }}
+            >
+              {recommendations.map((project) => {
+                const status = requestStatuses[project.id];
+                return (
+                  <Card
+                    key={project.id}
+                    sx={{
+                      borderRadius: 3,
+                      boxShadow: 3,
+                      border: "1px solid #e3e8ee",
+                      minWidth: 320,
+                      maxWidth: 420,
+                      m: 1,
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "space-between",
+                      bgcolor: "#f9fafb"
+                    }}
                   >
-                    Related Publication
-                  </a>
-                </Typography>
-              </Box>
-            )}
-          </Card>
-        );
-      })}
-    </Stack>
-  )}
-</section>
+                    <CardContent sx={{ flex: 1, p: 2 }}>
+                      <Typography variant="h6" sx={{ color: "var(--dark-blue)", fontWeight: 700, mb: 1 }}>
+                        {project.title}
+                      </Typography>
+                      <Typography sx={{ mb: 1, color: "#222" }}>
+                        {project.summary.length > 60
+                          ? `${project.summary.substring(0, 60)}…`
+                          : project.summary}
+                      </Typography>
+                      <Typography sx={{ color: "#7f8c8d", fontSize: 12, mb: 0.5 }}>
+                        Researcher: {project.postedByName}
+                      </Typography>
+                      <Typography sx={{ color: "#7f8c8d", fontSize: 12, mb: 0.5 }}>
+                        Institution: {project.institution}
+                      </Typography>
+                      <Typography sx={{ color: "#7f8c8d", fontSize: 12, mb: 0.5 }}>
+                        Area: {project.researchArea}
+                      </Typography>
+                    </CardContent>
+                    <CardActions sx={{ pt: 0 }}>
+                      <Stack direction="row" spacing={2} sx={{ width: "100%" }}>
+                        <Button
+                          variant="contained"
+                          size="small"
+                          sx={{
+                            bgcolor: 'var(--light-blue)',
+                            color: 'var(--dark-blue)',
+                            borderRadius: '1.5rem',
+                            fontWeight: 600,
+                            px: 2,
+                            py: 0.5,
+                            minWidth: 0,
+                            boxShadow: '0 2px 10px rgba(100,204,197,0.08)',
+                            textTransform: "none",
+                            '&:hover': { bgcolor: '#5AA9A3', color: 'var(--white)' },
+                            flex: 1
+                          }}
+                          onClick={() => handleRequestReviewAndNotify(project)}
+                          disabled={status === "pending" || status === "approved"}
+                        >
+                          Request to review
+                        </Button>
+                        <Button
+                          variant="contained"
+                          size="small"
+                          sx={{
+                            bgcolor: 'var(--light-blue)',
+                            color: 'var(--dark-blue)',
+                            borderRadius: '1.5rem',
+                            fontWeight: 600,
+                            px: 2,
+                            py: 0.5,
+                            minWidth: 0,
+                            boxShadow: '0 2px 10px rgba(100,204,197,0.08)',
+                            textTransform: "none",
+                            '&:hover': { bgcolor: '#5AA9A3', color: 'var(--white)' },
+                            flex: 1
+                          }}
+                          onClick={() => handleExpand(project.id)}
+                        >
+                          {expandedProject === project.id ? "Show less" : "View details"}
+                        </Button>
+                      </Stack>
+                    </CardActions>
+                    {expandedProject === project.id && (
+                      <Box sx={{ p: 2, borderTop: "1px solid #eee" }}>
+                        <Typography sx={{ fontWeight: 600, mb: 1, fontSize: "0.95rem" }}>Methodology:</Typography>
+                        <Typography sx={{ mb: 1, fontSize: "0.95rem" }}>{project.methodology}</Typography>
+                        <Typography sx={{ fontWeight: 600, mb: 1, fontSize: "0.95rem" }}>Collaboration Needs:</Typography>
+                        <Typography sx={{ mb: 1, fontSize: "0.95rem" }}>{project.collaborationNeeds}</Typography>
+                        <Typography sx={{ fontWeight: 600, mb: 1, fontSize: "0.95rem" }}>Estimated Completion:</Typography>
+                        <Typography sx={{ mb: 1, fontSize: "0.95rem" }}>{project.estimatedCompletion}</Typography>
+                        <Typography sx={{ fontSize: "0.95rem" }}>
+                          <a
+                            href={project.publicationLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            Related Publication
+                          </a>
+                        </Typography>
+                      </Box>
+                    )}
+                  </Card>
+                );
+              })}
+            </Stack>
+          )}
+        </section>
 
           {/* Snackbar for notifications */}
           <Snackbar
